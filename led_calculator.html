@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>LED Display Calculator</title>
+  <style>
+    :root {
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --accent: #f1f5f9;
+      --success: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 12px;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0;
+    }
+
+    .lang-selector {
+      display: flex;
+      gap: 4px;
+      background: var(--border);
+      padding: 3px;
+      border-radius: 8px;
+    }
+
+    .lang-btn {
+      background: none;
+      border: none;
+      padding: 5px 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .lang-btn.active {
+      background: #ffffff;
+      color: var(--primary);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .fullscreen-btn {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 2px;
+      text-align: center;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .tab-nav {
+      display: flex;
+      background: #e2e8f0;
+      padding: 4px;
+      border-radius: 12px;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .tab-btn.active {
+      background: #ffffff;
+      color: var(--primary);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+
+    .view-panel {
+      display: none;
+    }
+
+    .view-panel.active {
+      display: block;
+    }
+
+    .card {
+      background: var(--card-bg);
+      padding: 18px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+      border: 1px solid var(--border);
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.825rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text-main);
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      background-color: #fafafa;
+      color: var(--text-main);
+      transition: border-color 0.2s, background-color 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      background-color: #ffffff;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .unit {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .btn:active {
+      transform: scale(0.99);
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-share {
+      background-color: var(--success);
+      color: white;
+      margin-top: 12px;
+    }
+
+    .btn-reset {
+      background-color: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      margin-top: 8px;
+      padding: 8px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .result-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .result-card-item {
+      background: var(--accent);
+      padding: 14px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .result-card-item.highlight-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+    }
+
+    .res-label {
+      font-size: 0.825rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .res-val {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+      text-align: right;
+    }
+
+    .res-val.primary-text {
+      color: var(--primary);
+      font-size: 1.05rem;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.9);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container" id="app">
+    <div class="header-bar">
+      <div class="lang-selector">
+        <button class="lang-btn active" id="btnLangKo" onclick="setLanguage('ko')">KO</button>
+        <button class="lang-btn" id="btnLangEn" onclick="setLanguage('en')">EN</button>
+        <button class="lang-btn" id="btnLangZh" onclick="setLanguage('zh')">ZH</button>
+        <button class="lang-btn" id="btnLangJa" onclick="setLanguage('ja')">JA</button>
+      </div>
+
+      <button class="fullscreen-btn" onclick="toggleFullscreen()">
+        <span id="fsIcon">⛶</span> <span id="lblFullscreen">전체화면</span>
+      </button>
+    </div>
+
+    <div>
+      <h1 id="lblAppTitle">LED 디스플레이 모듈 계산기</h1>
+      <div class="subtitle" id="lblAppSub">입력 및 결과 창 분리형 스마트 계산기</div>
+    </div>
+
+    <div class="tab-nav">
+      <button class="tab-btn active" id="tabInputBtn" onclick="switchTab('input')">⚙️ 입력창</button>
+      <button class="tab-btn" id="tabResultBtn" onclick="switchTab('result')">📊 결과창</button>
+    </div>
+
+    <div class="view-panel active" id="viewInput">
+      <div class="card">
+        <div class="form-group">
+          <label id="lblTitle">프로젝트 제목</label>
+          <input type="text" id="projectTitle" placeholder="예: 메인강당 LED 스크린" oninput="saveAndCalculate()">
+        </div>
+
+        <div class="form-group">
+          <label id="lblModSize">모듈 규격 (가로 x 세로, mm)</label>
+          <div class="input-row">
+            <input type="number" id="modW" value="320" placeholder="320" oninput="saveAndCalculate()">
+            <span class="unit">x</span>
+            <input type="number" id="modH" value="160" placeholder="160" oninput="saveAndCalculate()">
+            <span class="unit">mm</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label id="lblTargetSize">설치 공간 크기 (가로 x 세로, mm)</label>
+          <div class="input-row">
+            <input type="number" id="targetW" value="3000" placeholder="3000" oninput="saveAndCalculate()">
+            <span class="unit">x</span>
+            <input type="number" id="targetH" value="2000" placeholder="2000" oninput="saveAndCalculate()">
+            <span class="unit">mm</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label id="lblPitch">픽셀 피치 (Pixel Pitch, mm)</label>
+          <div class="input-row">
+            <input type="number" id="pitch" step="0.01" value="1.86" placeholder="1.86" oninput="saveAndCalculate()">
+            <span class="unit">P-mm</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label id="lblFitModeW">가로 크기 설정 기준</label>
+          <select id="fitModeW" onchange="saveAndCalculate()">
+            <option value="smaller" id="optSmallerW">공간보다 작게 (안전 범위 내)</option>
+            <option value="larger" id="optLargerW">공간보다 크게 (가득 채움)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label id="lblFitModeH">세로 크기 설정 기준</label>
+          <select id="fitModeH" onchange="saveAndCalculate()">
+            <option value="smaller" id="optSmallerH">공간보다 작게 (안전 범위 내)</option>
+            <option value="larger" id="optLargerH">공간보다 크게 (가득 채움)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label id="lblBaseRatio">비교 기준 화면비 (가로 기준값)</label>
+          <div class="input-row">
+            <input type="number" id="baseRatioVal" value="16" placeholder="16" step="1" oninput="saveAndCalculate()">
+            <span class="unit" id="lblRatioUnit">기반 (예: 16 입력시 16 : X)</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label id="lblMemo">메모 / 특이사항</label>
+          <textarea id="memo" placeholder="현장 설치 여유공간, 프레임 두께 등 메모 작성" oninput="saveAndCalculate()"></textarea>
+        </div>
+
+        <button class="btn btn-primary" onclick="goToResultTab()" id="btnCalculate">📐 계산 및 결과 보기 ➔</button>
+        <button class="btn btn-reset" onclick="resetDefaults()" id="btnReset">🔄 입력값 초기화</button>
+      </div>
+    </div>
+
+    <div class="view-panel" id="viewResult">
+      <div class="card">
+        <div class="result-list">
+          <div class="result-card-item">
+            <span class="res-label" id="lblResTitle">프로젝트</span>
+            <span class="res-val" id="resTitleDisplay">-</span>
+          </div>
+
+          <div class="result-card-item">
+            <span class="res-label" id="lblResInputModSize">모듈 규격</span>
+            <span class="res-val" id="resInputModSize">320 × 160 mm</span>
+          </div>
+
+          <div class="result-card-item">
+            <span class="res-label" id="lblResInputTargetSize">설치 공간 크기</span>
+            <span class="res-val" id="resInputTargetSize">3000 × 2000 mm</span>
+          </div>
+
+          <div class="result-card-item">
+            <span class="res-label" id="lblResInputPitch">픽셀 피치</span>
+            <span class="res-val" id="resInputPitch">1.86 mm</span>
+          </div>
+
+          <div class="result-card-item">
+            <span class="res-label" id="lblResInputFitMode">크기 설정 기준</span>
+            <span class="res-val" id="resInputFitMode">가로: 작게 / 세로: 작게</span>
+          </div>
+
+          <div class="result-card-item highlight-box">
+            <span class="res-label" id="lblResModCount">총 모듈 개수</span>
+            <span class="res-val primary-text" id="resModCount">0 개 (가로 0 × 세로 0)</span>
+          </div>
+
+          <div class="result-card-item">
+            <span class="res-label" id="lblResSize">실제 화면 크기</span>
+            <span class="res-val" id="resSize">0 × 0 mm</span>
+          </div>
+
+          <div class="result-card-item highlight-box">
+            <span class="res-label" id="lblResResolution">전체 해상도</span>
+            <span class="res-val primary-text" id="resResolution">0 × 0 px</span>
+          </div>
+
+          <div class="result-card-item">
+            <span class="res-label" id="lblResRatio">계산된 화면 비율</span>
+            <span class="res-val" id="resRatio">16 : 9.00</span>
+          </div>
+
+          <div class="result-card-item" id="memoResultContainer" style="display:none; flex-direction:column; align-items:flex-start; gap:4px;">
+            <span class="res-label" id="lblResMemo">메모 / 특이사항</span>
+            <span class="res-val" id="resMemoDisplay" style="text-align:left; font-weight:normal; font-size:0.85rem; color:var(--text-main); white-space:pre-wrap; word-break:break-word;"></span>
+          </div>
+        </div>
+
+        <button class="btn btn-share" onclick="shareResults()" id="btnShare">📤 제목, 결과, 메모 공유하기</button>
+        <button class="btn btn-primary" onclick="switchTab('input')" style="margin-top:8px; background-color:#475569;" id="btnBackToInput">⬅️ 입력창으로 돌아가기</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">클립보드에 결과가 복사되었습니다!</div>
+
+  <script>
+    const i18n = {
+      ko: {
+        appTitle: "LED 디스플레이 모듈 계산기",
+        appSub: "입력 및 결과 창 분리형 스마트 계산기",
+        fullscreen: "전체화면",
+        tabInput: "⚙️ 입력창",
+        tabResult: "📊 결과창",
+        title: "프로젝트 제목",
+        titlePh: "예: 메인강당 LED 스크린",
+        modSize: "모듈 규격 (가로 x 세로, mm)",
+        targetSize: "설치 공간 크기 (가로 x 세로, mm)",
+        pitch: "픽셀 피치 (Pixel Pitch, mm)",
+        fitModeW: "가로 크기 설정 기준",
+        fitModeH: "세로 크기 설정 기준",
+        optSmaller: "공간보다 작게 (안전 범위 내)",
+        optLarger: "공간보다 크게 (가득 채움)",
+        baseRatio: "비교 기준 화면비 (가로 기준값)",
+        ratioUnit: "기반 (예: 16 입력시 16 : X)",
+        memo: "메모 / 특이사항",
+        memoPh: "현장 설치 여유공간, 프레임 두께 등 메모 작성",
+        btnCalculate: "📐 계산 및 결과 보기 ➔",
+        btnReset: "🔄 입력값 초기화",
+        resTitle: "프로젝트",
+        resInputModSize: "모듈 규격",
+        resInputTargetSize: "설치 공간 크기",
+        resInputPitch: "픽셀 피치",
+        resInputFitMode: "크기 설정 기준",
+        resModCount: "총 모듈 개수",
+        resSize: "실제 화면 크기",
+        resResolution: "전체 해상도",
+        resRatio: "계산된 화면 비율",
+        resMemo: "메모 / 특이사항",
+        btnShare: "📤 제목, 결과, 메모 공유하기",
+        btnBackToInput: "⬅️ 입력창으로 돌아가기",
+        modUnit: "개",
+        optTextSmaller: "작게",
+        optTextLarger: "크게",
+        labelWidth: "가로",
+        labelHeight: "세로",
+        toastCopied: "클립보드에 결과가 복사되었습니다!",
+        copyFail: "복사에 실패했습니다.",
+        resetConfirm: "모든 입력값을 초기화하시겠습니까?"
+      },
+      en: {
+        appTitle: "LED Display Module Calculator",
+        appSub: "Smart Calculator with Tabbed Navigation",
+        fullscreen: "Fullscreen",
+        tabInput: "⚙️ Input",
+        tabResult: "📊 Results",
+        title: "Project Title",
+        titlePh: "e.g., Main Hall LED Screen",
+        modSize: "Module Dimensions (W x H, mm)",
+        targetSize: "Available Space (W x H, mm)",
+        pitch: "Pixel Pitch (mm)",
+        fitModeW: "Width Sizing Strategy",
+        fitModeH: "Height Sizing Strategy",
+        optSmaller: "Smaller than space (Fit inside)",
+        optLarger: "Larger than space (Cover space)",
+        baseRatio: "Aspect Ratio Base (Width Ref)",
+        ratioUnit: "Base (e.g. 16 for 16:X)",
+        memo: "Memo / Notes",
+        memoPh: "Enter clearance, frame margins, or special notes",
+        btnCalculate: "📐 Calculate & View Results ➔",
+        btnReset: "🔄 Reset Inputs",
+        resTitle: "Project",
+        resInputModSize: "Module Size",
+        resInputTargetSize: "Available Space",
+        resInputPitch: "Pixel Pitch",
+        resInputFitMode: "Sizing Strategy",
+        resModCount: "Total Modules",
+        resSize: "Actual Screen Size",
+        resResolution: "Total Resolution",
+        resRatio: "Calculated Aspect Ratio",
+        resMemo: "Memo / Notes",
+        btnShare: "📤 Share Title, Results & Memo",
+        btnBackToInput: "⬅️ Back to Inputs",
+        modUnit: "pcs",
+        optTextSmaller: "Smaller",
+        optTextLarger: "Larger",
+        labelWidth: "W",
+        labelHeight: "H",
+        toastCopied: "Results copied to clipboard!",
+        copyFail: "Failed to copy.",
+        resetConfirm: "Are you sure you want to reset all inputs?"
+      },
+      zh: {
+        appTitle: "LED 显示屏模块计算器",
+        appSub: "输入与结果分屏智能计算器",
+        fullscreen: "全屏模式",
+        tabInput: "⚙️ 输入页",
+        tabResult: "📊 结果页",
+        title: "项目名称",
+        titlePh: "例如：礼堂主屏 LED",
+        modSize: "模组尺寸 (宽 x 高, mm)",
+        targetSize: "安装空间 (宽 x 高, mm)",
+        pitch: "点间距 (Pixel Pitch, mm)",
+        fitModeW: "宽度尺寸适配标准",
+        fitModeH: "高度尺寸适配标准",
+        optSmaller: "小于安装空间 (安全范围内)",
+        optLarger: "大于安装空间 (完全覆盖)",
+        baseRatio: "对比屏幕比例 (基准宽度)",
+        ratioUnit: "基准 (例: 16 对应 16 : X)",
+        memo: "备注 / 特殊说明",
+        memoPh: "填写现场留空、边框厚度等备注",
+        btnCalculate: "📐 计算并查看结果 ➔",
+        btnReset: "🔄 重置输入",
+        resTitle: "项目",
+        resInputModSize: "模组尺寸",
+        resInputTargetSize: "安装空间",
+        resInputPitch: "点间距",
+        resInputFitMode: "尺寸适配标准",
+        resModCount: "模组总数量",
+        resSize: "实际屏幕尺寸",
+        resResolution: "总分辨率",
+        resRatio: "计算所得屏幕比例",
+        resMemo: "备注 / 特殊说明",
+        btnShare: "📤 分享标题、结果与备注",
+        btnBackToInput: "⬅️ 返回输入页",
+        modUnit: "块",
+        optTextSmaller: "较小",
+        optTextLarger: "较大",
+        labelWidth: "宽",
+        labelHeight: "高",
+        toastCopied: "结果已成功复制到剪贴板！",
+        copyFail: "复制失败。",
+        resetConfirm: "确定要重置所有输入内容吗？"
+      },
+      ja: {
+        appTitle: "LED ディスプレイモジュール計算機",
+        appSub: "入力と結果が分かれたスマート計算機",
+        fullscreen: "全画面",
+        tabInput: "⚙️ 入力",
+        tabResult: "📊 結果",
+        title: "プロジェクトタイトル",
+        titlePh: "例: メインホール LEDスクリーン",
+        modSize: "モジュール規格 (幅 x 高さ, mm)",
+        targetSize: "設置スペース (幅 x 高さ, mm)",
+        pitch: "ピクセルピッチ (Pixel Pitch, mm)",
+        fitModeW: "横幅サイズ調整基準",
+        fitModeH: "高さサイズ調整基準",
+        optSmaller: "設置スペースより小さく (安全範囲内)",
+        optLarger: "設置スペースより大きく (全体をカバー)",
+        baseRatio: "比較基準画面比 (横幅基準)",
+        ratioUnit: "基準 (例: 16入力で 16 : X)",
+        memo: "メモ / 特記事項",
+        memoPh: "現場の余裕スペース、フレーム厚みなどのメモ",
+        btnCalculate: "📐 計算して結果を表示 ➔",
+        btnReset: "🔄 入力をリセット",
+        resTitle: "プロジェクト",
+        resInputModSize: "モジュール規格",
+        resInputTargetSize: "設置スペース",
+        resInputPitch: "ピクセルピッチ",
+        resInputFitMode: "サイズ調整基準",
+        resModCount: "総モジュール数",
+        resSize: "実際の画面サイズ",
+        resResolution: "総解像度",
+        resRatio: "計算された画面比率",
+        resMemo: "メモ / 特記事項",
+        btnShare: "📤 タイトル・結果・メモを共有",
+        btnBackToInput: "⬅️ 入力画面に戻る",
+        modUnit: "個",
+        optTextSmaller: "小さく",
+        optTextLarger: "大きく",
+        labelWidth: "幅",
+        labelHeight: "高さ",
+        toastCopied: "結果がクリップボードにコピーされました！",
+        copyFail: "コピーに失敗しました。",
+        resetConfirm: "すべての入力値をリセットしますか？"
+      }
+    };
+
+    let currentLang = 'ko';
+    const STORAGE_KEY = 'LED_CALC_DATA_V3';
+
+    function switchTab(tabName) {
+      document.getElementById('viewInput').classList.remove('active');
+      document.getElementById('viewResult').classList.remove('active');
+      document.getElementById('tabInputBtn').classList.remove('active');
+      document.getElementById('tabResultBtn').classList.remove('active');
+
+      if (tabName === 'input') {
+        document.getElementById('viewInput').classList.add('active');
+        document.getElementById('tabInputBtn').classList.add('active');
+      } else {
+        calculate();
+        document.getElementById('viewResult').classList.add('active');
+        document.getElementById('tabResultBtn').classList.add('active');
+      }
+    }
+
+    function goToResultTab() {
+      switchTab('result');
+    }
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      const dict = i18n[lang];
+
+      document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+      if(lang === 'ko') document.getElementById('btnLangKo').classList.add('active');
+      if(lang === 'en') document.getElementById('btnLangEn').classList.add('active');
+      if(lang === 'zh') document.getElementById('btnLangZh').classList.add('active');
+      if(lang === 'ja') document.getElementById('btnLangJa').classList.add('active');
+
+      document.getElementById('lblAppTitle').innerText = dict.appTitle;
+      document.getElementById('lblAppSub').innerText = dict.appSub;
+      document.getElementById('lblFullscreen').innerText = dict.fullscreen;
+      document.getElementById('tabInputBtn').innerText = dict.tabInput;
+      document.getElementById('tabResultBtn').innerText = dict.tabResult;
+      document.getElementById('lblTitle').innerText = dict.title;
+      document.getElementById('projectTitle').placeholder = dict.titlePh;
+      document.getElementById('lblModSize').innerText = dict.modSize;
+      document.getElementById('lblTargetSize').innerText = dict.targetSize;
+      document.getElementById('lblPitch').innerText = dict.pitch;
+      
+      document.getElementById('lblFitModeW').innerText = dict.fitModeW;
+      document.getElementById('lblFitModeH').innerText = dict.fitModeH;
+      document.getElementById('optSmallerW').innerText = dict.optSmaller;
+      document.getElementById('optLargerW').innerText = dict.optLarger;
+      document.getElementById('optSmallerH').innerText = dict.optSmaller;
+      document.getElementById('optLargerH').innerText = dict.optLarger;
+
+      document.getElementById('lblBaseRatio').innerText = dict.baseRatio;
+      document.getElementById('lblRatioUnit').innerText = dict.ratioUnit;
+      document.getElementById('lblMemo').innerText = dict.memo;
+      document.getElementById('memo').placeholder = dict.memoPh;
+      document.getElementById('btnCalculate').innerText = dict.btnCalculate;
+      document.getElementById('btnReset').innerText = dict.btnReset;
+      
+      document.getElementById('lblResTitle').innerText = dict.resTitle;
+      document.getElementById('lblResInputModSize').innerText = dict.resInputModSize;
+      document.getElementById('lblResInputTargetSize').innerText = dict.resInputTargetSize;
+      document.getElementById('lblResInputPitch').innerText = dict.resInputPitch;
+      document.getElementById('lblResInputFitMode').innerText = dict.resInputFitMode;
+      document.getElementById('lblResModCount').innerText = dict.resModCount;
+      document.getElementById('lblResSize').innerText = dict.resSize;
+      document.getElementById('lblResResolution').innerText = dict.resResolution;
+      document.getElementById('lblResRatio').innerText = dict.resRatio;
+      document.getElementById('lblResMemo').innerText = dict.resMemo;
+      document.getElementById('btnShare').innerText = dict.btnShare;
+      document.getElementById('btnBackToInput').innerText = dict.btnBackToInput;
+
+      saveAndCalculate();
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          alert(`Fullscreen error: ${err.message}`);
+        });
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    function saveAndCalculate() {
+      const data = {
+        title: document.getElementById('projectTitle').value,
+        modW: document.getElementById('modW').value,
+        modH: document.getElementById('modH').value,
+        targetW: document.getElementById('targetW').value,
+        targetH: document.getElementById('targetH').value,
+        pitch: document.getElementById('pitch').value,
+        fitModeW: document.getElementById('fitModeW').value,
+        fitModeH: document.getElementById('fitModeH').value,
+        baseRatioVal: document.getElementById('baseRatioVal').value,
+        memo: document.getElementById('memo').value,
+        lang: currentLang
+      };
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      calculate();
+    }
+
+    function calculate() {
+      const title = document.getElementById('projectTitle').value.trim();
+      const modW = parseFloat(document.getElementById('modW').value) || 0;
+      const modH = parseFloat(document.getElementById('modH').value) || 0;
+      const targetW = parseFloat(document.getElementById('targetW').value) || 0;
+      const targetH = parseFloat(document.getElementById('targetH').value) || 0;
+      const pitch = parseFloat(document.getElementById('pitch').value) || 1.86;
+      const fitModeW = document.getElementById('fitModeW').value;
+      const fitModeH = document.getElementById('fitModeH').value;
+      const baseRatioVal = parseFloat(document.getElementById('baseRatioVal').value) || 16;
+      const memo = document.getElementById('memo').value.trim();
+
+      if (modW <= 0 || modH <= 0 || targetW <= 0 || targetH <= 0) return;
+
+      let countX = fitModeW === 'smaller' ? Math.floor(targetW / modW) : Math.ceil(targetW / modW);
+      let countY = fitModeH === 'smaller' ? Math.floor(targetH / modH) : Math.ceil(targetH / modH);
+
+      countX = Math.max(1, countX);
+      countY = Math.max(1, countY);
+
+      const totalModules = countX * countY;
+      const totalW = countX * modW;
+      const totalH = countY * modH;
+
+      const modResX = Math.round(modW / pitch);
+      const modResY = Math.round(modH / pitch);
+
+      const totalResX = countX * modResX;
+      const totalResY = countY * modResY;
+
+      const calculatedSubRatio = (baseRatioVal * (totalH / totalW)).toFixed(2);
+      const ratioDisplay = `${baseRatioVal} : ${calculatedSubRatio}`;
+
+      const dict = i18n[currentLang];
+      const fitWText = fitModeW === 'smaller' ? dict.optTextSmaller : dict.optTextLarger;
+      const fitHText = fitModeH === 'smaller' ? dict.optTextSmaller : dict.optTextLarger;
+
+      document.getElementById('resTitleDisplay').innerText = title || '-';
+      document.getElementById('resInputModSize').innerText = `${modW} × ${modH} mm`;
+      document.getElementById('resInputTargetSize').innerText = `${targetW} × ${targetH} mm`;
+      document.getElementById('resInputPitch').innerText = `${pitch} mm`;
+      document.getElementById('resInputFitMode').innerText = `${dict.labelWidth}: ${fitWText} / ${dict.labelHeight}: ${fitHText}`;
+
+      document.getElementById('resModCount').innerText = `${totalModules.toLocaleString()} ${dict.modUnit} (${dict.labelWidth}: ${countX} × ${dict.labelHeight}: ${countY})`;
+      document.getElementById('resSize').innerText = `${totalW.toLocaleString()} × ${totalH.toLocaleString()} mm`;
+      document.getElementById('resResolution').innerText = `${totalResX.toLocaleString()} × ${totalResY.toLocaleString()} px`;
+      document.getElementById('resRatio').innerText = ratioDisplay;
+
+      const memoContainer = document.getElementById('memoResultContainer');
+      if (memo) {
+        document.getElementById('resMemoDisplay').innerText = memo;
+        memoContainer.style.display = 'flex';
+      } else {
+        memoContainer.style.display = 'none';
+      }
+    }
+
+    function shareResults() {
+      const title = document.getElementById('projectTitle').value.trim() || i18n[currentLang].title;
+      const memo = document.getElementById('memo').value.trim();
+      const inputModSize = document.getElementById('resInputModSize').innerText;
+      const inputTargetSize = document.getElementById('resInputTargetSize').innerText;
+      const inputPitch = document.getElementById('resInputPitch').innerText;
+      const inputFitMode = document.getElementById('resInputFitMode').innerText;
+
+      const modCount = document.getElementById('resModCount').innerText;
+      const size = document.getElementById('resSize').innerText;
+      const resolution = document.getElementById('resResolution').innerText;
+      const ratio = document.getElementById('resRatio').innerText;
+
+      let textToCopy = `📌 [${title}]\n`;
+      textToCopy += `------------------------------\n`;
+      textToCopy += `▪ ${i18n[currentLang].resInputModSize}: ${inputModSize}\n`;
+      textToCopy += `▪ ${i18n[currentLang].resInputTargetSize}: ${inputTargetSize}\n`;
+      textToCopy += `▪ ${i18n[currentLang].resInputPitch}: ${inputPitch}\n`;
+      textToCopy += `▪ ${i18n[currentLang].resInputFitMode}: ${inputFitMode}\n`;
+      textToCopy += `------------------------------\n`;
+      textToCopy += `▪ ${i18n[currentLang].resModCount}: ${modCount}\n`;
+      textToCopy += `▪ ${i18n[currentLang].resSize}: ${size}\n`;
+      textToCopy += `▪ ${i18n[currentLang].resResolution}: ${resolution}\n`;
+      textToCopy += `▪ ${i18n[currentLang].resRatio}: ${ratio}\n`;
+      if (memo) {
+        textToCopy += `------------------------------\n`;
+        textToCopy += `📝 ${i18n[currentLang].resMemo}: ${memo}\n`;
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(textToCopy).then(() => {
+          showToast(i18n[currentLang].toastCopied);
+        }).catch(() => {
+          fallbackCopy(textToCopy);
+        });
+      } else {
+        fallbackCopy(textToCopy);
+      }
+    }
+
+    function fallbackCopy(text) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast(i18n[currentLang].toastCopied);
+      } catch (err) {
+        alert(i18n[currentLang].copyFail);
+      }
+      document.body.removeChild(textarea);
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 2500);
+    }
+
+    function resetDefaults() {
+      if (confirm(i18n[currentLang].resetConfirm)) {
+        localStorage.removeItem(STORAGE_KEY);
+        document.getElementById('projectTitle').value = '';
+        document.getElementById('modW').value = '320';
+        document.getElementById('modH').value = '160';
+        document.getElementById('targetW').value = '3000';
+        document.getElementById('targetH').value = '2000';
+        document.getElementById('pitch').value = '1.86';
+        document.getElementById('fitModeW').value = 'smaller';
+        document.getElementById('fitModeH').value = 'smaller';
+        document.getElementById('baseRatioVal').value = '16';
+        document.getElementById('memo').value = '';
+        saveAndCalculate();
+      }
+    }
+
+    window.onload = function() {
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData);
+          if (parsed.title !== undefined) document.getElementById('projectTitle').value = parsed.title;
+          if (parsed.modW) document.getElementById('modW').value = parsed.modW;
+          if (parsed.modH) document.getElementById('modH').value = parsed.modH;
+          if (parsed.targetW) document.getElementById('targetW').value = parsed.targetW;
+          if (parsed.targetH) document.getElementById('targetH').value = parsed.targetH;
+          if (parsed.pitch) document.getElementById('pitch').value = parsed.pitch;
+          if (parsed.fitModeW) document.getElementById('fitModeW').value = parsed.fitModeW;
+          if (parsed.fitModeH) document.getElementById('fitModeH').value = parsed.fitModeH;
+          if (parsed.baseRatioVal) document.getElementById('baseRatioVal').value = parsed.baseRatioVal;
+          if (parsed.memo !== undefined) document.getElementById('memo').value = parsed.memo;
+          if (parsed.lang) currentLang = parsed.lang;
+        } catch(e) {
+          console.error("Cache load error", e);
+        }
+      }
+      setLanguage(currentLang);
+    }
+  </script>
+</body>
+</html>
