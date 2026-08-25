@@ -564,7 +564,7 @@
               <span class="team-name">Team A</span>
               <span class="court-arrow" id="arrow-a">◀</span>
             </div>
-            <div class="player-names" id="disp-players-a">Player A1 / A2</div>
+            <div class="player-names" id="disp-players-a">A. P1 / A. P2</div>
           </div>
         </div>
         <span class="sets-won" id="sets-a">0</span>
@@ -585,7 +585,7 @@
               <span class="team-name">Team B</span>
               <span class="court-arrow" id="arrow-b">▶</span>
             </div>
-            <div class="player-names" id="disp-players-b">Player B1 / B2</div>
+            <div class="player-names" id="disp-players-b">B. P1 / B. P2</div>
           </div>
         </div>
         <span class="sets-won" id="sets-b">0</span>
@@ -701,16 +701,16 @@
       <div class="setting-group">
         <label>Team A Players</label>
         <div class="input-row">
-          <input type="text" id="p-a1" value="A. Murray" placeholder="Player 1" />
-          <input type="text" id="p-a2" value="J. Peers" placeholder="Player 2" />
+          <input type="text" id="p-a1" value="A. P1" placeholder="Player 1" />
+          <input type="text" id="p-a2" value="A. P2" placeholder="Player 2" />
         </div>
       </div>
 
       <div class="setting-group">
         <label>Team B Players</label>
         <div class="input-row">
-          <input type="text" id="p-b1" value="R. Nadal" placeholder="Player 1" />
-          <input type="text" id="p-b2" value="M. Lopez" placeholder="Player 2" />
+          <input type="text" id="p-b1" value="B. P1" placeholder="Player 1" />
+          <input type="text" id="p-b2" value="B. P2" placeholder="Player 2" />
         </div>
       </div>
 
@@ -836,8 +836,8 @@
       deuceRule: 'ad',
       courtChange: 'manual',
       announceServer: '3000', // 복식 게임 종료 후 서브 순서 콜 지연시간 (ms)
-      playersA: ['A. Murray', 'J. Peers'],
-      playersB: ['R. Nadal', 'M. Lopez'],
+      playersA: ['A. P1', 'A. P2'],
+      playersB: ['B. P1', 'B. P2'],
       swipes: {
         up: 'right_score',
         down: 'left_score',
@@ -1211,12 +1211,12 @@
       config.announceServer = document.getElementById('set-announce-server').value;
       
       config.playersA = [
-        document.getElementById('p-a1').value || 'A1',
-        document.getElementById('p-a2').value || 'A2'
+        document.getElementById('p-a1').value || 'A. P1',
+        document.getElementById('p-a2').value || 'A. P2'
       ];
       config.playersB = [
-        document.getElementById('p-b1').value || 'B1',
-        document.getElementById('p-b2').value || 'B2'
+        document.getElementById('p-b1').value || 'B. P1',
+        document.getElementById('p-b2').value || 'B. P2'
       ];
 
       config.swipes = {
