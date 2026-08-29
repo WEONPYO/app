@@ -1,11 +1,435 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>WP Tennis Scoreboard</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>테니스 스코어보드 (Tennis Scoreboard)</title>
+  <style>
+    :root {
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --team-a-color: #3b82f6;
+      --team-b-color: #ef4444;
+      --text-main: #ffffff;
+      --text-sub: #a1a1aa;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* 상단 제어 바 */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      background: #18181b;
+      border-bottom: 1px solid #27272a;
+    }
+
+    .top-bar button {
+      background: #27272a;
+      color: #fff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .top-bar button:active {
+      background: #3f3f46;
+    }
+
+    /* 스코어보드 메인 영역 */
+    .scoreboard-container {
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+      gap: 12px;
+      padding: 12px;
+    }
+
+    .team-card {
+      flex: 1;
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .team-card.team-a { border-top: 4px solid var(--team-a-color); }
+    .team-card.team-b { border-top: 4px solid var(--team-b-color); }
+
+    .team-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .player-names {
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+
+    .serve-indicator {
+      display: none;
+      background: #eab308;
+      color: #000;
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+
+    .serve-indicator.active {
+      display: inline-block;
+    }
+
+    .score-display {
+      text-align: center;
+      margin: 10px 0;
+    }
+
+    .main-point {
+      font-size: 4rem;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .sub-scores {
+      display: flex;
+      justify-content: space-around;
+      font-size: 1.2rem;
+      color: var(--text-sub);
+    }
+
+    /* 코트 그래픽 영역 */
+    .court-container {
+      height: 180px;
+      margin: 0 12px 12px 12px;
+      background: #15803d;
+      border: 3px solid #fff;
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .court-side {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 50%;
+    }
+    .court-side.left { left: 0; border-right: 2px solid #fff; }
+    .court-side.right { right: 0; }
+
+    .player-marker {
+      position: absolute;
+      width: 80px;
+      height: 28px;
+      transform: translate(-50%, -50%);
+      border-radius: 14px;
+      color: #fff;
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+      z-index: 2;
+    }
+
+    .player-marker.server { border: 2px solid #eab308; }
+    .player-marker.receiver { border: 2px solid #ffffff; }
+
+    .role-badge {
+      font-size: 0.6rem;
+      margin-left: 4px;
+      background: rgba(0,0,0,0.5);
+      padding: 1px 3px;
+      border-radius: 3px;
+    }
+
+    #target-box {
+      position: absolute;
+      width: 25%;
+      height: 35%;
+      border: 2px dashed #fde047;
+      background: rgba(253, 224, 71, 0.2);
+      z-index: 1;
+      transition: all 0.3s ease;
+    }
+
+    /* 하단 버튼 바 */
+    .bottom-controls {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      padding: 0 12px 12px 12px;
+    }
+
+    .bottom-controls button {
+      background: #27272a;
+      color: #fff;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .bottom-controls button:active { background: #3f3f46; }
+
+    /* 모달 레이아웃 */
+    .modal, .confirm-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: #18181b;
+      padding: 20px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      margin-bottom: 4px;
+    }
+
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 8px;
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      color: #fff;
+      border-radius: 6px;
+    }
+
+    /* 권한 없음 레이어 */
+    #unauthorized-access {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #000;
+      color: red;
+      z-index: 999;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-  <script src="https://weonpyo.github.io/app/tennis_scoreboard.js"></script>
+
+  <!-- 미허가 도메인 차단 레이어 (JS 로직 대응) -->
+  <div id="unauthorized-access">
+    <span>Unauthorized Domain Access</span>
+  </div>
+
+  <!-- 풀스크린 시작 오버레이 -->
+  <div id="fs-overlay" style="position:fixed; top:0; left:0; right:0; bottom:0; background:#000; z-index:90; display:flex; justify-content:center; align-items:center;">
+    <button onclick="startFullscreenApp()" style="padding: 16px 32px; font-size: 1.2rem; font-weight:bold; background:#2563eb; color:#fff; border:none; border-radius:8px; cursor:pointer;">
+      경기 시작 (전체화면)
+    </button>
+  </div>
+
+  <!-- 백그라운드 WakeLock 및 미디어 세션용 미디어 태그 -->
+  <video id="wakelock-video" playsinline muted style="display:none;"></video>
+  <audio id="silent-audio" loop style="display:none;"></audio>
+
+  <!-- 상단 컨트롤 바 -->
+  <div class="top-bar">
+    <button onclick="undo()">◀ Undo</button>
+    <button id="btn-toggle-serve" onclick="toggleServeTeam()">SERVE: TEAM A</button>
+    <button onclick="manualCourtChange()">Change Ends ⇄</button>
+    <button id="btn-settings">⚙ Settings</button>
+  </div>
+
+  <!-- 메인 스코어보드 -->
+  <div class="scoreboard-container">
+    <!-- 팀 A 카드 -->
+    <div class="team-card team-a" id="card-team-a">
+      <div class="team-header">
+        <span id="label-left">TEAM A</span>
+        <span class="serve-indicator" id="serve-a">SERVE</span>
+      </div>
+      <div class="player-names" id="disp-players-a">A. P1 / A. P2</div>
+      <div class="score-display">
+        <div class="main-point" id="points-a">0</div>
+      </div>
+      <div class="sub-scores">
+        <span>Games: <b id="games-a">0</b></span>
+        <span>Sets: <b id="sets-a">0</b></span>
+      </div>
+      <button onclick="addPoint('A')" style="margin-top:10px; padding:10px; background:#2563eb; color:#fff; border:none; border-radius:6px; font-weight:bold;">+ Point</button>
+    </div>
+
+    <!-- 팀 B 카드 -->
+    <div class="team-card team-b" id="card-team-b">
+      <div class="team-header">
+        <span id="label-right">TEAM B</span>
+        <span class="serve-indicator" id="serve-b">SERVE</span>
+      </div>
+      <div class="player-names" id="disp-players-b">B. P1 / B. P2</div>
+      <div class="score-display">
+        <div class="main-point" id="points-b">0</div>
+      </div>
+      <div class="sub-scores">
+        <span>Games: <b id="games-b">0</b></span>
+        <span>Sets: <b id="sets-b">0</b></span>
+      </div>
+      <button onclick="addPoint('B')" style="margin-top:10px; padding:10px; background:#dc2626; color:#fff; border:none; border-radius:6px; font-weight:bold;">+ Point</button>
+    </div>
+  </div>
+
+  <!-- 코트 위젯 Graphic -->
+  <div class="court-container">
+    <div class="court-side left" id="side-left-bg"></div>
+    <div class="court-side right" id="side-right-bg"></div>
+    <div id="target-box"></div>
+
+    <!-- 플레이어 위치 마커 -->
+    <div class="player-marker" id="pm-a1"></div>
+    <div class="player-marker" id="pm-a2"></div>
+    <div class="player-marker" id="pm-b1"></div>
+    <div class="player-marker" id="pm-b2"></div>
+  </div>
+
+  <!-- 하단 서브 컨트롤 버튼 -->
+  <div class="bottom-controls">
+    <button onclick="confirmResetMatch()">Reset Match</button>
+    <button onclick="executeControlAction('left_score')"><span id="arrow-a">◀</span> Point Left</button>
+    <button onclick="executeControlAction('right_score')">Point Right <span id="arrow-b">▶</span></button>
+    <button onclick="toggleFullscreen()">Fullscreen</button>
+  </div>
+
+  <!-- 설정 모달 창 -->
+  <div class="modal" id="settings-modal">
+    <div class="modal-content">
+      <h2 style="margin-bottom:16px;">Match Settings</h2>
+      
+      <div class="form-group">
+        <label>Game Type</label>
+        <select id="set-type" onchange="togglePlayerInputs()">
+          <option value="doubles">Doubles (복식)</option>
+          <option value="singles">Singles (단식)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>First Serve Team</label>
+        <select id="set-first-serve">
+          <option value="A">Team A</option>
+          <option value="B">Team B</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Sets to Win</label>
+        <input type="number" id="set-sets" value="3">
+      </div>
+
+      <div class="form-group">
+        <label>Games per Set</label>
+        <input type="number" id="set-games" value="6">
+      </div>
+
+      <div class="form-group">
+        <label>Deuce Rule</label>
+        <select id="set-deuce">
+          <option value="ad">Advantage (기본)</option>
+          <option value="no-ad">No-Ad (노애드)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Court Change</label>
+        <select id="set-court">
+          <option value="manual">Manual (수동)</option>
+          <option value="auto">Auto (자동)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Announce Server (Delay ms)</label>
+        <select id="set-announce-server">
+          <option value="3000">3 Seconds</option>
+          <option value="2000">2 Seconds</option>
+          <option value="off">Off</option>
+        </select>
+      </div>
+
+      <hr style="border-color:#3f3f46; margin:12px 0;">
+
+      <div class="form-group"><label>Team A - Player 1</label><input type="text" id="p-a1"></div>
+      <div class="form-group"><label>Team A - Player 2</label><input type="text" id="p-a2"></div>
+      <div class="form-group"><label>Team B - Player 1</label><input type="text" id="p-b1"></div>
+      <div class="form-group"><label>Team B - Player 2</label><input type="text" id="p-b2"></div>
+
+      <!-- 제스처 및 미디어 키 세팅 -->
+      <input type="hidden" id="swipe-up" value="right_score">
+      <input type="hidden" id="swipe-down" value="left_score">
+      <input type="hidden" id="swipe-left" value="court_change">
+      <input type="hidden" id="swipe-right" value="undo">
+      <input type="hidden" id="media-next" value="right_score">
+      <input type="hidden" id="media-prev" value="left_score">
+      <input type="hidden" id="media-pause" value="undo">
+      <input type="hidden" id="media-play" value="court_change">
+
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px;">
+        <button id="btn-close-settings" style="padding:8px 16px; background:#3f3f46; color:#fff; border:none; border-radius:6px; cursor:pointer;">취소</button>
+        <button id="btn-save-settings" style="padding:8px 16px; background:#2563eb; color:#fff; border:none; border-radius:6px; cursor:pointer;">저장 및 초기화</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 커스텀 Confirm 모달 -->
+  <div class="confirm-modal" id="custom-confirm-modal">
+    <div class="modal-content" style="max-width:350px; text-align:center;">
+      <p id="confirm-message" style="margin-bottom:20px;">확인하시겠습니까?</p>
+      <div style="display:flex; justify-content:center; gap:12px;">
+        <button id="btn-confirm-no" style="padding:8px 16px; background:#3f3f46; color:#fff; border:none; border-radius:6px; cursor:pointer;">아니오</button>
+        <button id="btn-confirm-yes" style="padding:8px 16px; background:#2563eb; color:#fff; border:none; border-radius:6px; cursor:pointer;">예</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 제공해주신 자바스크립트 파일 로드 -->
+  <script src="tennis_scoreboard.js"></script>
 </body>
 </html>
