@@ -1,7 +1,3 @@
-// ==========================================
-// Tennis Scoreboard Script for Obfuscation (Fixed)
-// ==========================================
-
 // 접속 도메인 검증
 function checkDomainAuth() {
   const allowedHost = "weonpyo.github.io";
@@ -85,7 +81,7 @@ function scheduleServerAnnouncement(customDelayMs = null) {
     const serverTeam = state.currentServerTeam;
     const activeServerIdx = (serverTeam === 'A') ? state.serverIdxA : state.serverIdxB;
     
-    // 첫 번째 선수 / 두 번째 선수 ("First server" / "Second server") 호출
+    // 이름이 아닌 첫 번째 선수 / 두 번째 선수 ("First server" / "Second server") 호출
     const callText = (activeServerIdx === 0) ? "First server" : "Second server";
 
     speak(callText);
@@ -110,7 +106,7 @@ function enableVideoWakeLock() {
     if (!videoEl.src) {
       videoEl.src = "data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28ybXA0MQAAAAptZGF0AAAAAAYAAAAA";
     }
-    videoEl.play().catch(() => {});
+    videoEl.play().catch(e => {});
   }
 }
 
@@ -120,14 +116,12 @@ async function keepScreenAlive() {
   
   const audioEl = document.getElementById('silent-audio');
   if (audioEl && audioEl.paused) {
-    audioEl.play().catch(() => {});
+    audioEl.play().catch(e => {});
   }
 }
 
 setInterval(() => {
-  if (checkDomainAuth()) {
-    keepScreenAlive();
-  }
+  keepScreenAlive();
 }, 10000);
 
 function setupMediaSession() {
@@ -135,34 +129,32 @@ function setupMediaSession() {
   const audioEl = document.getElementById('silent-audio');
   if (audioEl) {
     audioEl.src = silentAudioURI;
-    audioEl.play().catch(() => {});
+    audioEl.play().catch(e => {});
   }
 
   if ('mediaSession' in navigator) {
-    try {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: "Tennis Scoreboard Active",
-        artist: "Screen Always On",
-        album: "WP Scoreboard",
-        artwork: [
-          { src: 'https://via.placeholder.com/96', sizes: '96x96', type: 'image/png' }
-        ]
-      });
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: "Tennis Scoreboard Active",
+      artist: "Screen Always On",
+      album: "WP Scoreboard",
+      artwork: [
+        { src: 'https://via.placeholder.com/96', sizes: '96x96', type: 'image/png' }
+      ]
+    });
 
-      const actionHandlers = [
-        ['nexttrack', () => executeControlAction(config.mediaKeys.nexttrack)],
-        ['previoustrack', () => executeControlAction(config.mediaKeys.previoustrack)],
-        ['pause', () => executeControlAction(config.mediaKeys.pause)],
-        ['play', () => executeControlAction(config.mediaKeys.play)],
-        ['playpause', () => executeControlAction(config.mediaKeys.play)]
-      ];
+    const actionHandlers = [
+      ['nexttrack', () => executeControlAction(config.mediaKeys.nexttrack)],
+      ['previoustrack', () => executeControlAction(config.mediaKeys.previoustrack)],
+      ['pause', () => executeControlAction(config.mediaKeys.pause)],
+      ['play', () => executeControlAction(config.mediaKeys.play)],
+      ['playpause', () => executeControlAction(config.mediaKeys.play)]
+    ];
 
-      for (const [action, handler] of actionHandlers) {
-        try {
-          navigator.mediaSession.setActionHandler(action, handler);
-        } catch (error) {}
-      }
-    } catch (e) {}
+    for (const [action, handler] of actionHandlers) {
+      try {
+        navigator.mediaSession.setActionHandler(action, handler);
+      } catch (error) {}
+    }
   }
 }
 
@@ -181,8 +173,6 @@ function showCustomConfirm(message, onConfirm) {
   const confirmMsg = document.getElementById('confirm-message');
   const btnYes = document.getElementById('btn-confirm-yes');
   const btnNo = document.getElementById('btn-confirm-no');
-
-  if (!confirmModal || !confirmMsg || !btnYes || !btnNo) return;
 
   confirmMsg.innerText = message;
   confirmModal.style.display = 'flex';
@@ -230,13 +220,13 @@ function toggleFullscreen() {
   if (!document.fullscreenElement && !document.webkitFullscreenElement) {
     const elem = document.documentElement;
     if (elem.requestFullscreen) {
-      elem.requestFullscreen().catch(() => {});
+      elem.requestFullscreen();
     } else if (elem.webkitRequestFullscreen) {
       elem.webkitRequestFullscreen();
     }
   } else {
     if (document.exitFullscreen) {
-      document.exitFullscreen().catch(() => {});
+      document.exitFullscreen();
     } else if (document.webkitExitFullscreen) {
       document.webkitExitFullscreen();
     }
@@ -247,8 +237,7 @@ async function startFullscreenApp() {
   toggleFullscreen();
   await keepScreenAlive();
   setupMediaSession();
-  const fsOverlay = document.getElementById('fs-overlay');
-  if (fsOverlay) fsOverlay.style.display = 'none';
+  document.getElementById('fs-overlay').style.display = 'none';
   render();
 }
 
@@ -269,37 +258,28 @@ window.onload = async () => {
 
 function setupEvents() {
   const modal = document.getElementById('settings-modal');
-  const btnSettings = document.getElementById('btn-settings');
-  const btnCloseSettings = document.getElementById('btn-close-settings');
-  const btnSaveSettings = document.getElementById('btn-save-settings');
+  
+  document.getElementById('btn-settings').onclick = () => {
+    populateSettingsModal();
+    modal.style.display = 'block';
+  };
 
-  if (btnSettings && modal) {
-    btnSettings.onclick = () => {
-      populateSettingsModal();
-      modal.style.display = 'block';
-    };
-  }
-
-  if (btnCloseSettings && modal) {
-    btnCloseSettings.onclick = () => {
-      modal.style.display = 'none';
-    };
-  }
+  document.getElementById('btn-close-settings').onclick = () => {
+    modal.style.display = 'none';
+  };
 
   window.onclick = (event) => {
-    if (modal && event.target === modal) {
+    if (event.target === modal) {
       modal.style.display = 'none';
     }
   };
 
-  if (btnSaveSettings && modal) {
-    btnSaveSettings.onclick = () => {
-      showCustomConfirm("설정을 적용하고 경기 점수를 초기화하시겠습니까?", () => {
-        saveSettings();
-        modal.style.display = 'none';
-      });
-    };
-  }
+  document.getElementById('btn-save-settings').onclick = () => {
+    showCustomConfirm("설정을 적용하고 경기 점수를 초기화하시겠습니까?", () => {
+      saveSettings();
+      modal.style.display = 'none';
+    });
+  };
 }
 
 function setupSwipeEvents() {
@@ -360,33 +340,23 @@ function executeControlAction(action) {
   }
 }
 
-function getVal(id, defaultVal = '') {
-  const el = document.getElementById(id);
-  return el ? el.value : defaultVal;
-}
-
-function setVal(id, val) {
-  const el = document.getElementById(id);
-  if (el) el.value = val;
-}
-
 function populateSettingsModal() {
-  setVal('set-type', config.type);
-  setVal('set-first-serve', config.firstServeTeam);
-  setVal('set-sets', config.setsToWin);
-  setVal('set-games', config.gamesPerSet);
-  setVal('set-deuce', config.deuceRule);
-  setVal('set-court', config.courtChange);
-  setVal('set-announce-server', config.announceServer || '3000');
-  setVal('p-a1', config.playersA[0] || '');
-  setVal('p-a2', config.playersA[1] || '');
-  setVal('p-b1', config.playersB[0] || '');
-  setVal('p-b2', config.playersB[1] || '');
+  document.getElementById('set-type').value = config.type;
+  document.getElementById('set-first-serve').value = config.firstServeTeam;
+  document.getElementById('set-sets').value = config.setsToWin;
+  document.getElementById('set-games').value = config.gamesPerSet;
+  document.getElementById('set-deuce').value = config.deuceRule;
+  document.getElementById('set-court').value = config.courtChange;
+  document.getElementById('set-announce-server').value = config.announceServer || '3000';
+  document.getElementById('p-a1').value = config.playersA[0] || '';
+  document.getElementById('p-a2').value = config.playersA[1] || '';
+  document.getElementById('p-b1').value = config.playersB[0] || '';
+  document.getElementById('p-b2').value = config.playersB[1] || '';
 
-  setVal('swipe-up', config.swipes.up || 'right_score');
-  setVal('swipe-down', config.swipes.down || 'left_score');
-  setVal('swipe-left', config.swipes.left || 'court_change');
-  setVal('swipe-right', config.swipes.right || 'undo');
+  document.getElementById('swipe-up').value = config.swipes.up || 'right_score';
+  document.getElementById('swipe-down').value = config.swipes.down || 'left_score';
+  document.getElementById('swipe-left').value = config.swipes.left || 'court_change';
+  document.getElementById('swipe-right').value = config.swipes.right || 'undo';
 
   if (!config.mediaKeys) {
     config.mediaKeys = {
@@ -397,56 +367,51 @@ function populateSettingsModal() {
     };
   }
 
-  setVal('media-next', config.mediaKeys.nexttrack || 'right_score');
-  setVal('media-prev', config.mediaKeys.previoustrack || 'left_score');
-  setVal('media-pause', config.mediaKeys.pause || 'undo');
-  setVal('media-play', config.mediaKeys.play || 'court_change');
+  document.getElementById('media-next').value = config.mediaKeys.nexttrack || 'right_score';
+  document.getElementById('media-prev').value = config.mediaKeys.previoustrack || 'left_score';
+  document.getElementById('media-pause').value = config.mediaKeys.pause || 'undo';
+  document.getElementById('media-play').value = config.mediaKeys.play || 'court_change';
 
   togglePlayerInputs();
 }
 
 function togglePlayerInputs() {
-  const typeEl = document.getElementById('set-type');
-  if (!typeEl) return;
-  const isSingles = typeEl.value === 'singles';
-  
-  const pa2 = document.getElementById('p-a2');
-  const pb2 = document.getElementById('p-b2');
-  if (pa2) pa2.style.display = isSingles ? 'none' : 'block';
-  if (pb2) pb2.style.display = isSingles ? 'none' : 'block';
+  const isSingles = document.getElementById('set-type').value === 'singles';
+  document.getElementById('p-a2').style.display = isSingles ? 'none' : 'block';
+  document.getElementById('p-b2').style.display = isSingles ? 'none' : 'block';
 }
 
 function saveSettings() {
   cancelServerAnnouncement();
-  config.type = getVal('set-type', 'doubles');
-  config.firstServeTeam = getVal('set-first-serve', 'A');
-  config.setsToWin = parseInt(getVal('set-sets', '3'), 10);
-  config.gamesPerSet = parseInt(getVal('set-games', '6'), 10);
-  config.deuceRule = getVal('set-deuce', 'ad');
-  config.courtChange = getVal('set-court', 'manual');
-  config.announceServer = getVal('set-announce-server', '3000');
+  config.type = document.getElementById('set-type').value;
+  config.firstServeTeam = document.getElementById('set-first-serve').value;
+  config.setsToWin = parseInt(document.getElementById('set-sets').value, 10);
+  config.gamesPerSet = parseInt(document.getElementById('set-games').value, 10);
+  config.deuceRule = document.getElementById('set-deuce').value;
+  config.courtChange = document.getElementById('set-court').value;
+  config.announceServer = document.getElementById('set-announce-server').value;
   
   config.playersA = [
-    getVal('p-a1') || 'A. P1',
-    getVal('p-a2') || 'A. P2'
+    document.getElementById('p-a1').value || 'A. P1',
+    document.getElementById('p-a2').value || 'A. P2'
   ];
   config.playersB = [
-    getVal('p-b1') || 'B. P1',
-    getVal('p-b2') || 'B. P2'
+    document.getElementById('p-b1').value || 'B. P1',
+    document.getElementById('p-b2').value || 'B. P2'
   ];
 
   config.swipes = {
-    up: getVal('swipe-up', 'right_score'),
-    down: getVal('swipe-down', 'left_score'),
-    left: getVal('swipe-left', 'court_change'),
-    right: getVal('swipe-right', 'undo')
+    up: document.getElementById('swipe-up').value,
+    down: document.getElementById('swipe-down').value,
+    left: document.getElementById('swipe-left').value,
+    right: document.getElementById('swipe-right').value
   };
 
   config.mediaKeys = {
-    nexttrack: getVal('media-next', 'right_score'),
-    previoustrack: getVal('media-prev', 'left_score'),
-    pause: getVal('media-pause', 'undo'),
-    play: getVal('media-play', 'court_change')
+    nexttrack: document.getElementById('media-next').value,
+    previoustrack: document.getElementById('media-prev').value,
+    pause: document.getElementById('media-pause').value,
+    play: document.getElementById('media-play').value
   };
 
   saveConfigToStorage();
@@ -669,7 +634,7 @@ function playWakeUpSound(durationMs = 600) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
       if (audioCtx.state === 'suspended') {
-        audioCtx.resume().catch(() => {});
+        audioCtx.resume();
       }
 
       const durationSec = durationMs / 1000;
@@ -766,57 +731,46 @@ function formatScore(pts, oppPts) {
   return pointTerms[pts] ? (pointTerms[pts] === "Love" ? "0" : (pts === 1 ? "15" : pts === 2 ? "30" : "40")) : "0";
 }
 
-function setTxt(id, txt) {
-  const el = document.getElementById(id);
-  if (el) el.innerText = txt;
-}
-
 function render() {
-  setTxt('disp-players-a', config.type === 'doubles' 
-    ? `${config.playersA[0]} / ${config.playersA[1]}` : config.playersA[0]);
-  setTxt('disp-players-b', config.type === 'doubles' 
-    ? `${config.playersB[0]} / ${config.playersB[1]}` : config.playersB[0]);
+  document.getElementById('disp-players-a').innerText = config.type === 'doubles' 
+    ? `${config.playersA[0]} / ${config.playersA[1]}` : config.playersA[0];
+  document.getElementById('disp-players-b').innerText = config.type === 'doubles' 
+    ? `${config.playersB[0]} / ${config.playersB[1]}` : config.playersB[0];
 
-  setTxt('sets-a', state.setsA);
-  setTxt('sets-b', state.setsB);
-  setTxt('games-a', state.gamesA);
-  setTxt('games-b', state.gamesB);
+  document.getElementById('sets-a').innerText = state.setsA;
+  document.getElementById('sets-b').innerText = state.setsB;
+  document.getElementById('games-a').innerText = state.gamesA;
+  document.getElementById('games-b').innerText = state.gamesB;
 
-  setTxt('points-a', formatScore(state.ptsA, state.ptsB));
-  setTxt('points-b', formatScore(state.ptsB, state.ptsA));
+  document.getElementById('points-a').innerText = formatScore(state.ptsA, state.ptsB);
+  document.getElementById('points-b').innerText = formatScore(state.ptsB, state.ptsA);
 
-  const serveA = document.getElementById('serve-a');
-  const serveB = document.getElementById('serve-b');
-  if (serveA) serveA.classList.toggle('active', state.currentServerTeam === 'A');
-  if (serveB) serveB.classList.toggle('active', state.currentServerTeam === 'B');
+  document.getElementById('serve-a').classList.toggle('active', state.currentServerTeam === 'A');
+  document.getElementById('serve-b').classList.toggle('active', state.currentServerTeam === 'B');
 
-  setTxt('btn-toggle-serve', `SERVE: TEAM ${state.currentServerTeam}`);
+  document.getElementById('btn-toggle-serve').innerText = `SERVE: TEAM ${state.currentServerTeam}`;
 
   const leftTeam = state.courtLeftTeam;
   const rightTeam = (leftTeam === 'A') ? 'B' : 'A';
 
   const cardA = document.getElementById('card-team-a');
   const cardB = document.getElementById('card-team-b');
-  if (cardA && cardB) {
-    if (leftTeam === 'A') {
-      cardA.style.order = 1;
-      cardB.style.order = 2;
-    } else {
-      cardA.style.order = 2;
-      cardB.style.order = 1;
-    }
+  if (leftTeam === 'A') {
+    cardA.style.order = 1;
+    cardB.style.order = 2;
+  } else {
+    cardA.style.order = 2;
+    cardB.style.order = 1;
   }
 
-  setTxt('arrow-a', (leftTeam === 'A') ? '◀' : '▶');
-  setTxt('arrow-b', (leftTeam === 'B') ? '◀' : '▶');
+  document.getElementById('arrow-a').innerText = (leftTeam === 'A') ? '◀' : '▶';
+  document.getElementById('arrow-b').innerText = (leftTeam === 'B') ? '◀' : '▶';
 
-  const sideLeftBg = document.getElementById('side-left-bg');
-  const sideRightBg = document.getElementById('side-right-bg');
-  if (sideLeftBg) sideLeftBg.className = `court-side left ${leftTeam === 'A' ? 'bg-team-a' : 'bg-team-b'}`;
-  if (sideRightBg) sideRightBg.className = `court-side right ${rightTeam === 'A' ? 'bg-team-a' : 'bg-team-b'}`;
+  document.getElementById('side-left-bg').className = `court-side left ${leftTeam === 'A' ? 'bg-team-a' : 'bg-team-b'}`;
+  document.getElementById('side-right-bg').className = `court-side right ${rightTeam === 'A' ? 'bg-team-a' : 'bg-team-b'}`;
 
-  setTxt('label-left', `TEAM ${leftTeam}`);
-  setTxt('label-right', `TEAM ${rightTeam}`);
+  document.getElementById('label-left').innerText = `TEAM ${leftTeam}`;
+  document.getElementById('label-right').innerText = `TEAM ${rightTeam}`;
 
   const totalPts = state.ptsA + state.ptsB;
   const isDeuceServe = (totalPts % 2 === 0);
@@ -829,8 +783,6 @@ function render() {
   const pmA2 = document.getElementById('pm-a2');
   const pmB1 = document.getElementById('pm-b1');
   const pmB2 = document.getElementById('pm-b2');
-
-  if (!pmA1 || !pmA2 || !pmB1 || !pmB2) return;
 
   const updateMarkerContent = (el, name, role) => {
     let badgeHtml = '';
@@ -880,10 +832,8 @@ function render() {
   }
 
   const setPos = (el, x, y) => {
-    if (el) {
-      el.style.left = `${x}%`;
-      el.style.top = `${y}%`;
-    }
+    el.style.left = `${x}%`;
+    el.style.top = `${y}%`;
   };
 
   const targetBox = document.getElementById('target-box');
