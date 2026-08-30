@@ -3,13 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>실시간 바코드 연동 스캐너</title>
-    <!-- PeerJS (WebRTC 실시간 통신 라이브러리) -->
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <!-- QR코드 생성 라이브러리 (PC 접속용) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- HTML5 카메라 바코드 스캐너 -->
+    <title>실시간 바코드 스캐너</title>
+    <!-- 카메라 바코드 스캔 라이브러리 -->
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- WebRTC 실시간 통신 라이브러리 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.4.7/peerjs.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -23,10 +21,11 @@
             height: 100%;
             background-color: #0f172a;
             color: #f8fafc;
+            overflow: hidden;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 600px;
             margin: 0 auto;
             height: 100vh;
             display: flex;
@@ -34,97 +33,84 @@
             padding: 12px;
         }
 
-        /* 역할 선택 화면 */
-        .mode-select {
+        /* 모드 선택 화면 */
+        #mode-select {
             display: flex;
             flex-direction: column;
-            align-items: center;
             justify-content: center;
-            height: 100%;
-            gap: 20px;
-            text-align: center;
-        }
-
-        .mode-card {
-            background: #1e293b;
-            border: 2px solid #334155;
-            border-radius: 16px;
-            padding: 24px;
-            width: 100%;
-            max-width: 360px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .mode-card:hover {
-            border-color: #38bdf8;
-            transform: translateY(-2px);
-        }
-
-        .mode-card h2 {
-            color: #38bdf8;
-            margin-bottom: 8px;
-            font-size: 1.3rem;
-        }
-
-        .mode-card p {
-            color: #94a3b8;
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
-
-        /* PC 수신 모드 스타일 */
-        .pc-view {
-            display: none;
-            flex-direction: column;
-            height: 100%;
-            gap: 12px;
-        }
-
-        .connection-box {
-            background: #1e293b;
-            border-radius: 12px;
-            padding: 16px;
-            display: flex;
             align-items: center;
-            justify-content: space-between;
+            height: 100%;
             gap: 16px;
         }
 
-        .status-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
+        .card {
+            background: #1e293b;
+            border: 2px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+            width: 100%;
+            text-align: center;
+            cursor: pointer;
         }
 
-        .status-disconnected { background: #ef4444; color: white; }
-        .status-connected { background: #10b981; color: white; }
+        .card:active { transform: scale(0.98); }
+        .card h2 { color: #38bdf8; margin-bottom: 6px; }
+        .card p { color: #94a3b8; font-size: 0.85rem; }
 
-        #qrcode-container {
-            background: white;
-            padding: 8px;
-            border-radius: 8px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        /* 모바일 스캔 모드 스타일 */
-        .mobile-view {
+        /* 메인 앱 영역 (기본 숨김) */
+        #app-view {
             display: none;
             flex-direction: column;
             height: 100%;
             gap: 8px;
         }
 
-        .scanner-section {
-            position: relative;
-            background: #000;
-            height: 220px;
+        .status-bar {
+            background: #1e293b;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .badge {
+            padding: 3px 8px;
             border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .bg-red { background: #ef4444; color: white; }
+        .bg-green { background: #10b981; color: white; }
+
+        /* 연결 입력창 */
+        .connect-box {
+            display: flex;
+            gap: 6px;
+            background: #1e293b;
+            padding: 8px;
+            border-radius: 8px;
+        }
+
+        .connect-box input {
+            flex: 1;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: white;
+            font-family: monospace;
+        }
+
+        /* 스캐너 */
+        .scanner-container {
+            height: 240px;
+            background: #000;
+            border-radius: 8px;
             overflow: hidden;
+            position: relative;
             flex-shrink: 0;
         }
 
@@ -136,69 +122,50 @@
 
         #reader video {
             object-fit: cover !important;
-            height: 220px !important;
+            height: 240px !important;
         }
 
-        /* 공통 컨트롤 바 */
-        .controls-bar {
-            background: #1e293b;
-            padding: 8px;
-            border-radius: 8px;
+        /* 버튼들 */
+        .btn-group {
             display: flex;
-            gap: 6px;
+            gap: 4px;
             flex-wrap: wrap;
         }
 
         button {
-            padding: 8px 12px;
+            padding: 8px 10px;
             border: none;
             border-radius: 6px;
             font-size: 0.8rem;
-            font-weight: 600;
+            font-weight: bold;
             cursor: pointer;
             white-space: nowrap;
         }
 
-        .btn-restart { background-color: #6366f1; color: white; flex: 1; }
-        .btn-undo { background-color: #f59e0b; color: white; flex: 1; }
-        .btn-clear { background-color: #ef4444; color: white; flex: 1; }
-        .btn-share { background-color: #fee500; color: #191919; flex: 1; }
-        .btn-save { background-color: #10b981; color: white; flex: 1; }
-        .btn-add { background-color: #0284c7; color: white; }
+        .btn-blue { background: #0284c7; color: white; }
+        .btn-indigo { background: #6366f1; color: white; flex: 1; }
+        .btn-amber { background: #f59e0b; color: white; flex: 1; }
+        .btn-red { background: #ef4444; color: white; flex: 1; }
+        .btn-yellow { background: #fee500; color: #191919; flex: 1; }
+        .btn-emerald { background: #10b981; color: white; flex: 1; }
 
-        .manual-input {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 4px;
-        }
-
-        .manual-input input {
-            flex: 1;
-            padding: 8px;
-            border-radius: 6px;
-            border: 1px solid #334155;
-            background: #0f172a;
-            color: white;
-            outline: none;
-        }
-
-        /* 스캔 리스트 영역 */
-        .list-container {
+        /* 리스트 */
+        .list-box {
             flex: 1;
             background: #1e293b;
-            border-radius: 12px;
+            border-radius: 8px;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
         .list-header {
-            padding: 10px 14px;
+            padding: 8px 12px;
             background: #334155;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: bold;
         }
 
@@ -206,390 +173,294 @@
             list-style: none;
             flex: 1;
             overflow-y: auto;
-            padding: 8px;
+            padding: 6px;
         }
 
         li {
-            padding: 10px 12px;
+            padding: 8px 10px;
             background: #0f172a;
             border: 1px solid #334155;
-            border-radius: 6px;
-            margin-bottom: 6px;
+            border-radius: 4px;
+            margin-bottom: 4px;
             display: flex;
             justify-content: space-between;
             font-family: monospace;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
         }
 
         li:first-child {
             background: #1e3a8a;
             border-color: #3b82f6;
-            color: #60a5fa;
+            color: #93c5fd;
             font-weight: bold;
         }
 
         .empty-msg {
             text-align: center;
             color: #64748b;
-            padding: 40px 0;
-            font-size: 0.9rem;
+            padding: 30px 0;
+            font-size: 0.85rem;
             border: none;
             background: transparent;
-        }
-
-        /* 연결 모달 */
-        .join-box {
-            background: #1e293b;
-            padding: 16px;
-            border-radius: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-
-    <!-- 0. 모드 선택 (처음 접속 시) -->
-    <div id="mode-select-view" class="mode-select">
-        <h1 style="font-size: 1.5rem; margin-bottom: 10px;">📱↔️💻 실시간 바코드 연동</h1>
-        <div class="mode-card" onclick="startAsPC()">
-            <h2>💻 PC 수신 화면</h2>
-            <p>모바일에서 스캔한 바코드를 이 화면에서 실시간으로 받아봅니다.</p>
+    <!-- 1. 초기 모드 선택 화면 -->
+    <div id="mode-select">
+        <h1 style="font-size: 1.3rem;">📱↔️💻 실시간 바코드 스캐너</h1>
+        <div class="card" onclick="selectMode('pc')">
+            <h2>💻 PC 수신 모드</h2>
+            <p>모바일에서 스캔한 바코드를 실시간으로 받는 화면입니다.</p>
         </div>
-        <div class="mode-card" onclick="startAsMobile()">
-            <h2>📱 모바일 스캐너</h2>
-            <p>스마트폰 카메라로 바코드를 읽어 PC로 바로 전송합니다.</p>
-        </div>
-    </div>
-
-    <!-- 1. PC 수신 화면 -->
-    <div id="pc-view" class="pc-view">
-        <div class="connection-box">
-            <div>
-                <h3 style="font-size: 1.1rem; margin-bottom: 4px;">PC 수신 모드</h3>
-                <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 8px;">스마트폰으로 우측 QR을 스캔하거나 연결 코드를 입력하세요.</p>
-                <div>상태: <span id="pc-status" class="status-badge status-disconnected">대기 중...</span></div>
-                <div style="margin-top: 6px; font-size: 0.85rem; font-family: monospace;">연결 코드: <strong id="pc-room-id" style="color: #38bdf8;">생성 중...</strong></div>
-            </div>
-            <div id="qrcode-container"></div>
-        </div>
-
-        <div class="controls-bar">
-            <button class="btn-undo" onclick="removeLastItem()">↩️ 마지막 지우기</button>
-            <button class="btn-clear" onclick="clearAllData()">🗑️ 초기화</button>
-            <button class="btn-share" onclick="shareData()">📋 복사/공유</button>
-            <button class="btn-save" onclick="downloadTXT()">💾 txt 저장</button>
-        </div>
-
-        <div class="list-container">
-            <div class="list-header">
-                <span>실시간 스캔 목록 (최신순)</span>
-                <span id="pc-count" style="background: #0284c7; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem;">0건</span>
-            </div>
-            <ul id="pc-barcode-list">
-                <li class="empty-msg">모바일 연결을 기다리는 중입니다...</li>
-            </ul>
+        <div class="card" onclick="selectMode('mobile')">
+            <h2>📱 모바일 스캔 모드</h2>
+            <p>카메라로 바코드를 찍어 PC로 전송합니다.</p>
         </div>
     </div>
 
-    <!-- 2. 모바일 스캐너 화면 -->
-    <div id="mobile-view" class="mobile-view">
-        <!-- 연동 코드 입력창 (연결 안 되었을 때 표시) -->
-        <div id="join-section" class="join-box">
-            <span style="font-size: 0.85rem; color: #94a3b8;">PC 화면의 연결 코드를 입력하거나 QR을 통해 접속하세요.</span>
-            <div style="display: flex; gap: 6px;">
-                <input type="text" id="join-room-id" placeholder="연결 코드 입력" style="flex:1; padding: 8px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: white;">
-                <button class="btn-add" onclick="connectToPC()">PC 연결</button>
+    <!-- 2. 메인 앱 화면 -->
+    <div id="app-view">
+        <div class="status-bar">
+            <span>내 ID: <strong id="my-id" style="color:#38bdf8;">생성 중...</strong></span>
+            <span id="conn-status" class="badge bg-red">연결 대기</span>
+        </div>
+
+        <!-- 모바일 전용: PC 연결 입력창 -->
+        <div id="connect-section" class="connect-box" style="display: none;">
+            <input type="text" id="target-id" placeholder="PC의 ID 6자리를 입력하세요">
+            <button class="btn-blue" onclick="connectToPeer()">연결하기</button>
+        </div>
+
+        <!-- 모바일 전용: 카메라 및 수동 입력 -->
+        <div id="scanner-section" style="display: none; flex-direction: column; gap: 6px;">
+            <div class="connect-box">
+                <input type="text" id="manual-input" placeholder="바코드 직접 입력" onkeydown="if(event.key==='Enter') addManualBar()">
+                <button class="btn-blue" onclick="addManualBar()">추가</button>
+            </div>
+            <div class="scanner-container">
+                <div id="reader"></div>
             </div>
         </div>
 
-        <!-- 연결 상태 표시 -->
-        <div style="background: #1e293b; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center;">
-            <span>PC 연동 상태:</span>
-            <span id="mobile-status" class="status-badge status-disconnected">미연결</span>
+        <!-- 버튼 메뉴 -->
+        <div class="btn-group">
+            <button id="btn-restart" class="btn-indigo" onclick="startScanner()" style="display:none;">📷 카메라 시작/재시작</button>
+            <button class="btn-amber" onclick="removeLast()">↩️ 지우기</button>
+            <button class="btn-red" onclick="clearAll()">🗑️ 초기화</button>
+        </div>
+        <div class="btn-group">
+            <button class="btn-yellow" onclick="shareData()">📋 복사/공유</button>
+            <button class="btn-emerald" onclick="downloadTXT()">💾 txt 저장</button>
         </div>
 
-        <!-- 수동 입력 -->
-        <div class="manual-input">
-            <input type="text" id="barcode-input" placeholder="바코드 수동 입력" onkeydown="handleKeyPress(event)">
-            <button class="btn-add" onclick="addManualBarcode()">추가</button>
-        </div>
-
-        <!-- 카메라 스캔 영역 -->
-        <div class="scanner-section">
-            <div id="reader"></div>
-        </div>
-
-        <!-- 컨트롤 버튼 -->
-        <div class="controls-bar">
-            <button class="btn-restart" onclick="restartCamera()">📷 카메라 재시작</button>
-            <button class="btn-undo" onclick="removeLastItem()">↩️ 지우기</button>
-            <button class="btn-clear" onclick="clearAllData()">🗑️ 초기화</button>
-            <button class="btn-save" onclick="downloadTXT()">💾 저장</button>
-        </div>
-
-        <!-- 스캔 내역 리스트 -->
-        <div class="list-container">
+        <!-- 스캔 리스트 -->
+        <div class="list-box">
             <div class="list-header">
                 <span>스캔 내역 (최신순)</span>
-                <span id="mobile-count" style="background: #0284c7; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem;">0건</span>
+                <span id="scan-count" style="background:#0284c7; padding:1px 6px; border-radius:10px;">0건</span>
             </div>
-            <ul id="mobile-barcode-list">
-                <li class="empty-msg">스캔된 바코드가 없습니다.</li>
+            <ul id="barcode-list">
+                <li class="empty-msg">내역이 없습니다.</li>
             </ul>
         </div>
     </div>
-
 </div>
 
 <script>
+    let mode = ''; // 'pc' or 'mobile'
     let peer = null;
     let conn = null;
     let barcodeList = [];
-    let isProcessing = false;
     let html5QrcodeScanner = null;
-    let currentMode = '';
+    let isScanning = false;
 
+    // 페이지 로드 시 기존 내역 불러오기
     window.onload = function() {
-        loadData();
-        
-        // URL 매개변수에 room ID가 포함되어 있는 경우 (모바일 QR 스캔 접속시)
-        const urlParams = new URLSearchParams(window.location.search);
-        const roomId = urlParams.get('room');
-        if (roomId) {
-            startAsMobile(roomId);
+        const saved = localStorage.getItem('barcodes');
+        if (saved) {
+            barcodeList = JSON.parse(saved);
         }
     };
 
-    function loadData() {
-        const savedData = localStorage.getItem('scanned_barcodes');
-        if (savedData) {
-            barcodeList = JSON.parse(savedData);
-        }
-    }
+    // 모드 선택 처리
+    function selectMode(selectedMode) {
+        mode = selectedMode;
+        document.getElementById('mode-select').style.display = 'none';
+        document.getElementById('app-view').style.display = 'flex';
 
-    function saveData() {
-        localStorage.setItem('scanned_barcodes', JSON.stringify(barcodeList));
         renderList();
-    }
+        initPeer();
 
-    function renderList() {
-        const listId = currentMode === 'pc' ? 'pc-barcode-list' : 'mobile-barcode-list';
-        const countId = currentMode === 'pc' ? 'pc-count' : 'mobile-count';
-        
-        const listElement = document.getElementById(listId);
-        const countElement = document.getElementById(countId);
-        
-        if (!listElement) return;
-
-        countElement.innerText = `${barcodeList.length}건`;
-        listElement.innerHTML = '';
-
-        if (barcodeList.length === 0) {
-            listElement.innerHTML = '<li class="empty-msg">스캔된 바코드가 없습니다.</li>';
-            return;
-        }
-
-        const total = barcodeList.length;
-        for (let i = total - 1; i >= 0; i--) {
-            const li = document.createElement('li');
-            li.innerHTML = `<span>${barcodeList[i]}</span><small style="color:#64748b;">#${i + 1}</small>`;
-            listElement.appendChild(li);
+        if (mode === 'mobile') {
+            document.getElementById('connect-section').style.display = 'flex';
+            document.getElementById('scanner-section').style.display = 'flex';
+            document.getElementById('btn-restart').style.display = 'block';
+            startScanner();
         }
     }
 
-    // 1. PC 수신 모드 시작
-    function startAsPC() {
-        currentMode = 'pc';
-        document.getElementById('mode-select-view').style.display = 'none';
-        document.getElementById('pc-view').style.display = 'flex';
-        renderList();
-
-        // P2P Peer 생성 (랜덤 ID)
-        peer = new Peer();
+    // P2P 통신 초기화 (6자리 짧은 ID 생성)
+    function initPeer() {
+        const shortId = Math.random().toString(36).substring(2, 8);
+        peer = new Peer(shortId);
 
         peer.on('open', function(id) {
-            document.getElementById('pc-room-id').innerText = id;
-            
-            // 모바일이 QR코드로 접속할 수 있는 URL 생성
-            const connectUrl = window.location.origin + window.location.pathname + '?room=' + id;
-            
-            // QR코드 생성
-            new QRCode(document.getElementById("qrcode-container"), {
-                text: connectUrl,
-                width: 90,
-                height: 90
-            });
+            document.getElementById('my-id').innerText = id;
         });
 
-        // 모바일 연결 수신
+        // PC 수신 모드일 때 모바일의 연결을 받아들임
         peer.on('connection', function(c) {
             conn = c;
-            const statusEl = document.getElementById('pc-status');
-            statusEl.innerText = "모바일 연결됨";
-            statusEl.className = "status-badge status-connected";
+            setupConnection();
+        });
 
-            // 모바일에서 데이터가 전송되었을 때
-            conn.on('data', function(data) {
-                if (data.type === 'ADD_BARCODE') {
-                    addBarcodeLocally(data.code);
-                    playBeep();
-                } else if (data.type === 'SYNC_ALL') {
-                    barcodeList = data.list;
-                    saveData();
-                } else if (data.type === 'REMOVE_LAST') {
-                    barcodeList.pop();
-                    saveData();
-                } else if (data.type === 'CLEAR_ALL') {
-                    barcodeList = [];
-                    localStorage.removeItem('scanned_barcodes');
-                    renderList();
-                }
-            });
-
-            conn.on('close', function() {
-                statusEl.innerText = "연결 끊김";
-                statusEl.className = "status-badge status-disconnected";
-            });
+        peer.on('error', function(err) {
+            alert("통신 연결 오류: " + err.type);
         });
     }
 
-    // 2. 모바일 스캐너 모드 시작
-    function startAsMobile(autoRoomId = null) {
-        currentMode = 'mobile';
-        document.getElementById('mode-select-view').style.display = 'none';
-        document.getElementById('mobile-view').style.display = 'flex';
-        renderList();
-        initScanner();
-
-        peer = new Peer();
-
-        peer.on('open', function() {
-            if (autoRoomId) {
-                document.getElementById('join-room-id').value = autoRoomId;
-                connectToPC(autoRoomId);
-            }
-        });
-    }
-
-    // 모바일 -> PC 연결 함수
-    function connectToPC(roomId = null) {
-        const targetId = roomId || document.getElementById('join-room-id').value.trim();
-        if (!targetId) return alert("연결 코드를 입력해 주세요.");
+    // 모바일에서 PC로 연결 시도
+    function connectToPeer() {
+        const targetId = document.getElementById('target-id').value.trim();
+        if (!targetId) return alert("PC 화면에 표시된 ID 6자리를 입력해 주세요.");
 
         conn = peer.connect(targetId);
+        setupConnection();
+    }
 
+    // 연결 이벤트 핸들러
+    function setupConnection() {
         conn.on('open', function() {
-            const statusEl = document.getElementById('mobile-status');
-            statusEl.innerText = "PC 연동 성공!";
-            statusEl.className = "status-badge status-connected";
-            document.getElementById('join-section').style.display = 'none';
+            const status = document.getElementById('conn-status');
+            status.innerText = "연결됨";
+            status.className = "badge bg-green";
 
-            // 연결되자마자 기존 바코드 목록 PC와 동기화
-            conn.send({ type: 'SYNC_ALL', list: barcodeList });
+            // 연결 성공 시 현재 데이터 동기화
+            conn.send({ type: 'SYNC', list: barcodeList });
+        });
+
+        conn.on('data', function(data) {
+            if (data.type === 'ADD') {
+                addBarcodeInternal(data.code);
+                playBeep();
+            } else if (data.type === 'SYNC') {
+                barcodeList = data.list;
+                saveData();
+            } else if (data.type === 'REMOVE_LAST') {
+                barcodeList.pop();
+                saveData();
+            } else if (data.type === 'CLEAR') {
+                barcodeList = [];
+                localStorage.removeItem('barcodes');
+                renderList();
+            }
         });
 
         conn.on('close', function() {
-            const statusEl = document.getElementById('mobile-status');
-            statusEl.innerText = "연결 끊김";
-            statusEl.className = "status-badge status-disconnected";
-            document.getElementById('join-section').style.display = 'flex';
+            const status = document.getElementById('conn-status');
+            status.innerText = "연결 끊김";
+            status.className = "badge bg-red";
         });
     }
 
-    // 바코드 추가
-    function addBarcodeLocally(code) {
-        const trimmedCode = code.trim();
-        if (!trimmedCode) return false;
-        if (barcodeList.includes(trimmedCode)) return false;
+    // 바코드 내부 저장 및 UI 업데이트
+    function addBarcodeInternal(code) {
+        const trimmed = code.trim();
+        if (!trimmed || barcodeList.includes(trimmed)) return false;
 
-        barcodeList.push(trimmedCode);
+        barcodeList.push(trimmed);
         saveData();
         return true;
     }
 
+    // 바코드 추가 함수 (전송 로직 포함)
     function addBarcode(code) {
-        const isAdded = addBarcodeLocally(code);
+        const isAdded = addBarcodeInternal(code);
         if (isAdded) {
             playBeep();
-            // PC로 데이터 전송
             if (conn && conn.open) {
-                conn.send({ type: 'ADD_BARCODE', code: code.trim() });
+                conn.send({ type: 'ADD', code: code.trim() });
             }
         }
         return isAdded;
     }
 
-    function removeLastItem() {
+    function removeLast() {
         if (barcodeList.length === 0) return alert("지울 항목이 없습니다.");
         barcodeList.pop();
         saveData();
-
-        if (conn && conn.open) {
-            conn.send({ type: 'REMOVE_LAST' });
-        }
+        if (conn && conn.open) conn.send({ type: 'REMOVE_LAST' });
     }
 
-    function clearAllData() {
+    function clearAll() {
         if (barcodeList.length === 0) return;
-        if (confirm("모든 스캔 내역을 삭제하시겠습니까?")) {
+        if (confirm("모든 내역을 삭제하시겠습니까?")) {
             barcodeList = [];
-            localStorage.removeItem('scanned_barcodes');
+            localStorage.removeItem('barcodes');
             renderList();
-
-            if (conn && conn.open) {
-                conn.send({ type: 'CLEAR_ALL' });
-            }
+            if (conn && conn.open) conn.send({ type: 'CLEAR' });
         }
     }
 
-    function addManualBarcode() {
-        const input = document.getElementById('barcode-input');
+    function addManualBar() {
+        const input = document.getElementById('manual-input');
         if (input.value) {
             const added = addBarcode(input.value);
-            if (!added && input.value.trim()) {
-                alert("이미 스캔된 바코드입니다.");
-            }
+            if (!added && input.value.trim()) alert("이미 스캔된 바코드입니다.");
             input.value = '';
             input.focus();
         }
     }
 
-    function handleKeyPress(event) {
-        if (event.key === 'Enter') addManualBarcode();
+    function saveData() {
+        localStorage.setItem('barcodes', JSON.stringify(barcodeList));
+        renderList();
     }
 
-    function initScanner() {
+    function renderList() {
+        const listEl = document.getElementById('barcode-list');
+        const countEl = document.getElementById('scan-count');
+        
+        countEl.innerText = `${barcodeList.length}건`;
+        listEl.innerHTML = '';
+
+        if (barcodeList.length === 0) {
+            listEl.innerHTML = '<li class="empty-msg">내역이 없습니다.</li>';
+            return;
+        }
+
+        for (let i = barcodeList.length - 1; i >= 0; i--) {
+            const li = document.createElement('li');
+            li.innerHTML = `<span>${barcodeList[i]}</span><small style="color:#64748b;">#${i + 1}</small>`;
+            listEl.appendChild(li);
+        }
+    }
+
+    // 카메라 스캐너 시작
+    function startScanner() {
         if (html5QrcodeScanner) {
-            try { html5QrcodeScanner.clear(); } catch (e) {}
+            try { html5QrcodeScanner.clear(); } catch(e) {}
         }
 
         html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", 
-            { 
-                fps: 15, 
-                qrbox: { width: 240, height: 140 },
-                experimentalFeatures: { useBarCodeDetectorIfSupported: true }
-            },
+            "reader",
+            { fps: 10, qrbox: { width: 220, height: 120 } },
             false
         );
+
         html5QrcodeScanner.render(onScanSuccess, () => {});
     }
 
-    function restartCamera() {
-        initScanner();
-    }
-
     function onScanSuccess(decodedText) {
-        if (isProcessing) return;
-        isProcessing = true;
+        if (isScanning) return;
+        isScanning = true;
 
         addBarcode(decodedText);
 
-        setTimeout(() => { isProcessing = false; }, 1200);
+        setTimeout(() => { isScanning = false; }, 1200);
     }
 
     function playBeep() {
@@ -609,18 +480,17 @@
 
     async function shareData() {
         if (barcodeList.length === 0) return alert("공유할 내역이 없습니다.");
-        const textContent = barcodeList.join('
-');
+        const text = barcodeList.join('\n');
 
         if (navigator.share) {
             try {
-                await navigator.share({ title: '스캔 바코드 목록', text: textContent });
+                await navigator.share({ title: '바코드 내역', text: text });
                 return;
             } catch (err) {}
         }
 
         try {
-            await navigator.clipboard.writeText(textContent);
+            await navigator.clipboard.writeText(text);
             alert("클립보드에 복사되었습니다.");
         } catch (err) {
             alert("복사 실패");
@@ -629,9 +499,8 @@
 
     function downloadTXT() {
         if (barcodeList.length === 0) return alert("저장할 데이터가 없습니다.");
-        const textContent = barcodeList.join('
-');
-        const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+        const text = barcodeList.join('\r\n');
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         
@@ -643,10 +512,8 @@
         const min = String(now.getMinutes()).padStart(2, '0');
         const ss = String(now.getSeconds()).padStart(2, '0');
 
-        const fileName = `scan_${yy}${mm}${dd}_${hh}${min}${ss}.txt`;
-
         a.href = url;
-        a.download = fileName;
+        a.download = `scan_${yy}${mm}${dd}_${hh}${min}${ss}.txt`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
