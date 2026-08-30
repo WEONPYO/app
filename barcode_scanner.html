@@ -20,7 +20,6 @@
             background-color: #f4f6f8;
         }
 
-        /* 전체화면 감싸는 메인 컨테이너 */
         .app-container {
             display: flex;
             flex-direction: column;
@@ -30,7 +29,7 @@
             background: #ffffff;
         }
 
-        /* 1. 상단 유틸리티 바 (전체화면, 수동입력 컴팩트화) */
+        /* 1. 상단 유틸리티 바 */
         .top-bar {
             padding: 8px;
             background: #1e293b;
@@ -55,11 +54,11 @@
             color: #94a3b8;
         }
 
-        /* 2. 최소화된 카메라 영역 */
+        /* 2. 카메라 스캔 영역 (기존 120px -> 2배 높이인 240px로 수정) */
         .scanner-section {
             position: relative;
             background: #000;
-            height: 120px; /* 카메라 영역 축소 */
+            height: 240px; 
             flex-shrink: 0;
             overflow: hidden;
         }
@@ -70,16 +69,16 @@
             border: none !important;
         }
 
-        /* html5-qrcode 내부 레이아웃 컴팩트 조절 */
         #reader video {
             object-fit: cover !important;
-            height: 120px !important;
+            height: 240px !important;
         }
+        
         #reader __dashboard_section {
             display: none !important;
         }
 
-        /* 3. 컴팩트 버튼 컨트롤 바 */
+        /* 3. 컨트롤 버튼 바 */
         .controls-bar {
             padding: 6px 8px;
             background: #f1f5f9;
@@ -106,7 +105,7 @@
         .btn-share { background-color: #fee500; color: #191919; flex: 1; }
         .btn-save { background-color: #10b981; color: white; flex: 1; }
 
-        /* 4. 극대화된 스캔 목록 영역 */
+        /* 4. 스캔 목록 영역 */
         .list-container {
             flex: 1;
             display: flex;
@@ -178,16 +177,19 @@
 <body>
 
 <div class="app-container" id="app">
+    <!-- 상단 입력 및 전체화면 -->
     <div class="top-bar">
         <input type="text" id="barcode-input" placeholder="바코드 직접 입력" onkeydown="handleKeyPress(event)">
         <button class="btn-add" onclick="addManualBarcode()">추가</button>
         <button class="btn-fullscreen" onclick="toggleFullScreen()">⛶ 전체화면</button>
     </div>
 
+    <!-- 스캐너 영역 (높이 240px로 확대) -->
     <div class="scanner-section">
         <div id="reader"></div>
     </div>
 
+    <!-- 미니 컨트롤 메뉴 -->
     <div class="controls-bar">
         <button class="btn-undo" onclick="removeLastItem()">↩️ 마지막 지우기</button>
         <button class="btn-clear" onclick="clearAllData()">🗑️ 초기화</button>
@@ -195,6 +197,7 @@
         <button class="btn-save" onclick="downloadTXT()">💾 저장</button>
     </div>
 
+    <!-- 스크롤 목록 영역 -->
     <div class="list-container">
         <div class="list-header">
             <span>스캔 내역 (최신순)</span>
@@ -229,7 +232,6 @@
         renderList();
     }
 
-    // 최신 항목이 맨 위에 오도록 목록 렌더링
     function renderList() {
         const listElement = document.getElementById('barcode-list');
         const countElement = document.getElementById('scan-count');
@@ -242,7 +244,6 @@
             return;
         }
 
-        // 역순(최신순)으로 화면 표시
         const total = barcodeList.length;
         for (let i = total - 1; i >= 0; i--) {
             const li = document.createElement('li');
@@ -251,14 +252,21 @@
         }
     }
 
-    // 바코드 추가 (배열 끝에 추가)
+    // 바코드 추가 (중복 검사 로직 포함)
     function addBarcode(code) {
-        if (!code.trim()) return;
-        barcodeList.push(code.trim());
+        const trimmedCode = code.trim();
+        if (!trimmedCode) return false;
+
+        // 이미 저장된 항목인지 중복 확인
+        if (barcodeList.includes(trimmedCode)) {
+            return false; // 중복 발생 시 저장 안 함
+        }
+
+        barcodeList.push(trimmedCode);
         saveData();
+        return true; // 성공적으로 추가됨
     }
 
-    // 마지막에 추가된 항목(최상단 항목) 제거
     function removeLastItem() {
         if (barcodeList.length === 0) {
             alert("지울 항목이 없습니다.");
@@ -280,7 +288,10 @@
     function addManualBarcode() {
         const input = document.getElementById('barcode-input');
         if (input.value) {
-            addBarcode(input.value);
+            const added = addBarcode(input.value);
+            if (!added && input.value.trim()) {
+                alert("이미 스캔된 바코드입니다.");
+            }
             input.value = '';
             input.focus();
         }
@@ -290,13 +301,12 @@
         if (event.key === 'Enter') addManualBarcode();
     }
 
-    // 전체화면 토글 기능
     function toggleFullScreen() {
         const doc = document.documentElement;
         if (!document.fullscreenElement && !document.webkitFullscreenElement) {
             if (doc.requestFullscreen) {
                 doc.requestFullscreen();
-            } else if (doc.webkitRequestFullscreen) { /* Safari */
+            } else if (doc.webkitRequestFullscreen) {
                 doc.webkitRequestFullscreen();
             }
         } else {
@@ -313,7 +323,7 @@
             "reader", 
             { 
                 fps: 15, 
-                qrbox: { width: 200, height: 80 },
+                qrbox: { width: 260, height: 160 },
                 experimentalFeatures: { useBarCodeDetectorIfSupported: true }
             },
             false
@@ -325,8 +335,12 @@
         if (isProcessing) return;
         isProcessing = true;
 
-        addBarcode(decodedText);
-        playBeep();
+        const isAdded = addBarcode(decodedText);
+        
+        // 새로 추가된 바코드일 때만 성공 비프음 재생
+        if (isAdded) {
+            playBeep();
+        }
 
         setTimeout(() => { isProcessing = false; }, 1200);
     }
