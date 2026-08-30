@@ -309,7 +309,6 @@
             status.innerText = "연결됨";
             status.className = "badge bg-green";
 
-            // 모바일에서 먼저 연결을 시도했을 경우, 모바일 기준의 데이터를 PC로 동기화
             if (isMobile) {
                 conn.send({ type: 'SYNC', list: barcodeList });
             }
@@ -319,7 +318,6 @@
             if (data.type === 'ADD') {
                 addBarcodeInternal(data.code);
             } else if (data.type === 'SYNC') {
-                // 수신받은 데이터(모바일 기준)로 동기화
                 barcodeList = data.list;
                 saveData();
             } else if (data.type === 'REMOVE_LAST') {
@@ -423,10 +421,21 @@
         }
     }
 
-    function startScanner() {
+    // 카메라 정지 및 재시작 안전 로직 추가
+    async function startScanner() {
         if (html5QrcodeScanner) {
-            try { html5QrcodeScanner.clear(); } catch(e) {}
+            try {
+                // 스캐너가 동작 중이면 완벽히 정지할 때까지 대기
+                await html5QrcodeScanner.clear();
+            } catch(e) {
+                console.log("Scanner clear error: ", e);
+            }
+            html5QrcodeScanner = null;
         }
+
+        // 스캐너 영역 HTML 요소 재정비
+        const readerEl = document.getElementById('reader');
+        if (readerEl) readerEl.innerHTML = '';
 
         html5QrcodeScanner = new Html5QrcodeScanner(
             "reader",
