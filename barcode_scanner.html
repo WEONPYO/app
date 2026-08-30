@@ -315,7 +315,6 @@
         conn.on('data', function(data) {
             if (data.type === 'ADD') {
                 addBarcodeInternal(data.code);
-                playBeep();
             } else if (data.type === 'SYNC') {
                 barcodeList = data.list;
                 saveData();
@@ -341,24 +340,23 @@
         const trimmed = code.trim();
         if (!trimmed) return false;
 
-        // 1. 바로 이전 코드와 동일할 경우 입력 거부
+        // 1. 바로 이전 값과 중복 검사
         if (barcodeList.length > 0 && barcodeList[barcodeList.length - 1] === trimmed) {
+            playErrorBeep(); // 바로 이전 값 중복 시 경고음 발생
             return false;
         }
 
-        // 2. 조건을 만족하면 입력 추가 (이전 데이터 중 중복 여부와 상관없이 무조건 추가)
+        // 2. 정상 추가 및 비프음 재생
         barcodeList.push(trimmed);
+        playBeep();
         saveData();
         return true;
     }
 
     function addBarcode(code) {
         const isAdded = addBarcodeInternal(code);
-        if (isAdded) {
-            playBeep();
-            if (conn && conn.open) {
-                conn.send({ type: 'ADD', code: code.trim() });
-            }
+        if (isAdded && conn && conn.open) {
+            conn.send({ type: 'ADD', code: code.trim() });
         }
         return isAdded;
     }
@@ -383,10 +381,7 @@
     function addManualBar() {
         const input = document.getElementById('manual-input');
         if (input.value) {
-            const added = addBarcode(input.value);
-            if (!added && input.value.trim() && barcodeList.length > 0 && barcodeList[barcodeList.length - 1] === input.value.trim()) {
-                alert("바로 이전 항목과 동일한 바코드입니다.");
-            }
+            addBarcode(input.value);
             input.value = '';
             input.focus();
         }
@@ -397,7 +392,7 @@
         renderList();
     }
 
-    // 목록 렌더링 (중복 카운트 계산 및 빨간색 표시 로직 포함)
+    // 목록 렌더링
     function renderList() {
         const listEl = document.getElementById('barcode-list');
         const countEl = document.getElementById('scan-count');
@@ -410,7 +405,7 @@
             return;
         }
 
-        // 각 바코드 등장 횟수 카운팅
+        // 카운팅 로직 (과거 중복 체크용)
         const counts = {};
         barcodeList.forEach(code => {
             counts[code] = (counts[code] || 0) + 1;
@@ -421,7 +416,7 @@
             const code = barcodeList[i];
             const li = document.createElement('li');
             
-            // 동일 바코드가 목록에 2개 이상 존재하면 빨간색 클래스 추가
+            // 과거 목록에 동일 바코드가 2개 이상 존재하면 빨간색 표시
             if (counts[code] > 1) {
                 li.classList.add('is-duplicate');
             }
@@ -454,6 +449,7 @@
         setTimeout(() => { isScanning = false; }, 1200);
     }
 
+    // [정상 스캔] 비프음 (높은 톤)
     function playBeep() {
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -466,6 +462,35 @@
             gain.gain.value = 0.1;
             osc.start();
             osc.stop(ctx.currentTime + 0.1);
+        } catch(e) {}
+    }
+
+    // [중복 차단] 경고 비프음 (낮은 톤 2회 반복)
+    function playErrorBeep() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // 첫 번째 낮은 음
+            const osc1 = ctx.createOscillator();
+            const gain1 = ctx.createGain();
+            osc1.connect(gain1);
+            gain1.connect(ctx.destination);
+            osc1.type = "sawtooth";
+            osc1.frequency.value = 400;
+            gain1.gain.value = 0.15;
+            osc1.start(ctx.currentTime);
+            osc1.stop(ctx.currentTime + 0.08);
+
+            // 두 번째 낮은 음
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.type = "sawtooth";
+            osc2.frequency.value = 400;
+            gain2.gain.value = 0.15;
+            osc2.start(ctx.currentTime + 0.12);
+            osc2.stop(ctx.currentTime + 0.20);
         } catch(e) {}
     }
 
