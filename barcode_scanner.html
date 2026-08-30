@@ -161,11 +161,19 @@
             font-size: 0.8rem;
         }
 
+        /* 최신 항목 기본 스타일 */
         li:first-child {
             background: #1e3a8a;
             border-color: #3b82f6;
             color: #93c5fd;
             font-weight: bold;
+        }
+
+        /* 과거 중복 데이터 존재 시 빨간색 스타일 */
+        li.is-duplicate {
+            background: #450a0a !important;
+            border-color: #ef4444 !important;
+            color: #fca5a5 !important;
         }
 
         .empty-msg {
@@ -184,7 +192,6 @@
     <!-- 상단 상태 바 -->
     <div class="status-bar">
         <span id="mode-badge" style="font-weight: bold; color: #38bdf8;">모드 감지 중...</span>
-        <!-- PC에서만 표시되는 내 ID -->
         <span id="pc-id-area" style="display: none;">PC ID: <strong id="my-id" style="color:#f59e0b; font-size: 0.85rem;">----</strong></span>
         <span id="conn-status" class="badge bg-red">대기</span>
     </div>
@@ -203,7 +210,6 @@
 
     <!-- 버튼 메뉴 -->
     <div class="btn-group">
-        <!-- 모바일 전용: 하단 PC 연결 버튼 -->
         <button id="btn-connect" class="btn-sky" onclick="promptConnect()" style="display:none;">🔗 PC 연결</button>
         <button id="btn-restart" class="btn-indigo" onclick="startScanner()" style="display:none;">📷 카메라 재시작</button>
         <button class="btn-amber" onclick="removeLast()">↩️ 지우기</button>
@@ -235,18 +241,15 @@
     let isScanning = false;
 
     window.onload = function() {
-        // 기존 내역 불러오기
         const saved = localStorage.getItem('barcodes');
         if (saved) {
             barcodeList = JSON.parse(saved);
         }
         renderList();
 
-        // 기기 자동 감지 (스마트폰/모바일 여부 확인)
         isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         if (isMobile) {
-            // [모바일 환경]
             document.getElementById('mode-badge').innerText = "📱 모바일 스캔 모드";
             document.getElementById('scanner-section').style.display = 'flex';
             document.getElementById('btn-connect').style.display = 'block';
@@ -255,7 +258,6 @@
             initPeerMobile();
             startScanner();
         } else {
-            // [PC 환경]
             document.getElementById('mode-badge').innerText = "💻 PC 수신 모드";
             document.getElementById('pc-id-area').style.display = 'inline';
             
@@ -263,7 +265,6 @@
         }
     };
 
-    // PC용 PeerJS (4자리 ID 생성 및 대기)
     function initPeerPC() {
         const numId = Math.floor(1000 + Math.random() * 9000).toString();
         peer = new Peer(numId);
@@ -286,12 +287,10 @@
         });
     }
 
-    // 모바일용 PeerJS
     function initPeerMobile() {
-        peer = new Peer(); // 모바일은 내 ID 지정 필요 없음
+        peer = new Peer();
     }
 
-    // 모바일: 하단 메뉴 [PC 연결] 버튼 클릭 시
     function promptConnect() {
         const targetId = prompt("PC 화면 상단에 표시된 4자리 숫자 ID를 입력하세요:");
         if (targetId) {
@@ -304,7 +303,6 @@
         }
     }
 
-    // 연결 이벤트 처리
     function setupConnection() {
         conn.on('open', function() {
             const status = document.getElementById('conn-status');
@@ -338,10 +336,17 @@
         });
     }
 
+    // 바코드 처리 및 저장 핵심 함수
     function addBarcodeInternal(code) {
         const trimmed = code.trim();
-        if (!trimmed || barcodeList.includes(trimmed)) return false;
+        if (!trimmed) return false;
 
+        // 1. 바로 이전 코드와 동일할 경우 입력 거부
+        if (barcodeList.length > 0 && barcodeList[barcodeList.length - 1] === trimmed) {
+            return false;
+        }
+
+        // 2. 조건을 만족하면 입력 추가 (이전 데이터 중 중복 여부와 상관없이 무조건 추가)
         barcodeList.push(trimmed);
         saveData();
         return true;
@@ -379,7 +384,9 @@
         const input = document.getElementById('manual-input');
         if (input.value) {
             const added = addBarcode(input.value);
-            if (!added && input.value.trim()) alert("이미 스캔된 바코드입니다.");
+            if (!added && input.value.trim() && barcodeList.length > 0 && barcodeList[barcodeList.length - 1] === input.value.trim()) {
+                alert("바로 이전 항목과 동일한 바코드입니다.");
+            }
             input.value = '';
             input.focus();
         }
@@ -390,6 +397,7 @@
         renderList();
     }
 
+    // 목록 렌더링 (중복 카운트 계산 및 빨간색 표시 로직 포함)
     function renderList() {
         const listEl = document.getElementById('barcode-list');
         const countEl = document.getElementById('scan-count');
@@ -402,9 +410,23 @@
             return;
         }
 
+        // 각 바코드 등장 횟수 카운팅
+        const counts = {};
+        barcodeList.forEach(code => {
+            counts[code] = (counts[code] || 0) + 1;
+        });
+
+        // 최신순 렌더링
         for (let i = barcodeList.length - 1; i >= 0; i--) {
+            const code = barcodeList[i];
             const li = document.createElement('li');
-            li.innerHTML = `<span>${barcodeList[i]}</span><small style="color:#64748b;">#${i + 1}</small>`;
+            
+            // 동일 바코드가 목록에 2개 이상 존재하면 빨간색 클래스 추가
+            if (counts[code] > 1) {
+                li.classList.add('is-duplicate');
+            }
+
+            li.innerHTML = `<span>${code}</span><small style="opacity: 0.7;">#${i + 1}</small>`;
             listEl.appendChild(li);
         }
     }
@@ -447,12 +469,10 @@
         } catch(e) {}
     }
 
-    // 복사 및 공유 기능 (PC일 경우 단순 클립보드 복사)
     async function copyOrShare() {
         if (barcodeList.length === 0) return alert("복사할 내역이 없습니다.");
         const text = barcodeList.join('\n');
 
-        // 모바일이고 공유 기능을 지원하는 경우 Web Share API 실행
         if (isMobile && navigator.share) {
             try {
                 await navigator.share({ title: '바코드 내역', text: text });
@@ -460,12 +480,10 @@
             } catch (err) {}
         }
 
-        // PC 환경이거나 모바일 공유 실패 시 -> 즉시 클립보드 복사
         try {
             await navigator.clipboard.writeText(text);
             alert("클립보드에 복사되었습니다.");
         } catch (err) {
-            // 구형 브라우저 대응
             const textArea = document.createElement("textarea");
             textArea.value = text;
             document.body.appendChild(textArea);
