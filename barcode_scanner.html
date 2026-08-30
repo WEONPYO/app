@@ -309,13 +309,17 @@
             status.innerText = "연결됨";
             status.className = "badge bg-green";
 
-            conn.send({ type: 'SYNC', list: barcodeList });
+            // 모바일에서 먼저 연결을 시도했을 경우, 모바일 기준의 데이터를 PC로 동기화
+            if (isMobile) {
+                conn.send({ type: 'SYNC', list: barcodeList });
+            }
         });
 
         conn.on('data', function(data) {
             if (data.type === 'ADD') {
                 addBarcodeInternal(data.code);
             } else if (data.type === 'SYNC') {
+                // 수신받은 데이터(모바일 기준)로 동기화
                 barcodeList = data.list;
                 saveData();
             } else if (data.type === 'REMOVE_LAST') {
@@ -335,18 +339,15 @@
         });
     }
 
-    // 바코드 처리 및 저장 핵심 함수
     function addBarcodeInternal(code) {
         const trimmed = code.trim();
         if (!trimmed) return false;
 
-        // 1. 바로 이전 값과 중복 검사
         if (barcodeList.length > 0 && barcodeList[barcodeList.length - 1] === trimmed) {
-            playErrorBeep(); // 바로 이전 값 중복 시 경고음 발생
+            playErrorBeep();
             return false;
         }
 
-        // 2. 정상 추가 및 비프음 재생
         barcodeList.push(trimmed);
         playBeep();
         saveData();
@@ -392,7 +393,6 @@
         renderList();
     }
 
-    // 목록 렌더링
     function renderList() {
         const listEl = document.getElementById('barcode-list');
         const countEl = document.getElementById('scan-count');
@@ -405,18 +405,15 @@
             return;
         }
 
-        // 카운팅 로직 (과거 중복 체크용)
         const counts = {};
         barcodeList.forEach(code => {
             counts[code] = (counts[code] || 0) + 1;
         });
 
-        // 최신순 렌더링
         for (let i = barcodeList.length - 1; i >= 0; i--) {
             const code = barcodeList[i];
             const li = document.createElement('li');
             
-            // 과거 목록에 동일 바코드가 2개 이상 존재하면 빨간색 표시
             if (counts[code] > 1) {
                 li.classList.add('is-duplicate');
             }
@@ -449,7 +446,6 @@
         setTimeout(() => { isScanning = false; }, 1200);
     }
 
-    // [정상 스캔] 비프음 (높은 톤)
     function playBeep() {
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -465,12 +461,10 @@
         } catch(e) {}
     }
 
-    // [중복 차단] 경고 비프음 (낮은 톤 2회 반복)
     function playErrorBeep() {
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             
-            // 첫 번째 낮은 음
             const osc1 = ctx.createOscillator();
             const gain1 = ctx.createGain();
             osc1.connect(gain1);
@@ -481,7 +475,6 @@
             osc1.start(ctx.currentTime);
             osc1.stop(ctx.currentTime + 0.08);
 
-            // 두 번째 낮은 음
             const osc2 = ctx.createOscillator();
             const gain2 = ctx.createGain();
             osc2.connect(gain2);
