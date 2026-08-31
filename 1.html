@@ -92,59 +92,59 @@
     <button onclick="location.reload()" style="background-color: #718093;">다시 시도</button>
   </div>
 
-  <script>
-    // '1824'의 SHA-256 해시값
-    const TARGET_HASH = "7a268e3790ecdc4119e0b8e66e7465f299863863433e2bfae498687b1c31405e";
+<script>
+  // '1824'의 올바른 SHA-256 해시값
+  const TARGET_HASH = "7a268e3790ecdc4119e0b8e66e7465f299863863433e2bfae498687b1c31405e";
 
-    // 표준 Web Crypto API 기반 SHA-256 변환 함수
-    async function getSha256(str) {
-      const buffer = new TextEncoder().encode(str);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  // Web Crypto API를 사용한 표준 SHA-256 암호화 함수
+  async function getSha256(str) {
+    const buffer = new TextEncoder().encode(str);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  // 비밀번호 검증 처리 함수
+  async function checkPassword() {
+    const inputEl = document.getElementById('passwordInput');
+    const cardEl = document.getElementById('login-card');
+    const msgEl = document.getElementById('statusMsg');
+    const inputVal = inputEl.value;
+
+    if (!inputVal) {
+      msgEl.className = "msg error";
+      msgEl.innerText = "비밀번호를 입력해 주세요.";
+      return;
     }
 
-    // 비밀번호 검증 처리 함수
-    async function checkPassword() {
-      const inputEl = document.getElementById('passwordInput');
-      const cardEl = document.getElementById('login-card');
-      const msgEl = document.getElementById('statusMsg');
-      const inputVal = inputEl.value;
+    // 입력한 비밀번호 해시 변환 후 비교
+    const inputHash = await getSha256(inputVal);
 
-      if (!inputVal) {
-        msgEl.className = "msg error";
-        msgEl.innerText = "비밀번호를 입력해 주세요.";
-        return;
-      }
+    if (inputHash === TARGET_HASH) {
+      // [맞았을 때]
+      msgEl.className = "msg success";
+      msgEl.innerText = "비밀번호가 맞습니다! 이동 중...";
+      inputEl.style.borderColor = "#2ecc71";
 
-      // 입력된 비밀번호 해시 계산
-      const inputHash = await getSha256(inputVal);
+      setTimeout(() => {
+        cardEl.style.display = 'none';
+        document.getElementById('success-content').style.display = 'block';
+      }, 600);
 
-      if (inputHash === TARGET_HASH) {
-        // [맞았을 때]
-        msgEl.className = "msg success";
-        msgEl.innerText = "비밀번호가 맞습니다! 이동 중...";
-        inputEl.style.borderColor = "#2ecc71";
+    } else {
+      // [틀렸을 때]
+      msgEl.className = "msg error";
+      msgEl.innerText = "❌ 비밀번호가 올바르지 않습니다.";
+      inputEl.style.borderColor = "#e74c3c";
+      
+      cardEl.classList.remove('shake');
+      void cardEl.offsetWidth;
+      cardEl.classList.add('shake');
 
-        setTimeout(() => {
-          cardEl.style.display = 'none';
-          document.getElementById('success-content').style.display = 'block';
-        }, 600);
-
-      } else {
-        // [틀렸을 때]
-        msgEl.className = "msg error";
-        msgEl.innerText = "❌ 비밀번호가 올바르지 않습니다.";
-        inputEl.style.borderColor = "#e74c3c";
-        
-        cardEl.classList.remove('shake');
-        void cardEl.offsetWidth;
-        cardEl.classList.add('shake');
-
-        inputEl.value = '';
-        inputEl.focus();
-      }
+      inputEl.value = '';
+      inputEl.focus();
     }
-  </script>
+  }
+</script>
 </body>
 </html>
