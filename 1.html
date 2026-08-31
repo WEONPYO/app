@@ -80,8 +80,8 @@
   <div id="login-card" class="container">
     <h2>보안 인증</h2>
     <p style="color: #666; font-size: 14px;">비밀번호 4자리를 입력하세요.</p>
-    <input type="password" id="passwordInput" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter') checkPassword()">
-    <button onclick="checkPassword()">확인</button>
+    <input type="password" id="passwordInput" placeholder="비밀번호 입력">
+    <button id="submitBtn">확인</button>
     <div id="statusMsg" class="msg"></div>
   </div>
 
@@ -92,59 +92,138 @@
     <button onclick="location.reload()" style="background-color: #718093;">다시 시도</button>
   </div>
 
-<script>
-  // '1824'의 올바른 SHA-256 해시값
-  const TARGET_HASH = "7a268e3790ecdc4119e0b8e66e7465f299863863433e2bfae498687b1c31405e";
+  <script>
+    // '1824'의 정확한 SHA-256 해시값
+    var TARGET_HASH = "7a268e3790ecdc4119e0b8e66e7465f299863863433e2bfae498687b1c31405e";
 
-  // Web Crypto API를 사용한 표준 SHA-256 암호화 함수
-  async function getSha256(str) {
-    const buffer = new TextEncoder().encode(str);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  }
+    // 동기식 순수 자바스크립트 SHA-256 해시 함수
+    function calcSHA256(str) {
+      function rightRotate(value, amount) {
+        return (value >>> amount) | (value << (32 - amount));
+      }
 
-  // 비밀번호 검증 처리 함수
-  async function checkPassword() {
-    const inputEl = document.getElementById('passwordInput');
-    const cardEl = document.getElementById('login-card');
-    const msgEl = document.getElementById('statusMsg');
-    const inputVal = inputEl.value;
+      var mathPow = Math.pow;
+      var maxWord = mathPow(2, 32);
+      var lengthProperty = 'length';
+      var i, j;
+      var result = '';
 
-    if (!inputVal) {
-      msgEl.className = "msg error";
-      msgEl.innerText = "비밀번호를 입력해 주세요.";
-      return;
+      var words = [];
+      var asciiBitLength = str[lengthProperty] * 8;
+
+      var hash = calcSHA256.h = calcSHA256.h || [];
+      var k = calcSHA256.k = calcSHA256.k || [];
+      var primeCounter = k[lengthProperty];
+
+      var isComposite = {};
+      for (var candidate = 2; primeCounter < 64; candidate++) {
+        if (!isComposite[candidate]) {
+          for (i = 0; i < 300; i += candidate) {
+            isComposite[i] = true;
+          }
+          hash[primeCounter] = (mathPow(candidate, .5) * maxWord) | 0;
+          k[primeCounter++] = (mathPow(candidate, 1/3) * maxWord) | 0;
+        }
+      }
+
+      str += '\x80';
+      while (str[lengthProperty] % 64 - 56) str += '\x00';
+      for (i = 0; i < str[lengthProperty]; i++) {
+        j = str.charCodeAt(i);
+        if (j >> 8) return;
+        words[i >> 2] |= j << ((3 - i % 4) * 8);
+      }
+      words[words[lengthProperty]] = ((asciiBitLength / maxWord) | 0);
+      words[words[lengthProperty]] = (asciiBitLength | 0);
+
+      for (j = 0; j < words[lengthProperty];) {
+        var w = words.slice(j, j += 16);
+        var oldHash = hash;
+        hash = hash.slice(0, 8);
+
+        for (i = 0; i < 64; i++) {
+          var w15 = w[i - 15], w2 = w[i - 2];
+          var a = hash[0], e = hash[4];
+          var temp1 = hash[7]
+            + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25))
+            + ((e & hash[5]) ^ ((~e) & hash[6]))
+            + k[i]
+            + (w[i] = (i < 16) ? w[i] : (
+                w[i - 16]
+                + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3))
+                + w[i - 7]
+                + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))
+              ) | 0
+            );
+          var temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22))
+            + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+
+          hash = [(temp1 + temp2) | 0].concat(hash);
+          hash[4] = (hash[4] + temp1) | 0;
+        }
+
+        for (i = 0; i < 8; i++) {
+          hash[i] = (hash[i] + oldHash[i]) | 0;
+        }
+      }
+
+      for (i = 0; i < 8; i++) {
+        for (j = 3; j >= 0; j--) {
+          var b = (hash[i] >> (j * 8)) & 255;
+          result += (b < 16 ? 0 : '') + b.toString(16);
+        }
+      }
+      return result;
     }
 
-    // 입력한 비밀번호 해시 변환 후 비교
-    const inputHash = await getSha256(inputVal);
+    // 검증 로직 실행
+    function checkPassword() {
+      var inputEl = document.getElementById('passwordInput');
+      var cardEl = document.getElementById('login-card');
+      var msgEl = document.getElementById('statusMsg');
+      var inputVal = inputEl.value.trim(); // 공백 제거 처리
 
-    if (inputHash === TARGET_HASH) {
-      // [맞았을 때]
-      msgEl.className = "msg success";
-      msgEl.innerText = "비밀번호가 맞습니다! 이동 중...";
-      inputEl.style.borderColor = "#2ecc71";
+      if (!inputVal) {
+        msgEl.className = "msg error";
+        msgEl.innerText = "비밀번호를 입력해 주세요.";
+        return;
+      }
 
-      setTimeout(() => {
-        cardEl.style.display = 'none';
-        document.getElementById('success-content').style.display = 'block';
-      }, 600);
+      // 입력값 해시 계산
+      var inputHash = calcSHA256(inputVal);
 
-    } else {
-      // [틀렸을 때]
-      msgEl.className = "msg error";
-      msgEl.innerText = "❌ 비밀번호가 올바르지 않습니다.";
-      inputEl.style.borderColor = "#e74c3c";
-      
-      cardEl.classList.remove('shake');
-      void cardEl.offsetWidth;
-      cardEl.classList.add('shake');
+      if (inputHash === TARGET_HASH) {
+        // 성공 처리
+        msgEl.className = "msg success";
+        msgEl.innerText = "비밀번호가 맞습니다! 이동 중...";
+        inputEl.style.borderColor = "#2ecc71";
 
-      inputEl.value = '';
-      inputEl.focus();
+        setTimeout(function() {
+          cardEl.style.display = 'none';
+          document.getElementById('success-content').style.display = 'block';
+        }, 500);
+      } else {
+        // 실패 처리
+        msgEl.className = "msg error";
+        msgEl.innerText = "❌ 비밀번호가 올바르지 않습니다.";
+        inputEl.style.borderColor = "#e74c3c";
+
+        cardEl.classList.remove('shake');
+        void cardEl.offsetWidth;
+        cardEl.classList.add('shake');
+
+        inputEl.value = '';
+        inputEl.focus();
+      }
     }
-  }
-</script>
+
+    // 이벤트 리스너 등록
+    document.getElementById('submitBtn').addEventListener('click', checkPassword);
+    document.getElementById('passwordInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        checkPassword();
+      }
+    });
+  </script>
 </body>
 </html>
