@@ -58,7 +58,7 @@
         .bg-green { background: #10b981; color: white; }
         .bg-yellow { background: #f59e0b; color: white; }
 
-        /* 카메라 스캐너 영역 */
+        /* 카메라 스캔 영역 */
         .scanner-container {
             height: 200px;
             background: #000;
@@ -149,7 +149,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            min-height: 0; /* flex 자식 스크롤 허용 */
+            min-height: 0;
         }
 
         .list-header {
@@ -255,7 +255,7 @@
         <button class="btn-emerald" onclick="downloadTXT()">💾 txt 저장</button>
     </div>
 
-    <!-- 스캔 리스트 -->
+    <!-- 스캔 내역 리스트 -->
     <div class="list-box">
         <div class="list-header">
             <span>스캔 내역 (최신순)</span>
@@ -278,13 +278,25 @@
     let html5QrCode = null;
     let videoTrack = null;
     let isScanning = false;
+    let currentZoom = parseFloat(localStorage.getItem('saved_zoom')) || 1.0;
 
-    // WebRTC STUN 서버 설정
+    // 유선 랜 및 이종 네트워크 우회를 위한 STUN/TURN 서버 인프라
     const peerConfig = {
         config: {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:rel.metered.ca:443' },
+                {
+                    urls: 'turn:global.relay.metered.ca:80',
+                    username: 'e0129bc3a05943d0436d6a54',
+                    credential: 'u4K+tV2P9o/P/eE2'
+                },
+                {
+                    urls: 'turn:global.relay.metered.ca:443',
+                    username: 'e0129bc3a05943d0436d6a54',
+                    credential: 'u4K+tV2P9o/P/eE2'
+                }
             ]
         }
     };
@@ -314,7 +326,7 @@
         }
     };
 
-    /* PC Peer 초기화 (4자리 ID 생성) */
+    /* PC Peer 초기화 (4자리 ID) */
     function initPeerPC() {
         const numId = Math.floor(1000 + Math.random() * 9000).toString();
         peer = new Peer(numId, peerConfig);
@@ -360,7 +372,6 @@
         conn.on('open', function() {
             updateStatus("연결됨", "bg-green");
 
-            // 최초 연결 시 모바일 기준 동기화
             if (isMobile) {
                 conn.send({ type: 'SYNC', list: barcodeList });
             }
@@ -416,7 +427,6 @@
             );
             setupZoomControl();
         } catch (err) {
-            // 후면 카메라 실패 시 기본 카메라 시도
             try {
                 await html5QrCode.start({ facingMode: "user" }, config, onScanSuccess);
                 setupZoomControl();
@@ -426,7 +436,7 @@
         }
     }
 
-    /* 카메라 하드웨어 Zoom 적용 */
+    /* 카메라 Zoom 바인딩 및 저장된 배율 복원 */
     function setupZoomControl() {
         setTimeout(() => {
             const videoEl = document.querySelector("#reader video");
@@ -438,21 +448,31 @@
                         const zoomArea = document.getElementById('zoom-area');
                         const zoomSlider = document.getElementById('zoom-slider');
                         zoomArea.style.display = 'flex';
+                        
                         zoomSlider.min = capabilities.zoom.min || 1;
                         zoomSlider.max = Math.min(capabilities.zoom.max || 5, 5);
                         zoomSlider.step = capabilities.zoom.step || 0.1;
-                        zoomSlider.value = 1;
+                        
+                        // 저장된 배율 적용
+                        let targetZoom = Math.max(zoomSlider.min, Math.min(currentZoom, zoomSlider.max));
+                        zoomSlider.value = targetZoom;
+                        changeZoom(targetZoom);
                     }
                 }
             }
         }, 800);
     }
 
+    /* Zoom 배율 변경 및 LocalStorage 저장 */
     function changeZoom(val) {
-        document.getElementById('zoom-value').innerText = `${parseFloat(val).toFixed(1)}x`;
+        const numVal = parseFloat(val);
+        currentZoom = numVal;
+        localStorage.setItem('saved_zoom', numVal.toString());
+        
+        document.getElementById('zoom-value').innerText = `${numVal.toFixed(1)}x`;
         if (videoTrack) {
             videoTrack.applyConstraints({
-                advanced: [{ zoom: parseFloat(val) }]
+                advanced: [{ zoom: numVal }]
             }).catch(e => console.log(e));
         }
     }
