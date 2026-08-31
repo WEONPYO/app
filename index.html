@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>내 북마크</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,"Malgun Gothic",sans-serif;background:#f3f5f7;color:#222}
+header{background:#fff;padding:20px;border-bottom:1px solid #ddd;position:sticky;top:0;z-index:10}
+.wrap,main{max-width:1000px;margin:auto}
+h1{margin:0 0 15px;font-size:25px}
+.form{display:grid;grid-template-columns:1fr 2fr auto;gap:8px}
+input{height:44px;border:1px solid #ccc;border-radius:8px;padding:0 12px;font-size:14px;outline:none}
+input:focus{border-color:#1976d2}
+button{border:0;border-radius:8px;padding:0 15px;font-size:14px;cursor:pointer}
+.add{background:#1976d2;color:#fff;font-weight:bold}
+.tools{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.tools button{height:38px;background:#eee}
+.save{background:#2e7d32!important;color:#fff}
+.load{background:#455a64!important;color:#fff}
+.github{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}
+.github button{background:#24292f;color:#fff;height:44px}
+#fileInput{display:none}
+.status{margin-top:10px;font-size:13px;color:#666}
+main{padding:20px 12px}
+.info{font-size:13px;color:#666;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:15px;box-shadow:0 2px 6px #0000000d;min-height:125px;display:flex;flex-direction:column}
+.title{font-size:17px;font-weight:bold;margin-bottom:9px;word-break:break-word}
+.url{font-size:12px;color:#777;word-break:break-all;line-height:1.4;flex:1}
+.actions{display:flex;gap:7px;margin-top:13px}
+.open{background:#1976d2;color:#fff;flex:1;height:36px}
+.edit{background:#eee;height:36px}
+.delete{background:#ffe7e7;color:#c62828;height:36px}
+.empty{text-align:center;background:#fff;border:1px dashed #bbb;border-radius:12px;padding:45px 15px;color:#888}
+@media(max-width:650px){
+.form{grid-template-columns:1fr}
+.add{height:44px}
+.github{grid-template-columns:1fr}
+.github button{height:44px}
+h1{font-size:22px}
+}
+</style>
+</head>
+<body>
+<header>
+<div class="wrap">
+<h1>🔖 내 북마크</h1>
+
+<div class="form">
+<input id="title" type="text" placeholder="제목 (예: 네이버)">
+<input id="url" type="text" placeholder="주소 (예: https://www.naver.com)">
+<button class="add" onclick="addBookmark()">＋ 추가</button>
+</div>
+
+<div class="tools">
+<button class="save" onclick="saveToFile()">💾 JSON 파일로 저장</button>
+<button class="load" onclick="document.getElementById('fileInput').click()">📂 JSON 파일 불러오기</button>
+<input id="fileInput" type="file" accept=".json,application/json" onchange="loadFromFile(event)">
+<button onclick="clearAll()">🗑 전체 삭제</button>
+</div>
+
+<div class="github">
+<input id="remoteUrl" type="url" value="https://weonpyo.github.io/app/bookmark.json"
+       placeholder="GitHub / 웹 JSON 주소">
+<button onclick="loadFromUrl()">🌐 URL에서 불러오기</button>
+</div>
+<div class="status" id="status">기본 북마크 주소에서 자동으로 불러옵니다.</div>
+</div>
+</header>
+
+<main>
+<div class="info" id="count"></div>
+<div id="list" class="grid"></div>
+</main>
+
+<script>
+const DEFAULT_URL = "https://weonpyo.github.io/app/bookmark.json";
+const STORAGE_KEY = "bookmark_page_v3";
+let bookmarks = [];
+
+function setStatus(text, error=false){
+    const el=document.getElementById("status");
+    el.textContent=text;
+    el.style.color=error ? "#c62828" : "#666";
+}
+
+function saveLocal(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(bookmarks));
+}
+
+function normalizeUrl(url){
+    url=url.trim();
+    if(!url)return "";
+    if(!/^https?:\\/\\//i.test(url))url="https://"+url;
+    return url;
+}
+
+function addBookmark(){
+    const title=document.getElementById("title").value.trim();
+    const url=normalizeUrl(document.getElementById("url").value);
+
+    if(!title){alert("제목을 입력해 주세요.");return}
+    if(!url){alert("주소를 입력해 주세요.");return}
+
+    try{new URL(url)}catch(e){
+        alert("올바른 주소를 입력해 주세요.");return;
+    }
+
+    bookmarks.push({id:Date.now()+Math.random(),title,url});
+    saveLocal();render();
+
+    document.getElementById("title").value="";
+    document.getElementById("url").value="";
+    document.getElementById("title").focus();
+}
+
+function openBookmark(id){
+    const item=bookmarks.find(x=>x.id===id);
+    if(item)window.open(item.url,"_blank","noopener");
+}
+
+function editBookmark(id){
+    const item=bookmarks.find(x=>x.id===id);
+    if(!item)return;
+
+    const title=prompt("제목을 수정하세요.",item.title);
+    if(title===null)return;
+
+    const u=prompt("주소를 수정하세요.",item.url);
+    if(u===null)return;
+
+    const url=normalizeUrl(u);
+    if(!title.trim()||!url){alert("제목과 주소를 모두 입력해 주세요.");return}
+
+    try{new URL(url)}catch(e){
+        alert("올바른 주소를 입력해 주세요.");return;
+    }
+
+    item.title=title.trim();
+    item.url=url;
+    saveLocal();render();
+}
+
+function deleteBookmark(id){
+    const item=bookmarks.find(x=>x.id===id);
+    if(!item)return;
+
+    if(confirm('"'+item.title+'" 북마크를 삭제할까요?')){
+        bookmarks=bookmarks.filter(x=>x.id!==id);
+        saveLocal();render();
+    }
+}
+
+function clearAll(){
+    if(!bookmarks.length){alert("삭제할 북마크가 없습니다.");return}
+    if(confirm("저장된 북마크를 모두 삭제할까요?")){
+        bookmarks=[];saveLocal();render();
+    }
+}
+
+function saveToFile(){
+    if(!bookmarks.length){alert("저장할 북마크가 없습니다.");return}
+
+    const data={
+        type:"My Bookmark",
+        version:1,
+        savedAt:new Date().toISOString(),
+        bookmarks:bookmarks.map(x=>({title:x.title,url:x.url}))
+    };
+
+    const blob=new Blob([JSON.stringify(data,null,2)],
+        {type:"application/json;charset=utf-8"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="bookmark.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
+function loadFromFile(event){
+    const file=event.target.files[0];
+    if(!file)return;
+
+    const reader=new FileReader();
+    reader.onload=function(e){
+        try{
+            const data=JSON.parse(e.target.result);
+            importData(data,"파일");
+        }catch(err){
+            alert("올바른 JSON 파일이 아닙니다.");
+        }
+        event.target.value="";
+    };
+    reader.readAsText(file,"utf-8");
+}
+
+async function loadFromUrl(){
+    const url=document.getElementById("remoteUrl").value.trim();
+    if(!url){alert("JSON 주소를 입력해 주세요.");return}
+
+    setStatus("JSON 파일을 불러오는 중입니다...");
+
+    try{
+        const response=await fetch(url,{cache:"no-store"});
+        if(!response.ok)throw new Error("HTTP "+response.status);
+
+        const data=await response.json();
+        const imported=extractBookmarks(data);
+
+        if(!imported.length){
+            throw new Error("북마크 데이터가 없습니다.");
+        }
+
+        const oldCount=bookmarks.length;
+
+        if(oldCount>0){
+            const replace=confirm(
+                "온라인 JSON에서 "+imported.length+"개의 북마크를 찾았습니다.\\n\\n"+
+                "확인 = 기존 북마크를 온라인 데이터로 교체\\n"+
+                "취소 = 기존 북마크 뒤에 추가"
+            );
+
+            if(replace)bookmarks=imported;
+            else bookmarks=bookmarks.concat(imported);
+        }else{
+            bookmarks=imported;
+        }
+
+        saveLocal();
+        render();
+        setStatus("온라인 JSON에서 "+imported.length+"개의 북마크를 불러왔습니다.");
+    }catch(err){
+        console.error(err);
+        setStatus(
+            "불러오기에 실패했습니다. JSON 주소가 공개되어 있는지 확인하세요. ("+
+            err.message+")",true
+        );
+        alert(
+            "JSON 파일을 불러오지 못했습니다.\\n\\n"+
+            "확인할 사항:\\n"+
+            "1. JSON 파일이 공개되어 있는지\\n"+
+            "2. 주소가 정확한지\\n"+
+            "3. GitHub Pages라면 해당 URL에서 JSON이 실제로 열리는지"
+        );
+    }
+}
+
+function extractBookmarks(data){
+    let arr;
+
+    if(Array.isArray(data))arr=data;
+    else if(Array.isArray(data.bookmarks))arr=data.bookmarks;
+    else if(Array.isArray(data.items))arr=data.items;
+    else return [];
+
+    return arr.filter(item=>
+        item &&
+        typeof item.title==="string" &&
+        typeof item.url==="string"
+    ).map(item=>({
+        id:Date.now()+Math.random(),
+        title:item.title.trim(),
+        url:normalizeUrl(item.url)
+    })).filter(item=>{
+        try{new URL(item.url);return true}catch(e){return false}
+    });
+}
+
+function escapeHtml(str){
+    return str.replace(/[&<>"']/g,ch=>({
+        "&":"&amp;","<":"&lt;",">":"&gt;",
+        '"':"&quot;","'":"&#039;"
+    }[ch]));
+}
+
+function render(){
+    const list=document.getElementById("list");
+    document.getElementById("count").textContent=
+        "저장된 북마크 "+bookmarks.length+"개";
+
+    if(!bookmarks.length){
+        list.className="";
+        list.innerHTML='<div class="empty">아직 북마크가 없습니다.<br>'+
+            '온라인 JSON 또는 제목과 주소를 입력하여 추가하세요.</div>';
+        return;
+    }
+
+    list.className="grid";
+    list.innerHTML=bookmarks.map(item=>`
+        <div class="card">
+            <div class="title">${escapeHtml(item.title)}</div>
+            <div class="url">${escapeHtml(item.url)}</div>
+            <div class="actions">
+                <button class="open" onclick="openBookmark(${item.id})">페이지 열기</button>
+                <button class="edit" onclick="editBookmark(${item.id})">수정</button>
+                <button class="delete" onclick="deleteBookmark(${item.id})">삭제</button>
+            </div>
+        </div>
+    `).join("");
+}
+
+document.getElementById("url").addEventListener("keydown",e=>{
+    if(e.key==="Enter")addBookmark();
+});
+document.getElementById("title").addEventListener("keydown",e=>{
+    if(e.key==="Enter")document.getElementById("url").focus();
+});
+
+// 브라우저에 저장된 북마크를 먼저 표시
+try{
+    const local=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
+    if(Array.isArray(local))bookmarks=local;
+}catch(e){bookmarks=[]}
+
+render();
+
+// 기본 URL의 온라인 북마크를 자동으로 불러오기
+window.addEventListener("load",()=>{
+    loadFromUrl();
+});
+</script>
+</body>
+</html>
