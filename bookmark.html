@@ -6,7 +6,7 @@
 <title>내 북마크</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#f3f5f7;color:#222;font-family:Arial,"Malgun Gothic",sans-serif}
+body{margin:0;background:#f3f5f7;color:#222;font-family:Arial,"Malgun Gothic","맑은 고딕",sans-serif}
 header{background:#fff;border-bottom:1px solid #ddd;padding:18px 15px;position:sticky;top:0;z-index:10}
 .container,main{max-width:1000px;margin:auto}
 .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -27,7 +27,6 @@ button{border:0;border-radius:8px;cursor:pointer;font-size:14px}
 #settingsPanel{display:none;margin-top:14px;padding:14px;background:#f7f7f7;border:1px solid #ddd;border-radius:10px}
 #settingsPanel.open{display:block}
 .setting-title{font-weight:bold;margin-bottom:10px}
-.setting-row{display:grid;grid-template-columns:1fr auto;gap:8px}
 .close-settings{margin-top:10px;height:36px;padding:0 14px;background:#ddd}
 main{padding:20px 12px}
 .count{font-size:13px;color:#666;margin-bottom:12px}
@@ -46,7 +45,6 @@ main{padding:20px 12px}
 .add{height:44px}
 .remote{grid-template-columns:1fr}
 .remote button{height:44px}
-.setting-row{grid-template-columns:1fr}
 h1{font-size:22px}
 }
 </style>
@@ -59,13 +57,12 @@ h1{font-size:22px}
 <button class="settings-btn" id="settingsBtn" title="설정">⚙️</button>
 </div>
 
-<!-- 설정 버튼을 눌렀을 때만 추가/파일 기능 표시 -->
 <div id="settingsPanel">
 <div class="setting-title">북마크 설정</div>
 
 <div class="form" style="margin-top:0">
-<input id="title" placeholder="제목 (예: 네이버)">
-<input id="url" placeholder="주소 (예: https://www.naver.com)">
+<input id="title" type="text" placeholder="제목 (예: 관리)">
+<input id="url" type="text" placeholder="주소 (예: https://www.naver.com)">
 <button class="add" id="addBtn">＋ 추가</button>
 </div>
 
@@ -95,11 +92,9 @@ h1{font-size:22px}
 <script>
 "use strict";
 
-const DEFAULT_JSON_URL="https://weonpyo.github.io/app/bookmark.json";
-const STORAGE_KEY="weonpyo_bookmarks_v6";
+const STORAGE_KEY="weonpyo_bookmarks_v7";
 let bookmarks=[];
 
-/* 설정 */
 const settingsBtn=document.getElementById("settingsBtn");
 const settingsPanel=document.getElementById("settingsPanel");
 
@@ -111,21 +106,20 @@ document.getElementById("closeSettings").addEventListener("click",()=>{
   settingsPanel.classList.remove("open");
 });
 
-/* 상태 표시 */
 function status(text,error=false){
   const e=document.getElementById("status");
   e.textContent=text;
   e.style.color=error?"#c62828":"#666";
 }
 
-/* 브라우저 저장 */
 function saveLocal(){
   try{
     localStorage.setItem(STORAGE_KEY,JSON.stringify(bookmarks));
-  }catch(e){}
+  }catch(e){
+    console.error(e);
+  }
 }
 
-/* 주소 처리 */
 function normalizeUrl(value){
   let u=String(value||"").trim();
   if(!u)return "";
@@ -142,7 +136,6 @@ function validUrl(u){
   }
 }
 
-/* 추가 */
 function addBookmark(){
   const title=document.getElementById("title").value.trim();
   const url=normalizeUrl(document.getElementById("url").value);
@@ -159,11 +152,7 @@ function addBookmark(){
     return;
   }
 
-  bookmarks.push({
-    title:title,
-    url:url
-  });
-
+  bookmarks.push({title:title,url:url});
   saveLocal();
   render();
 
@@ -173,13 +162,10 @@ function addBookmark(){
   status("북마크가 추가되었습니다.");
 }
 
-/* 열기 */
 function openBookmark(i){
-  if(!bookmarks[i])return;
-  window.open(bookmarks[i].url,"_blank");
+  if(bookmarks[i])window.open(bookmarks[i].url,"_blank");
 }
 
-/* 수정 */
 function editBookmark(i){
   const b=bookmarks[i];
   if(!b)return;
@@ -197,16 +183,11 @@ function editBookmark(i){
     return;
   }
 
-  bookmarks[i]={
-    title:t.trim(),
-    url:url
-  };
-
+  bookmarks[i]={title:t.trim(),url:url};
   saveLocal();
   render();
 }
 
-/* 삭제 */
 function deleteBookmark(i){
   if(!bookmarks[i])return;
 
@@ -217,7 +198,6 @@ function deleteBookmark(i){
   }
 }
 
-/* 전체 삭제 */
 function clearAll(){
   if(!bookmarks.length){
     alert("삭제할 북마크가 없습니다.");
@@ -231,7 +211,6 @@ function clearAll(){
   }
 }
 
-/* 화면 표시 */
 function render(){
   const list=document.getElementById("list");
 
@@ -271,7 +250,6 @@ function esc(s){
   }[c]));
 }
 
-/* JSON 데이터 읽기 */
 function extract(data){
   const arr=
     Array.isArray(data)?data:
@@ -295,7 +273,6 @@ function extract(data){
   }).filter(Boolean);
 }
 
-/* JSON 불러오기 */
 function importBookmarks(data,mode){
   const incoming=extract(data);
 
@@ -304,44 +281,56 @@ function importBookmarks(data,mode){
     return false;
   }
 
-  if(mode==="replace"){
-    bookmarks=incoming;
-  }else{
-    bookmarks=bookmarks.concat(incoming);
-  }
+  if(mode==="replace")bookmarks=incoming;
+  else bookmarks=bookmarks.concat(incoming);
 
   saveLocal();
   render();
   return true;
 }
 
-/* JSON 저장 */
+/*
+ * UTF-8 BOM을 포함하여 저장합니다.
+ * 한글이 깨지거나 마지막 글자가 잘리는 문제를 방지합니다.
+ */
 function saveJson(){
   const data={
     type:"My Bookmark",
     version:1,
-    bookmarks:bookmarks
+    bookmarks:bookmarks.map(b=>({
+      title:String(b.title),
+      url:String(b.url)
+    }))
   };
 
+  const json=JSON.stringify(data,null,2);
+
+  // BOM + UTF-8 Blob
+  const bom="\uFEFF";
   const blob=new Blob(
-    [JSON.stringify(data,null,2)],
-    {type:"application/json"}
+    [bom,json],
+    {type:"application/json;charset=utf-8"}
   );
 
-  const a=document.createElement("a");
   const objectUrl=URL.createObjectURL(blob);
+  const a=document.createElement("a");
 
   a.href=objectUrl;
   a.download="bookmark.json";
+  a.style.display="none";
+
   document.body.appendChild(a);
   a.click();
-  a.remove();
 
-  setTimeout(()=>URL.revokeObjectURL(objectUrl),1000);
-  status("bookmark.json 파일을 저장했습니다.");
+  // 클릭 직후 제거하지 않고 잠시 유지
+  setTimeout(()=>{
+    a.remove();
+    URL.revokeObjectURL(objectUrl);
+  },1000);
+
+  status("bookmark.json을 UTF-8 형식으로 저장했습니다.");
 }
 
-/* PC JSON 파일 */
 function loadFile(){
   document.getElementById("fileInput").click();
 }
@@ -354,7 +343,11 @@ function readFile(event){
 
   reader.onload=function(){
     try{
-      const data=JSON.parse(reader.result);
+      // UTF-8 BOM이 있는 JSON도 정상 처리
+      let text=String(reader.result);
+      if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);
+
+      const data=JSON.parse(text);
       const incoming=extract(data);
 
       if(!incoming.length){
@@ -376,16 +369,16 @@ function readFile(event){
       status(incoming.length+"개의 북마크를 불러왔습니다.");
 
     }catch(e){
+      console.error(e);
       alert("JSON 파일 형식이 올바르지 않습니다.");
     }
 
     event.target.value="";
   };
 
-  reader.readAsText(file,"utf-8");
+  reader.readAsText(file,"UTF-8");
 }
 
-/* 온라인 JSON */
 async function loadRemote(){
   const url=document.getElementById("remoteUrl").value.trim();
 
@@ -427,16 +420,14 @@ async function loadRemote(){
     );
 
   }catch(e){
+    console.error(e);
     status(
-      "온라인 JSON을 불러오지 못했습니다. "+
-      "현재 저장된 북마크를 표시합니다.",
+      "온라인 JSON을 불러오지 못했습니다. 현재 저장된 북마크를 표시합니다.",
       true
     );
-    console.error(e);
   }
 }
 
-/* 버튼 이벤트 */
 document.getElementById("addBtn").addEventListener("click",addBookmark);
 document.getElementById("saveBtn").addEventListener("click",saveJson);
 document.getElementById("fileBtn").addEventListener("click",loadFile);
@@ -445,28 +436,47 @@ document.getElementById("clearBtn").addEventListener("click",clearAll);
 document.getElementById("remoteBtn").addEventListener("click",loadRemote);
 
 document.getElementById("title").addEventListener("keydown",e=>{
-  if(e.key==="Enter")
-    document.getElementById("url").focus();
+  if(e.key==="Enter")document.getElementById("url").focus();
 });
 
 document.getElementById("url").addEventListener("keydown",e=>{
-  if(e.key==="Enter")
-    addBookmark();
+  if(e.key==="Enter")addBookmark();
 });
 
 /*
-  핵심 변경:
-  1. 저장된 북마크를 가장 먼저 표시
-  2. 온라인 JSON은 자동으로 덮어쓰지 않음
-  3. 사용자가 설정에서 "온라인 불러오기"를 눌렀을 때만 가져옴
-*/
+ * 기존 버전의 LocalStorage 데이터도 자동으로 찾아서
+ * 새 저장 영역으로 한 번 이전합니다.
+ */
 try{
-  const saved=JSON.parse(
-    localStorage.getItem(STORAGE_KEY)||"[]"
-  );
+  let saved=localStorage.getItem(STORAGE_KEY);
 
-  if(Array.isArray(saved))
-    bookmarks=saved;
+  if(!saved){
+    const oldKeys=[
+      "weonpyo_bookmarks_v6",
+      "weonpyo_bookmarks_v5",
+      "bookmark_page_v3",
+      "bookmark_page_v2"
+    ];
+
+    for(const key of oldKeys){
+      const old=localStorage.getItem(key);
+      if(old){
+        saved=old;
+        break;
+      }
+    }
+  }
+
+  if(saved){
+    const parsed=JSON.parse(saved);
+    if(Array.isArray(parsed)){
+      bookmarks=parsed.filter(b=>
+        b &&
+        typeof b.title==="string" &&
+        typeof b.url==="string"
+      );
+    }
+  }
 }catch(e){
   bookmarks=[];
 }
