@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>돋보기 앱</title>
+  <title>접사 지원 돋보기 앱</title>
   <style>
     * {
       box-sizing: border-box;
@@ -49,7 +49,7 @@
     }
     label {
       font-size: 14px;
-      min-width: 70px;
+      min-width: 80px;
       color: #ccc;
     }
     select, input[type="range"], button {
@@ -62,6 +62,9 @@
     }
     select {
       flex: 1;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
     }
     input[type="range"] {
       flex: 1;
@@ -74,7 +77,7 @@
     }
     .btn {
       flex: 1;
-      padding: 12px;
+      padding: 10px;
       font-weight: bold;
       text-align: center;
       background: #333;
@@ -88,6 +91,7 @@
       background: #34c759;
       color: #fff;
       font-size: 16px;
+      padding: 12px;
     }
     canvas {
       display: none;
@@ -102,7 +106,7 @@
 
   <div class="controls">
     <div class="row">
-      <label for="cameraSelect">카메라</label>
+      <label for="cameraSelect">카메라 선택</label>
       <select id="cameraSelect"></select>
     </div>
 
@@ -119,8 +123,8 @@
     <div class="row">
       <label>초점 모드</label>
       <div class="btn-group">
-        <button id="btnFocusAuto" class="btn btn-active">자동</button>
-        <button id="btnFocusManual" class="btn">수동</button>
+        <button id="btnFocusAuto" class="btn btn-active">자동 (AF)</button>
+        <button id="btnFocusManual" class="btn">수동 (MF)</button>
       </div>
     </div>
 
@@ -146,7 +150,7 @@
     let currentStream = null;
     let trackCapabilities = null;
 
-    // LocalStorage 설정 로드
+    // 저장된 이전 설정값 로드
     const settings = JSON.parse(localStorage.getItem('magnifier_settings')) || {
       deviceId: '',
       zoom: 1,
@@ -158,31 +162,64 @@
       localStorage.setItem('magnifier_settings', JSON.stringify(settings));
     }
 
-    // 카메라 목록 조회
-    async function getCameras() {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter(device => device.kind === 'videoinput');
-      
-      cameraSelect.innerHTML = '';
-      videoDevices.forEach((device, index) => {
-        const option = document.createElement('option');
-        option.value = device.deviceId;
-        option.text = device.label || `카메라 ${index + 1}`;
-        if (device.deviceId === settings.deviceId) {
-          option.selected = true;
-        }
-        cameraSelect.appendChild(option);
-      });
+    // 카메라 권한 취득 및 하드웨어 장치 목록 열거
+    async function initCameraDevices() {
+      try {
+        // 권한을 얻기 위해 임시 스트림 실행 후 즉시 중지 (라벨 정보 획득 용도)
+        const initStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        initStream.getTracks().forEach(track => track.stop());
 
-      if (!settings.deviceId && videoDevices.length > 0) {
-        // 기본값: 후면 카메라 우선 선택
-        const backCam = videoDevices.find(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('environment'));
-        settings.deviceId = backCam ? backCam.deviceId : videoDevices[0].deviceId;
-        cameraSelect.value = settings.deviceId;
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        
+        cameraSelect.innerHTML = '';
+        
+        let preferredDeviceId = settings.deviceId;
+        let macroCameraFound = false;
+
+        videoDevices.forEach((device, index) => {
+          const option = document.createElement('option');
+          option.value = device.deviceId;
+          
+          let label = device.label || `카메라 ${index + 1}`;
+          
+          // 접사(Macro) 카메라 파악을 위한 힌트 표시
+          const lowerLabel = label.toLowerCase();
+          if (lowerLabel.includes('macro') || lowerLabel.includes('접사') || lowerLabel.includes('close-up')) {
+            label = `🔍 [접사] ${label}`;
+            if (!settings.deviceId) {
+              preferredDeviceId = device.deviceId; // 접사 카메라 우선 자동선택
+              macroCameraFound = true;
+            }
+          }
+          
+          option.text = label;
+          if (device.deviceId === preferredDeviceId) {
+            option.selected = true;
+          }
+          cameraSelect.appendChild(option);
+        });
+
+        // 기본 접사 카메라를 못 찾고 설정값도 없을 경우 후면 카메라 선택
+        if (!preferredDeviceId && videoDevices.length > 0) {
+          const backCam = videoDevices.find(d => 
+            d.label.toLowerCase().includes('back') || 
+            d.label.toLowerCase().includes('environment') ||
+            d.label.toLowerCase().includes('0')
+          );
+          preferredDeviceId = backCam ? backCam.deviceId : videoDevices[0].deviceId;
+        }
+
+        settings.deviceId = preferredDeviceId;
+        cameraSelect.value = preferredDeviceId;
+        saveSettings();
+
+      } catch (err) {
+        console.error("카메라 장치 권한 요청 실패:", err);
       }
     }
 
-    // 스트림 시작
+    // 지정한 deviceId로 스트림 연결
     async function startCamera(deviceId) {
       if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
@@ -191,8 +228,8 @@
       const constraints = {
         video: {
           deviceId: deviceId ? { exact: deviceId } : undefined,
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
+          width: { ideal: 3840 },
+          height: { ideal: 2160 }
         }
       };
 
@@ -203,16 +240,20 @@
         const track = currentStream.getVideoTracks()[0];
         trackCapabilities = track.getCapabilities ? track.getCapabilities() : {};
 
-        // 확대 기능 지원 여부 확인
+        // 1. 디지털/광학 Zoom 컨트롤 설정
         if (trackCapabilities.zoom) {
           zoomRange.min = trackCapabilities.zoom.min;
           zoomRange.max = trackCapabilities.zoom.max;
-          zoomRange.step = trackCapabilities.zoom.step;
-          zoomRange.value = Math.min(Math.max(settings.zoom, trackCapabilities.zoom.min), trackCapabilities.zoom.max);
-          applyZoom(zoomRange.value);
+          zoomRange.step = trackCapabilities.zoom.step || 0.1;
+          const targetZoom = Math.min(Math.max(settings.zoom, trackCapabilities.zoom.min), trackCapabilities.zoom.max);
+          zoomRange.value = targetZoom;
+          applyZoom(targetZoom);
+        } else {
+          zoomRange.value = 1;
+          zoomVal.textContent = "1.0x";
         }
 
-        // 초점 모드 제어 지원여부 확인
+        // 2. 초점 모드 및 수동 거리 제어 설정
         if (trackCapabilities.focusMode) {
           applyFocusMode(settings.focusMode);
         } else {
@@ -220,39 +261,44 @@
         }
 
       } catch (err) {
-        console.error("카메라 접근 실패:", err);
+        console.error("선택한 카메라를 열 수 없습니다:", err);
       }
     }
 
-    // 확대 적용
+    // Zoom 적용
     function applyZoom(value) {
       if (!currentStream) return;
       const track = currentStream.getVideoTracks()[0];
-      if (trackCapabilities.zoom) {
-        track.applyConstraints({ advanced: [{ zoom: parseFloat(value) }] });
-        zoomVal.textContent = `${parseFloat(value).toFixed(1)}x`;
-        settings.zoom = value;
-        saveSettings();
+      if (trackCapabilities && trackCapabilities.zoom) {
+        track.applyConstraints({ advanced: [{ zoom: parseFloat(value) }] })
+          .then(() => {
+            zoomVal.textContent = `${parseFloat(value).toFixed(1)}x`;
+            settings.zoom = value;
+            saveSettings();
+          })
+          .catch(err => console.warn("Zoom 설정 비지원:", err));
       }
     }
 
-    // 초점 모드 적용 (자동/수동)
+    // 초점 모드 전환 (자동 continuous / 수동 manual)
     function applyFocusMode(mode) {
       if (!currentStream) return;
       const track = currentStream.getVideoTracks()[0];
-      if (!trackCapabilities.focusMode) return;
+      if (!trackCapabilities || !trackCapabilities.focusMode) return;
 
       const constraints = { advanced: [] };
 
       if (mode === 'manual' && trackCapabilities.focusMode.includes('manual')) {
         constraints.advanced.push({ focusMode: 'manual' });
+        
         if (trackCapabilities.focusDistance) {
           focusRange.min = trackCapabilities.focusDistance.min;
           focusRange.max = trackCapabilities.focusDistance.max;
-          focusRange.step = trackCapabilities.focusDistance.step;
+          focusRange.step = trackCapabilities.focusDistance.step || 0.01;
           focusRange.value = settings.focusDistance;
           constraints.advanced[0].focusDistance = parseFloat(settings.focusDistance);
         }
+        
         focusDistanceRow.style.display = 'flex';
         btnFocusManual.classList.add('btn-active');
         btnFocusAuto.classList.remove('btn-active');
@@ -263,23 +309,29 @@
         btnFocusManual.classList.remove('btn-active');
       }
 
-      track.applyConstraints(constraints);
-      settings.focusMode = mode;
-      saveSettings();
+      track.applyConstraints(constraints)
+        .then(() => {
+          settings.focusMode = mode;
+          saveSettings();
+        })
+        .catch(err => console.warn("Focus constraints 적용 실패:", err));
     }
 
-    // 수동 초점 거리 적용
+    // 수동 초점 거리 조절
     function applyFocusDistance(value) {
       if (!currentStream) return;
       const track = currentStream.getVideoTracks()[0];
-      if (trackCapabilities.focusDistance) {
-        track.applyConstraints({ advanced: [{ focusMode: 'manual', focusDistance: parseFloat(value) }] });
-        settings.focusDistance = value;
-        saveSettings();
+      if (trackCapabilities && trackCapabilities.focusDistance) {
+        track.applyConstraints({ 
+          advanced: [{ focusMode: 'manual', focusDistance: parseFloat(value) }] 
+        }).then(() => {
+          settings.focusDistance = value;
+          saveSettings();
+        });
       }
     }
 
-    // 사진 촬영 및 다운로드
+    // 캔버스 캡처 및 저장
     function capturePhoto() {
       if (!video.videoWidth) return;
       
@@ -289,13 +341,20 @@
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
       const link = document.createElement('a');
-      const now = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-      link.download = `magnifier_${now}.jpg`;
+      const now = new Date();
+      const timestamp = now.getFullYear().toString() +
+        (now.getMonth() + 1).toString().padStart(2, '0') +
+        now.getDate().toString().padStart(2, '0') + "_" +
+        now.getHours().toString().padStart(2, '0') +
+        now.getMinutes().toString().padStart(2, '0') +
+        now.getSeconds().toString().padStart(2, '0');
+
+      link.download = `macro_magnifier_${timestamp}.jpg`;
       link.href = canvas.toDataURL('image/jpeg', 0.95);
       link.click();
     }
 
-    // 이벤트 리스너 설정
+    // 이벤트 등록
     cameraSelect.addEventListener('change', (e) => {
       settings.deviceId = e.target.value;
       saveSettings();
@@ -309,10 +368,12 @@
     btnFocusManual.addEventListener('click', () => applyFocusMode('manual'));
     btnCapture.addEventListener('click', capturePhoto);
 
-    // 초기화
+    // 실행 초기화 과정
     async function init() {
-      await getCameras();
-      await startCamera(settings.deviceId);
+      await initCameraDevices();
+      if (settings.deviceId) {
+        await startCamera(settings.deviceId);
+      }
     }
 
     init();
