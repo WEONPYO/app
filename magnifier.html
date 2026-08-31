@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>접사 & 플래시 돋보기 앱</title>
+  <title>접사 지원 돋보기 앱</title>
   <style>
     * {
       box-sizing: border-box;
@@ -38,23 +38,23 @@
       padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       border-top-left-radius: 16px;
       border-top-right-radius: 16px;
     }
     .row {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
     label {
-      font-size: 14px;
-      min-width: 80px;
+      font-size: 13px;
+      min-width: 75px;
       color: #ccc;
     }
     select, input[type="range"], button {
-      font-size: 14px;
-      padding: 8px 12px;
+      font-size: 13px;
+      padding: 8px 10px;
       border-radius: 8px;
       border: 1px solid #444;
       background: #222;
@@ -72,7 +72,7 @@
     }
     .btn-group {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       width: 100%;
     }
     .btn {
@@ -92,11 +92,21 @@
       background: #ffcc00;
       color: #000;
     }
+    .btn-reload {
+      background: #444;
+      padding: 8px 10px;
+      white-space: nowrap;
+    }
     .btn-capture {
       background: #34c759;
       color: #fff;
-      font-size: 16px;
+      font-size: 15px;
       padding: 12px;
+    }
+    .status-info {
+      font-size: 11px;
+      color: #888;
+      text-align: center;
     }
     canvas {
       display: none;
@@ -110,30 +120,30 @@
   </div>
 
   <div class="controls">
-    <!-- 카메라 선택 -->
+    <!-- 카메라 검색 및 선택 -->
     <div class="row">
       <label for="cameraSelect">카메라 선택</label>
       <select id="cameraSelect"></select>
+      <button id="btnScanCameras" class="btn btn-reload" title="카메라 전체 다시 탐색">🔄 검색</button>
     </div>
 
     <!-- 확대 / 축소 -->
     <div class="row">
-      <label for="zoomRange">확대 <span id="zoomVal">1x</span></label>
+      <label for="zoomRange">확대 배율 <span id="zoomVal">1.0x</span></label>
       <input type="range" id="zoomRange" min="1" max="5" step="0.1" value="1">
     </div>
 
-    <!-- 수동 초점 거리 제어 -->
+    <!-- 초점 거리 (수동 초점용 - 근접 접사 조절) -->
     <div class="row" id="focusDistanceRow" style="display: none;">
-      <label for="focusRange">초점 거리</label>
+      <label for="focusRange">접사거리(MF)</label>
       <input type="range" id="focusRange" min="0" max="1" step="0.01" value="0.5">
     </div>
 
-    <!-- 초점 모드 전환 & 플래시 버튼 -->
+    <!-- 기능 버튼 그룹 -->
     <div class="row">
-      <label>기능 제어</label>
       <div class="btn-group">
-        <button id="btnFocusAuto" class="btn btn-active">자동 초점</button>
-        <button id="btnFocusManual" class="btn">수동 초점</button>
+        <button id="btnFocusAuto" class="btn btn-active">자동초점</button>
+        <button id="btnFocusManual" class="btn">수동(접사)</button>
         <button id="btnTorch" class="btn">💡 플래시</button>
       </div>
     </div>
@@ -142,6 +152,8 @@
     <div class="row">
       <button id="btnCapture" class="btn btn-capture">📷 사진 촬영 및 저장</button>
     </div>
+
+    <div id="statusInfo" class="status-info">감지된 카메라 수 검색 중...</div>
   </div>
 
   <canvas id="canvas"></canvas>
@@ -149,6 +161,7 @@
   <script>
     const video = document.getElementById('webcam');
     const cameraSelect = document.getElementById('cameraSelect');
+    const btnScanCameras = document.getElementById('btnScanCameras');
     const zoomRange = document.getElementById('zoomRange');
     const zoomVal = document.getElementById('zoomVal');
     const focusRange = document.getElementById('focusRange');
@@ -157,17 +170,18 @@
     const btnFocusManual = document.getElementById('btnFocusManual');
     const btnTorch = document.getElementById('btnTorch');
     const btnCapture = document.getElementById('btnCapture');
+    const statusInfo = document.getElementById('statusInfo');
     const canvas = document.getElementById('canvas');
 
     let currentStream = null;
     let trackCapabilities = null;
 
-    // 저장된 이전 설정값 로드
+    // 저장된 설정 로드
     const settings = JSON.parse(localStorage.getItem('magnifier_settings')) || {
       deviceId: '',
       zoom: 1,
       focusMode: 'continuous',
-      focusDistance: 0.5,
+      focusDistance: 0,
       torch: false
     };
 
@@ -175,59 +189,75 @@
       localStorage.setItem('magnifier_settings', JSON.stringify(settings));
     }
 
-    // 카메라 권한 취득 및 하드웨어 장치 목록 열거
-    async function initCameraDevices() {
+    // 스마트폰 내 모든 카메라 드라이버 탐색
+    async function scanAndPopulateCameras() {
+      statusInfo.textContent = "카메라 장치를 탐색 중입니다...";
       try {
-        const initStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        initStream.getTracks().forEach(track => track.stop());
+        // 카메라 목록 라벨 획득을 위해 먼저 임시 권한 받기
+        const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        tempStream.getTracks().forEach(track => track.stop());
 
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
-        
-        cameraSelect.innerHTML = '';
-        
-        let preferredDeviceId = settings.deviceId;
 
+        cameraSelect.innerHTML = '';
+
+        if (videoDevices.length === 0) {
+          statusInfo.textContent = "카메라를 찾을 수 없습니다.";
+          return;
+        }
+
+        let selectedIndex = 0;
         videoDevices.forEach((device, index) => {
           const option = document.createElement('option');
           option.value = device.deviceId;
-          
+
           let label = device.label || `카메라 ${index + 1}`;
-          const lowerLabel = label.toLowerCase();
-          
-          if (lowerLabel.includes('macro') || lowerLabel.includes('접사') || lowerLabel.includes('close-up')) {
-            label = `🔍 [접사] ${label}`;
-            if (!settings.deviceId) {
-              preferredDeviceId = device.deviceId;
-            }
+          const lower = label.toLowerCase();
+
+          // 접사(Macro) 키워드가 들어있는 경우 강조
+          if (lower.includes('macro') || lower.includes('접사') || lower.includes('close-up') || lower.includes('ultra wide')) {
+            label = `🔍 [접사/근접] ${label}`;
+          } else if (lower.includes('back') || lower.includes('rear') || lower.includes('environment')) {
+            label = `📷 [후면] ${label}`;
+          } else if (lower.includes('front') || lower.includes('user')) {
+            label = `👤 [전면] ${label}`;
           }
-          
+
           option.text = label;
-          if (device.deviceId === preferredDeviceId) {
+
+          if (device.deviceId === settings.deviceId) {
             option.selected = true;
+            selectedIndex = index;
           }
           cameraSelect.appendChild(option);
         });
 
-        if (!preferredDeviceId && videoDevices.length > 0) {
-          const backCam = videoDevices.find(d => 
+        // 설정된 디바이스가 없으면 후면 카메라 우선 선택
+        if (!settings.deviceId) {
+          const backIndex = videoDevices.findIndex(d => 
             d.label.toLowerCase().includes('back') || 
-            d.label.toLowerCase().includes('environment') ||
+            d.label.toLowerCase().includes('environment') || 
             d.label.toLowerCase().includes('0')
           );
-          preferredDeviceId = backCam ? backCam.deviceId : videoDevices[0].deviceId;
+          if (backIndex !== -1) {
+            cameraSelect.selectedIndex = backIndex;
+            settings.deviceId = videoDevices[backIndex].deviceId;
+          } else {
+            settings.deviceId = videoDevices[0].deviceId;
+          }
+          saveSettings();
         }
 
-        settings.deviceId = preferredDeviceId;
-        cameraSelect.value = preferredDeviceId;
-        saveSettings();
+        statusInfo.textContent = `총 ${videoDevices.length}개의 카메라 장치가 연결됨`;
 
       } catch (err) {
-        console.error("카메라 장치 권한 요청 실패:", err);
+        console.error("카메라 장치 탐색 실패:", err);
+        statusInfo.textContent = "카메라 권한 거부됨 또는 탐색 불가";
       }
     }
 
-    // 지정한 deviceId로 스트림 연결
+    // 선택된 카메라 스트림 시작 및 세부 제어 기능 획득
     async function startCamera(deviceId) {
       if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
@@ -244,11 +274,11 @@
       try {
         currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = currentStream;
-        
+
         const track = currentStream.getVideoTracks()[0];
         trackCapabilities = track.getCapabilities ? track.getCapabilities() : {};
 
-        // 1. Zoom 제어
+        // 1. Zoom(확대) 제어 설정
         if (trackCapabilities.zoom) {
           zoomRange.min = trackCapabilities.zoom.min;
           zoomRange.max = trackCapabilities.zoom.max;
@@ -258,10 +288,10 @@
           applyZoom(targetZoom);
         } else {
           zoomRange.value = 1;
-          zoomVal.textContent = "1.0x";
+          zoomVal.textContent = "1.0x (디지털)";
         }
 
-        // 2. 초점 모드 제어
+        // 2. 초점 모드 (자동/수동) 제어 설정
         if (trackCapabilities.focusMode) {
           applyFocusMode(settings.focusMode);
         } else {
@@ -277,11 +307,12 @@
         }
 
       } catch (err) {
-        console.error("카메라 접근 실패:", err);
+        console.error("카메라 실행 실패:", err);
+        statusInfo.textContent = "선택한 카메라를 열 수 없습니다.";
       }
     }
 
-    // Zoom 적용
+    // 배율 조절
     function applyZoom(value) {
       if (!currentStream) return;
       const track = currentStream.getVideoTracks()[0];
@@ -292,11 +323,13 @@
             settings.zoom = value;
             saveSettings();
           })
-          .catch(err => console.warn("Zoom 비지원:", err));
+          .catch(err => console.warn("Zoom 설정 비지원:", err));
+      } else {
+        zoomVal.textContent = `${parseFloat(value).toFixed(1)}x`;
       }
     }
 
-    // 초점 모드 전환
+    // 초점 모드 변환 (Continuous/Manual)
     function applyFocusMode(mode) {
       if (!currentStream) return;
       const track = currentStream.getVideoTracks()[0];
@@ -311,8 +344,10 @@
           focusRange.min = trackCapabilities.focusDistance.min;
           focusRange.max = trackCapabilities.focusDistance.max;
           focusRange.step = trackCapabilities.focusDistance.step || 0.01;
-          focusRange.value = settings.focusDistance;
-          constraints.advanced[0].focusDistance = parseFloat(settings.focusDistance);
+          
+          // 접사의 경우 초점 거리를 최소 근접(가장 가까운 거리)으로 설정
+          focusRange.value = settings.focusDistance || trackCapabilities.focusDistance.min;
+          constraints.advanced[0].focusDistance = parseFloat(focusRange.value);
         }
         
         focusDistanceRow.style.display = 'flex';
@@ -330,10 +365,10 @@
           settings.focusMode = mode;
           saveSettings();
         })
-        .catch(err => console.warn("Focus constraints 적용 실패:", err));
+        .catch(err => console.warn("Focus 모드 변환 불가:", err));
     }
 
-    // 수동 초점 거리 조절
+    // 수동 초점거리 슬라이더 (근접 촬영용)
     function applyFocusDistance(value) {
       if (!currentStream) return;
       const track = currentStream.getVideoTracks()[0];
@@ -347,7 +382,7 @@
       }
     }
 
-    // 플래시(Torch) 켜기/끄기 적용
+    // 플래시 켜기/끄기
     function applyTorch(enable) {
       if (!currentStream) return;
       const track = currentStream.getVideoTracks()[0];
@@ -362,14 +397,14 @@
             }
             saveSettings();
           })
-          .catch(err => console.warn("Torch 제어 실패:", err));
+          .catch(err => console.warn("Torch 제어 불가:", err));
       }
     }
 
     // 사진 저장
     function capturePhoto() {
       if (!video.videoWidth) return;
-      
+
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
@@ -389,11 +424,18 @@
       link.click();
     }
 
-    // 이벤트 리스너
+    // 이벤트 등록
     cameraSelect.addEventListener('change', (e) => {
       settings.deviceId = e.target.value;
       saveSettings();
       startCamera(settings.deviceId);
+    });
+
+    btnScanCameras.addEventListener('click', async () => {
+      await scanAndPopulateCameras();
+      if (cameraSelect.value) {
+        startCamera(cameraSelect.value);
+      }
     });
 
     zoomRange.addEventListener('input', (e) => applyZoom(e.target.value));
@@ -404,9 +446,9 @@
     btnTorch.addEventListener('click', () => applyTorch(!settings.torch));
     btnCapture.addEventListener('click', capturePhoto);
 
-    // 초기화
+    // 초기 실행
     async function init() {
-      await initCameraDevices();
+      await scanAndPopulateCameras();
       if (settings.deviceId) {
         await startCamera(settings.deviceId);
       }
