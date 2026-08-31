@@ -2,158 +2,325 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>접사 지원 돋보기 앱</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>스마트 돋보기 앱</title>
   <style>
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
     }
     body {
       background-color: #000;
       color: #fff;
-      font-family: system-ui, -apple-system, sans-serif;
-      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       height: 100vh;
+      height: 100dvh; /* dynamic viewport height */
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
-    .video-container {
+
+    /* 상단 헤더 바 */
+    .top-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 10;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0));
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .camera-select-wrapper {
       flex: 1;
       position: relative;
+    }
+    select {
+      width: 100%;
+      background: rgba(30, 30, 30, 0.75);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 8px 14px;
+      font-size: 13px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      appearance: none;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .icon-btn {
+      background: rgba(30, 30, 30, 0.75);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 14px;
+      backdrop-filter: blur(10px);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .icon-btn:active {
+      background: rgba(60, 60, 60, 0.9);
+    }
+
+    /* 메인 비디오 영역 */
+    .video-container {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      height: 100%;
       background: #000;
       overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     video {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      transform-origin: center center;
     }
-    .controls {
-      background: rgba(20, 20, 20, 0.95);
-      padding: 16px;
+
+    /* 배율 뱃지 표시 */
+    .zoom-badge {
+      position: absolute;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffcc00;
+      font-weight: bold;
+      font-size: 15px;
+      padding: 4px 14px;
+      border-radius: 14px;
+      backdrop-filter: blur(8px);
+      z-index: 5;
+      pointer-events: none;
+      transition: all 0.2s;
+    }
+
+    /* 하단 컨트롤 영역 전체 */
+    .bottom-controls {
+      background: linear-gradient(to top, rgba(0,0,0,0.95) 80%, rgba(0,0,0,0));
+      padding: 10px 16px env(safe-area-inset-bottom, 16px) 16px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      border-top-left-radius: 16px;
-      border-top-right-radius: 16px;
+      gap: 12px;
+      z-index: 10;
+      flex-shrink: 0;
     }
-    .row {
+
+    /* 컨트롤 슬라이더 파트 */
+    .slider-group {
       display: flex;
-      align-items: center;
+      flex-direction: column;
       gap: 8px;
     }
-    label {
-      font-size: 13px;
-      min-width: 75px;
-      color: #ccc;
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
-    select, input[type="range"], button {
-      font-size: 13px;
-      padding: 8px 10px;
-      border-radius: 8px;
-      border: 1px solid #444;
-      background: #222;
-      color: #fff;
+    .slider-label {
+      font-size: 12px;
+      color: #bbb;
+      min-width: 58px;
+      font-weight: 500;
     }
-    select {
+    .slider-container {
       flex: 1;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      overflow: hidden;
+      display: flex;
+      align-items: center;
+      position: relative;
     }
     input[type="range"] {
-      flex: 1;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.2);
+      outline: none;
       accent-color: #0a84ff;
     }
-    .btn-group {
+
+    /* 배율 프리셋 퀵 버튼 */
+    .quick-zoom-bar {
       display: flex;
+      justify-content: space-between;
       gap: 6px;
-      width: 100%;
     }
-    .btn {
+    .preset-btn {
       flex: 1;
-      padding: 10px;
-      font-weight: bold;
-      text-align: center;
-      background: #333;
-      border: none;
+      background: rgba(40, 40, 40, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #ccc;
+      padding: 6px 0;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
       cursor: pointer;
-      border-radius: 8px;
-    }
-    .btn-active {
-      background: #0a84ff;
-    }
-    .btn-flash-active {
-      background: #ffcc00;
-      color: #000;
-    }
-    .btn-reload {
-      background: #444;
-      padding: 8px 10px;
-      white-space: nowrap;
-    }
-    .btn-capture {
-      background: #34c759;
-      color: #fff;
-      font-size: 15px;
-      padding: 12px;
-    }
-    .status-info {
-      font-size: 11px;
-      color: #888;
       text-align: center;
     }
-    canvas {
-      display: none;
+    .preset-btn.active {
+      background: #0a84ff;
+      color: #fff;
+      border-color: #0a84ff;
     }
+
+    /* 하단 액션 버튼 바 (촬영/모드/플래시) */
+    .action-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding-top: 4px;
+      padding-bottom: 6px;
+    }
+    
+    .sub-btn {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: rgba(40, 40, 40, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      gap: 2px;
+      cursor: pointer;
+    }
+    .sub-btn .icon {
+      font-size: 16px;
+    }
+    .sub-btn.active {
+      background: rgba(10, 132, 255, 0.3);
+      border-color: #0a84ff;
+      color: #64d2ff;
+    }
+    .sub-btn.flash-on {
+      background: rgba(255, 204, 0, 0.3);
+      border-color: #ffcc00;
+      color: #ffcc00;
+    }
+
+    /* 메인 촬영 버튼 (샤터 버튼 디자인) */
+    .shutter-btn-outer {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      padding: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: transparent;
+      flex-shrink: 0;
+    }
+    .shutter-btn-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform 0.1s, background-color 0.1s;
+    }
+    .shutter-btn-outer:active .shutter-btn-inner {
+      transform: scale(0.9);
+      background: #e0e0e0;
+    }
+
+    .status-text {
+      font-size: 11px;
+      color: #666;
+      text-align: center;
+      margin-top: -4px;
+    }
+
+    canvas { display: none; }
   </style>
 </head>
 <body>
 
-  <div class="video-container">
-    <video id="webcam" autoplay playsinline></video>
+  <!-- 상단 오버레이 헤더 -->
+  <div class="top-bar">
+    <div class="camera-select-wrapper">
+      <select id="cameraSelect"></select>
+    </div>
+    <button id="btnScanCameras" class="icon-btn" title="카메라 재검색">🔄</button>
   </div>
 
-  <div class="controls">
-    <!-- 카메라 검색 및 선택 -->
-    <div class="row">
-      <label for="cameraSelect">카메라 선택</label>
-      <select id="cameraSelect"></select>
-      <button id="btnScanCameras" class="btn btn-reload" title="카메라 전체 다시 탐색">🔄 검색</button>
+  <!-- 비디오 화면 영역 -->
+  <div class="video-container">
+    <video id="webcam" autoplay playsinline></video>
+    <div id="zoomBadge" class="zoom-badge">1.0x</div>
+  </div>
+
+  <!-- 하단 컨트롤 영역 -->
+  <div class="bottom-controls">
+    
+    <!-- 퀵 배율 버튼 (1x ~ 20x) -->
+    <div class="quick-zoom-bar">
+      <button class="preset-btn active" data-zoom="1">1x</button>
+      <button class="preset-btn" data-zoom="2">2x</button>
+      <button class="preset-btn" data-zoom="5">5x</button>
+      <button class="preset-btn" data-zoom="10">10x</button>
+      <button class="preset-btn" data-zoom="15">15x</button>
+      <button class="preset-btn" data-zoom="20">20x</button>
     </div>
 
-    <!-- 확대 / 축소 -->
-    <div class="row">
-      <label for="zoomRange">확대 배율 <span id="zoomVal">1.0x</span></label>
-      <input type="range" id="zoomRange" min="1" max="5" step="0.1" value="1">
-    </div>
-
-    <!-- 초점 거리 (수동 초점용 - 근접 접사 조절) -->
-    <div class="row" id="focusDistanceRow" style="display: none;">
-      <label for="focusRange">접사거리(MF)</label>
-      <input type="range" id="focusRange" min="0" max="1" step="0.01" value="0.5">
-    </div>
-
-    <!-- 기능 버튼 그룹 -->
-    <div class="row">
-      <div class="btn-group">
-        <button id="btnFocusAuto" class="btn btn-active">자동초점</button>
-        <button id="btnFocusManual" class="btn">수동(접사)</button>
-        <button id="btnTorch" class="btn">💡 플래시</button>
+    <!-- 연속 배율 조절 슬라이더 ( 최대 20배 ) -->
+    <div class="slider-group">
+      <div class="slider-row">
+        <span class="slider-label">배율 (20x)</span>
+        <div class="slider-container">
+          <input type="range" id="zoomRange" min="1" max="20" step="0.1" value="1">
+        </div>
+      </div>
+      
+      <!-- 수동 초점 거리 슬라이더 -->
+      <div class="slider-row" id="focusDistanceRow" style="display: none;">
+        <span class="slider-label">초점 거리</span>
+        <div class="slider-container">
+          <input type="range" id="focusRange" min="0" max="1" step="0.01" value="0.5">
+        </div>
       </div>
     </div>
 
-    <!-- 사진 저장 버튼 -->
-    <div class="row">
-      <button id="btnCapture" class="btn btn-capture">📷 사진 촬영 및 저장</button>
+    <!-- 하단 메인 액션 바 (촬영 버튼 중심 배치) -->
+    <div class="action-bar">
+      <!-- 초점 모드 전환 버튼 -->
+      <button id="btnFocusToggle" class="sub-btn">
+        <span class="icon">🎯</span>
+        <span id="focusModeText">자동초점</span>
+      </button>
+
+      <!-- 셔터 (촬영 및 저장) 버튼 -->
+      <div id="btnCapture" class="shutter-btn-outer" role="button" aria-label="사진 촬영">
+        <div class="shutter-btn-inner"></div>
+      </div>
+
+      <!-- 플래시 버튼 -->
+      <button id="btnTorch" class="sub-btn" style="display: none;">
+        <span class="icon">💡</span>
+        <span>플래시</span>
+      </button>
     </div>
 
-    <div id="statusInfo" class="status-info">감지된 카메라 수 검색 중...</div>
+    <div id="statusInfo" class="status-text">카메라 초기화 중...</div>
   </div>
 
   <canvas id="canvas"></canvas>
@@ -163,37 +330,38 @@
     const cameraSelect = document.getElementById('cameraSelect');
     const btnScanCameras = document.getElementById('btnScanCameras');
     const zoomRange = document.getElementById('zoomRange');
-    const zoomVal = document.getElementById('zoomVal');
+    const zoomBadge = document.getElementById('zoomBadge');
     const focusRange = document.getElementById('focusRange');
     const focusDistanceRow = document.getElementById('focusDistanceRow');
-    const btnFocusAuto = document.getElementById('btnFocusAuto');
-    const btnFocusManual = document.getElementById('btnFocusManual');
+    const btnFocusToggle = document.getElementById('btnFocusToggle');
+    const focusModeText = document.getElementById('focusModeText');
     const btnTorch = document.getElementById('btnTorch');
     const btnCapture = document.getElementById('btnCapture');
     const statusInfo = document.getElementById('statusInfo');
+    const presetBtns = document.querySelectorAll('.preset-btn');
     const canvas = document.getElementById('canvas');
 
     let currentStream = null;
     let trackCapabilities = null;
+    let currentZoom = 1;
 
-    // 저장된 설정 로드
-    const settings = JSON.parse(localStorage.getItem('magnifier_settings')) || {
+    // LocalStorage 설정 관리
+    const settings = JSON.parse(localStorage.getItem('magnifier_settings_v2')) || {
       deviceId: '',
       zoom: 1,
       focusMode: 'continuous',
-      focusDistance: 0,
+      focusDistance: 0.5,
       torch: false
     };
 
     function saveSettings() {
-      localStorage.setItem('magnifier_settings', JSON.stringify(settings));
+      localStorage.setItem('magnifier_settings_v2', JSON.stringify(settings));
     }
 
-    // 스마트폰 내 모든 카메라 드라이버 탐색
+    // 스마트폰 카메라 디바이스 수집
     async function scanAndPopulateCameras() {
-      statusInfo.textContent = "카메라 장치를 탐색 중입니다...";
+      statusInfo.textContent = "카메라 장치 탐색 중...";
       try {
-        // 카메라 목록 라벨 획득을 위해 먼저 임시 권한 받기
         const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
         tempStream.getTracks().forEach(track => track.stop());
 
@@ -207,17 +375,14 @@
           return;
         }
 
-        let selectedIndex = 0;
         videoDevices.forEach((device, index) => {
           const option = document.createElement('option');
           option.value = device.deviceId;
-
           let label = device.label || `카메라 ${index + 1}`;
           const lower = label.toLowerCase();
 
-          // 접사(Macro) 키워드가 들어있는 경우 강조
-          if (lower.includes('macro') || lower.includes('접사') || lower.includes('close-up') || lower.includes('ultra wide')) {
-            label = `🔍 [접사/근접] ${label}`;
+          if (lower.includes('macro') || lower.includes('접사') || lower.includes('close-up')) {
+            label = `🔍 [접사] ${label}`;
           } else if (lower.includes('back') || lower.includes('rear') || lower.includes('environment')) {
             label = `📷 [후면] ${label}`;
           } else if (lower.includes('front') || lower.includes('user')) {
@@ -225,39 +390,33 @@
           }
 
           option.text = label;
-
           if (device.deviceId === settings.deviceId) {
             option.selected = true;
-            selectedIndex = index;
           }
           cameraSelect.appendChild(option);
         });
 
-        // 설정된 디바이스가 없으면 후면 카메라 우선 선택
         if (!settings.deviceId) {
           const backIndex = videoDevices.findIndex(d => 
             d.label.toLowerCase().includes('back') || 
             d.label.toLowerCase().includes('environment') || 
             d.label.toLowerCase().includes('0')
           );
-          if (backIndex !== -1) {
-            cameraSelect.selectedIndex = backIndex;
-            settings.deviceId = videoDevices[backIndex].deviceId;
-          } else {
-            settings.deviceId = videoDevices[0].deviceId;
-          }
+          const targetIndex = backIndex !== -1 ? backIndex : 0;
+          cameraSelect.selectedIndex = targetIndex;
+          settings.deviceId = videoDevices[targetIndex].deviceId;
           saveSettings();
         }
 
-        statusInfo.textContent = `총 ${videoDevices.length}개의 카메라 장치가 연결됨`;
+        statusInfo.textContent = `연결된 카메라: ${videoDevices.length}개`;
 
       } catch (err) {
-        console.error("카메라 장치 탐색 실패:", err);
-        statusInfo.textContent = "카메라 권한 거부됨 또는 탐색 불가";
+        console.error("카메라 탐색 실패:", err);
+        statusInfo.textContent = "카메라 권한 필요";
       }
     }
 
-    // 선택된 카메라 스트림 시작 및 세부 제어 기능 획득
+    // 선택된 카메라 스트림 시작
     async function startCamera(deviceId) {
       if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
@@ -278,58 +437,77 @@
         const track = currentStream.getVideoTracks()[0];
         trackCapabilities = track.getCapabilities ? track.getCapabilities() : {};
 
-        // 1. Zoom(확대) 제어 설정
-        if (trackCapabilities.zoom) {
-          zoomRange.min = trackCapabilities.zoom.min;
-          zoomRange.max = trackCapabilities.zoom.max;
-          zoomRange.step = trackCapabilities.zoom.step || 0.1;
-          const targetZoom = Math.min(Math.max(settings.zoom, trackCapabilities.zoom.min), trackCapabilities.zoom.max);
-          zoomRange.value = targetZoom;
-          applyZoom(targetZoom);
-        } else {
-          zoomRange.value = 1;
-          zoomVal.textContent = "1.0x (디지털)";
-        }
+        // Zoom 복원 & 적용
+        const initZoom = Math.min(Math.max(settings.zoom, 1), 20);
+        setZoom(initZoom);
 
-        // 2. 초점 모드 (자동/수동) 제어 설정
+        // 초점 모드
         if (trackCapabilities.focusMode) {
           applyFocusMode(settings.focusMode);
         } else {
           focusDistanceRow.style.display = 'none';
         }
 
-        // 3. 플래시(Torch) 지원 제어
+        // 플래시
         if (trackCapabilities.torch) {
-          btnTorch.style.display = 'block';
+          btnTorch.style.display = 'flex';
           applyTorch(settings.torch);
         } else {
           btnTorch.style.display = 'none';
         }
 
       } catch (err) {
-        console.error("카메라 실행 실패:", err);
-        statusInfo.textContent = "선택한 카메라를 열 수 없습니다.";
+        console.error("카메라 실행 오류:", err);
+        statusInfo.textContent = "카메라를 열 수 없습니다.";
       }
     }
 
-    // 배율 조절
-    function applyZoom(value) {
+    // 통합 배율 조절 (하드웨어 Zoom + CSS 픽셀 확대 하이브리드 지원)
+    function setZoom(val) {
+      const zoomVal = parseFloat(val);
+      currentZoom = zoomVal;
+      zoomRange.value = zoomVal;
+      zoomBadge.textContent = `${zoomVal.toFixed(1)}x`;
+
+      // 퀵 버튼 UI 업데이트
+      presetBtns.forEach(btn => {
+        const pZoom = parseFloat(btn.dataset.zoom);
+        if (Math.abs(pZoom - zoomVal) < 0.2) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
       if (!currentStream) return;
       const track = currentStream.getVideoTracks()[0];
+
+      // 1. 하드웨어 지원 범위 내 Zoom 적용
       if (trackCapabilities && trackCapabilities.zoom) {
-        track.applyConstraints({ advanced: [{ zoom: parseFloat(value) }] })
-          .then(() => {
-            zoomVal.textContent = `${parseFloat(value).toFixed(1)}x`;
-            settings.zoom = value;
-            saveSettings();
-          })
-          .catch(err => console.warn("Zoom 설정 비지원:", err));
+        const hwMax = trackCapabilities.zoom.max;
+        const hwMin = trackCapabilities.zoom.min;
+        const hwZoom = Math.min(Math.max(zoomVal, hwMin), hwMax);
+
+        track.applyConstraints({ advanced: [{ zoom: hwZoom }] })
+          .catch(err => console.warn("하드웨어 Zoom 제어 실패:", err));
+
+        // 하드웨어 max 초과 시 디지털 CSS 줌 결합
+        if (zoomVal > hwMax) {
+          const cssScale = zoomVal / hwMax;
+          video.style.transform = `scale(${cssScale})`;
+        } else {
+          video.style.transform = `scale(1)`;
+        }
       } else {
-        zoomVal.textContent = `${parseFloat(value).toFixed(1)}x`;
+        // 하드웨어 미지원 시 순수 CSS 디지털 줌 활용
+        video.style.transform = `scale(${zoomVal})`;
       }
+
+      settings.zoom = zoomVal;
+      saveSettings();
     }
 
-    // 초점 모드 변환 (Continuous/Manual)
+    // 초점 모드 전환
     function applyFocusMode(mode) {
       if (!currentStream) return;
       const track = currentStream.getVideoTracks()[0];
@@ -344,20 +522,18 @@
           focusRange.min = trackCapabilities.focusDistance.min;
           focusRange.max = trackCapabilities.focusDistance.max;
           focusRange.step = trackCapabilities.focusDistance.step || 0.01;
-          
-          // 접사의 경우 초점 거리를 최소 근접(가장 가까운 거리)으로 설정
           focusRange.value = settings.focusDistance || trackCapabilities.focusDistance.min;
           constraints.advanced[0].focusDistance = parseFloat(focusRange.value);
         }
         
         focusDistanceRow.style.display = 'flex';
-        btnFocusManual.classList.add('btn-active');
-        btnFocusAuto.classList.remove('btn-active');
+        btnFocusToggle.classList.add('active');
+        focusModeText.textContent = "수동초점";
       } else {
         constraints.advanced.push({ focusMode: 'continuous' });
         focusDistanceRow.style.display = 'none';
-        btnFocusAuto.classList.add('btn-active');
-        btnFocusManual.classList.remove('btn-active');
+        btnFocusToggle.classList.remove('active');
+        focusModeText.textContent = "자동초점";
       }
 
       track.applyConstraints(constraints)
@@ -365,10 +541,10 @@
           settings.focusMode = mode;
           saveSettings();
         })
-        .catch(err => console.warn("Focus 모드 변환 불가:", err));
+        .catch(err => console.warn("Focus 모드 변경 실패:", err));
     }
 
-    // 수동 초점거리 슬라이더 (근접 촬영용)
+    // 수동 초점 거리 적용
     function applyFocusDistance(value) {
       if (!currentStream) return;
       const track = currentStream.getVideoTracks()[0];
@@ -382,7 +558,7 @@
       }
     }
 
-    // 플래시 켜기/끄기
+    // 플래시 제어
     function applyTorch(enable) {
       if (!currentStream) return;
       const track = currentStream.getVideoTracks()[0];
@@ -391,24 +567,43 @@
           .then(() => {
             settings.torch = enable;
             if (enable) {
-              btnTorch.classList.add('btn-flash-active');
+              btnTorch.classList.add('flash-on');
             } else {
-              btnTorch.classList.remove('btn-flash-active');
+              btnTorch.classList.remove('flash-on');
             }
             saveSettings();
           })
-          .catch(err => console.warn("Torch 제어 불가:", err));
+          .catch(err => console.warn("Torch 제어 실패:", err));
       }
     }
 
-    // 사진 저장
+    // 사진 촬영 및 다운로드 (디지털 줌 포함 캡처)
     function capturePhoto() {
       if (!video.videoWidth) return;
 
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // 디지털 CSS 배율이 적용되어 있는 경우 해당 부분 크롭 렌더링
+      let scale = 1;
+      if (trackCapabilities && trackCapabilities.zoom) {
+        if (currentZoom > trackCapabilities.zoom.max) {
+          scale = currentZoom / trackCapabilities.zoom.max;
+        }
+      } else {
+        scale = currentZoom;
+      }
+
+      if (scale > 1) {
+        const sw = canvas.width / scale;
+        const sh = canvas.height / scale;
+        const sx = (canvas.width - sw) / 2;
+        const sy = (canvas.height - sh) / 2;
+        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+      } else {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      }
 
       const link = document.createElement('a');
       const now = new Date();
@@ -419,12 +614,12 @@
         now.getMinutes().toString().padStart(2, '0') +
         now.getSeconds().toString().padStart(2, '0');
 
-      link.download = `magnifier_${timestamp}.jpg`;
+      link.download = `magnifier_${currentZoom.toFixed(1)}x_${timestamp}.jpg`;
       link.href = canvas.toDataURL('image/jpeg', 0.95);
       link.click();
     }
 
-    // 이벤트 등록
+    // 이벤트 리스너 설정
     cameraSelect.addEventListener('change', (e) => {
       settings.deviceId = e.target.value;
       saveSettings();
@@ -438,15 +633,25 @@
       }
     });
 
-    zoomRange.addEventListener('input', (e) => applyZoom(e.target.value));
+    zoomRange.addEventListener('input', (e) => setZoom(e.target.value));
+
+    presetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        setZoom(btn.dataset.zoom);
+      });
+    });
+
     focusRange.addEventListener('input', (e) => applyFocusDistance(e.target.value));
 
-    btnFocusAuto.addEventListener('click', () => applyFocusMode('continuous'));
-    btnFocusManual.addEventListener('click', () => applyFocusMode('manual'));
+    btnFocusToggle.addEventListener('click', () => {
+      const newMode = settings.focusMode === 'manual' ? 'continuous' : 'manual';
+      applyFocusMode(newMode);
+    });
+
     btnTorch.addEventListener('click', () => applyTorch(!settings.torch));
     btnCapture.addEventListener('click', capturePhoto);
 
-    // 초기 실행
+    // 앱 초기화
     async function init() {
       await scanAndPopulateCameras();
       if (settings.deviceId) {
