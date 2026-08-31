@@ -55,6 +55,7 @@
 
         .bg-red { background: #ef4444; color: white; }
         .bg-green { background: #10b981; color: white; }
+        .bg-yellow { background: #f59e0b; color: white; }
 
         /* 입력창 스타일 */
         .input-box {
@@ -78,7 +79,7 @@
 
         /* 카메라 영역 */
         .scanner-container {
-            height: 192px;
+            height: 220px;
             background: #000;
             border-radius: 8px;
             overflow: hidden;
@@ -94,7 +95,7 @@
 
         #reader video {
             object-fit: cover !important;
-            height: 192px !important;
+            height: 220px !important;
         }
 
         /* 버튼 그룹 */
@@ -192,7 +193,7 @@
     <!-- 상단 상태 바 -->
     <div class="status-bar">
         <span id="mode-badge" style="font-weight: bold; color: #38bdf8;">모드 감지 중...</span>
-        <span id="pc-id-area" style="display: none;">PC ID: <strong id="my-id" style="color:#f59e0b; font-size: 0.85rem;">----</strong></span>
+        <span id="pc-id-area" style="display: none;">PC ID: <strong id="my-id" style="color:#f59e0b; font-size: 0.85rem;">생성 중...</strong></span>
         <span id="conn-status" class="badge bg-red">대기</span>
     </div>
 
@@ -240,6 +241,17 @@
     let html5QrcodeScanner = null;
     let isScanning = false;
 
+    // WebRTC 연결을 위한 STUN 서버 설정 (접속 성공률 향상)
+    const peerConfig = {
+        config: {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' }
+            ]
+        }
+    };
+
     window.onload = function() {
         const saved = localStorage.getItem('barcodes');
         if (saved) {
@@ -267,7 +279,7 @@
 
     function initPeerPC() {
         const numId = Math.floor(1000 + Math.random() * 9000).toString();
-        peer = new Peer(numId);
+        peer = new Peer(numId, peerConfig);
 
         peer.on('open', function(id) {
             document.getElementById('my-id').innerText = id;
@@ -279,16 +291,23 @@
         });
 
         peer.on('error', function(err) {
+            console.error("PeerJS PC Error:", err);
             if (err.type === 'unavailable-id') {
                 initPeerPC();
             } else {
-                alert("연결 오류: " + err.type);
+                const status = document.getElementById('conn-status');
+                status.innerText = "오류";
+                status.className = "badge bg-red";
             }
         });
     }
 
     function initPeerMobile() {
-        peer = new Peer();
+        peer = new Peer(peerConfig);
+
+        peer.on('error', function(err) {
+            console.error("PeerJS Mobile Error:", err);
+        });
     }
 
     function promptConnect() {
@@ -298,7 +317,14 @@
             if (trimmed.length !== 4 || isNaN(trimmed)) {
                 return alert("4자리 숫자를 정확히 입력해 주세요.");
             }
-            conn = peer.connect(trimmed);
+
+            const status = document.getElementById('conn-status');
+            status.innerText = "연동 중";
+            status.className = "badge bg-yellow";
+
+            if (conn) conn.close();
+
+            conn = peer.connect(trimmed, { reliable: true });
             setupConnection();
         }
     }
@@ -309,6 +335,7 @@
             status.innerText = "연결됨";
             status.className = "badge bg-green";
 
+            // 모바일 연동 시 모바일 데이터 기준 전체 동기화
             if (isMobile) {
                 conn.send({ type: 'SYNC', list: barcodeList });
             }
@@ -333,6 +360,12 @@
         conn.on('close', function() {
             const status = document.getElementById('conn-status');
             status.innerText = "끊김";
+            status.className = "badge bg-red";
+        });
+
+        conn.on('error', function() {
+            const status = document.getElementById('conn-status');
+            status.innerText = "실패";
             status.className = "badge bg-red";
         });
     }
@@ -421,11 +454,10 @@
         }
     }
 
-    // 카메라 정지 및 재시작 안전 로직 추가
+    // 초점 및 해상도 최적화 카메라 스캐너 시작 함수
     async function startScanner() {
         if (html5QrcodeScanner) {
             try {
-                // 스캐너가 동작 중이면 완벽히 정지할 때까지 대기
                 await html5QrcodeScanner.clear();
             } catch(e) {
                 console.log("Scanner clear error: ", e);
@@ -433,17 +465,40 @@
             html5QrcodeScanner = null;
         }
 
-        // 스캐너 영역 HTML 요소 재정비
         const readerEl = document.getElementById('reader');
         if (readerEl) readerEl.innerHTML = '';
 
-        html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader",
-            { fps: 10, qrbox: { width: 180, height: 100 } },
-            false
-        );
+        // 해상도 고화질 고정 및 연속 초점 모드 설정
+        const scanConfig = {
+            fps: 15,
+            qrbox: { width: 240, height: 120 },
+            videoConstraints: {
+                facingMode: { exact: "environment" },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
+                focusMode: "continuous"
+            }
+        };
+
+        html5QrcodeScanner = new Html5QrcodeScanner("reader", scanConfig, false);
 
         html5QrcodeScanner.render(onScanSuccess, () => {});
+
+        // 비디오 트랙 직접 접근하여 연속 자동 초점 적용 시도
+        setTimeout(() => {
+            const videoElem = document.querySelector("#reader video");
+            if (videoElem && videoElem.srcObject) {
+                const track = videoElem.srcObject.getVideoTracks()[0];
+                if (track && track.getCapabilities) {
+                    const capabilities = track.getCapabilities();
+                    if (capabilities.focusMode && capabilities.focusMode.includes("continuous")) {
+                        track.applyConstraints({
+                            advanced: [{ focusMode: "continuous" }]
+                        }).catch(err => console.log("Focus mode error:", err));
+                    }
+                }
+            }
+        }, 1000);
     }
 
     function onScanSuccess(decodedText) {
