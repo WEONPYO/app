@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>내 북마크</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f3f5f7;color:#222;font-family:Arial,"Malgun Gothic",sans-serif}
+header{background:#fff;border-bottom:1px solid #ddd;padding:18px 15px;position:sticky;top:0;z-index:10}
+.container{max-width:1000px;margin:auto}
+h1{font-size:24px;margin:0 0 15px}
+.form{display:grid;grid-template-columns:1fr 2fr 90px;gap:8px}
+input{height:44px;border:1px solid #ccc;border-radius:8px;padding:0 12px;font-size:14px;outline:none}
+input:focus{border-color:#1976d2}
+button{border:0;border-radius:8px;cursor:pointer;font-size:14px}
+.add{background:#1976d2;color:white;font-weight:bold}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.tools button{height:38px;padding:0 14px;background:#eee}
+.save{background:#2e7d32!important;color:white}
+.load{background:#455a64!important;color:white}
+.remote{display:grid;grid-template-columns:1fr 140px;gap:8px;margin-top:10px}
+.remote button{background:#24292f;color:white}
+.status{font-size:13px;color:#666;margin-top:8px;min-height:18px}
+main{max-width:1000px;margin:20px auto;padding:0 12px}
+.count{font-size:13px;color:#666;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.card{background:white;border:1px solid #ddd;border-radius:12px;padding:15px;min-height:130px;display:flex;flex-direction:column;box-shadow:0 2px 6px #0000000d}
+.title{font-weight:bold;font-size:17px;margin-bottom:8px;word-break:break-word}
+.url{font-size:12px;color:#777;word-break:break-all;line-height:1.4;flex:1}
+.actions{display:flex;gap:7px;margin-top:12px}
+.actions button{height:36px;padding:0 12px}
+.open{background:#1976d2;color:white;flex:1}
+.edit{background:#eee}
+.del{background:#ffe7e7;color:#c62828}
+.empty{text-align:center;background:white;border:1px dashed #bbb;border-radius:12px;padding:45px;color:#888}
+@media(max-width:650px){
+.form{grid-template-columns:1fr}
+.add{height:44px}
+.remote{grid-template-columns:1fr}
+.remote button{height:44px}
+}
+</style>
+</head>
+<body>
+<header>
+<div class="container">
+<h1>🔖 내 북마크</h1>
+
+<div class="form">
+<input id="title" placeholder="제목 (예: 네이버)">
+<input id="url" placeholder="주소 (예: https://www.naver.com)">
+<button class="add" id="addBtn">＋ 추가</button>
+</div>
+
+<div class="tools">
+<button class="save" id="saveBtn">💾 JSON 저장</button>
+<button class="load" id="fileBtn">📂 JSON 불러오기</button>
+<button id="clearBtn">🗑 전체 삭제</button>
+<input id="fileInput" type="file" accept=".json,application/json" hidden>
+</div>
+
+<div class="remote">
+<input id="remoteUrl" value="https://weonpyo.github.io/app/bookmark.json">
+<button id="remoteBtn">🌐 온라인 불러오기</button>
+</div>
+<div class="status" id="status">페이지를 열면 온라인 북마크를 먼저 확인합니다.</div>
+</div>
+</header>
+
+<main>
+<div class="count" id="count"></div>
+<div id="list"></div>
+</main>
+
+<script>
+"use strict";
+
+const DEFAULT_JSON_URL="https://weonpyo.github.io/app/bookmark.json";
+const STORAGE_KEY="weonpyo_bookmarks_v5";
+let bookmarks=[];
+
+function status(text,error=false){
+  const e=document.getElementById("status");
+  e.textContent=text;
+  e.style.color=error?"#c62828":"#666";
+}
+
+function saveLocal(){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(bookmarks));}catch(e){}
+}
+
+function normalizeUrl(value){
+  let u=String(value||"").trim();
+  if(!u)return "";
+  if(!/^https?:\/\//i.test(u))u="https://"+u;
+  return u;
+}
+
+function validUrl(u){
+  try{
+    const x=new URL(u);
+    return x.protocol==="http:"||x.protocol==="https:";
+  }catch(e){return false}
+}
+
+function addBookmark(){
+  const title=document.getElementById("title").value.trim();
+  const url=normalizeUrl(document.getElementById("url").value);
+
+  if(!title){alert("제목을 입력해 주세요.");document.getElementById("title").focus();return}
+  if(!validUrl(url)){alert("올바른 웹 주소를 입력해 주세요.");document.getElementById("url").focus();return}
+
+  bookmarks.push({title:title,url:url});
+  saveLocal();
+  render();
+
+  document.getElementById("title").value="";
+  document.getElementById("url").value="";
+  document.getElementById("title").focus();
+  status("북마크가 추가되었습니다.");
+}
+
+function openBookmark(i){
+  if(!bookmarks[i])return;
+  window.open(bookmarks[i].url,"_blank");
+}
+
+function editBookmark(i){
+  const b=bookmarks[i];
+  if(!b)return;
+
+  const t=prompt("제목:",b.title);
+  if(t===null)return;
+  const u=prompt("주소:",b.url);
+  if(u===null)return;
+
+  const url=normalizeUrl(u);
+  if(!t.trim()||!validUrl(url)){
+    alert("제목과 올바른 주소를 입력해 주세요.");
+    return;
+  }
+
+  bookmarks[i]={title:t.trim(),url:url};
+  saveLocal();
+  render();
+}
+
+function deleteBookmark(i){
+  if(!bookmarks[i])return;
+  if(confirm('"'+bookmarks[i].title+'"을 삭제할까요?')){
+    bookmarks.splice(i,1);
+    saveLocal();
+    render();
+  }
+}
+
+function clearAll(){
+  if(!bookmarks.length)return;
+  if(confirm("모든 북마크를 삭제할까요?")){
+    bookmarks=[];
+    saveLocal();
+    render();
+  }
+}
+
+function render(){
+  const list=document.getElementById("list");
+  document.getElementById("count").textContent="저장된 북마크 "+bookmarks.length+"개";
+
+  if(!bookmarks.length){
+    list.innerHTML='<div class="empty">저장된 북마크가 없습니다.<br>위에서 제목과 주소를 입력해 추가하세요.</div>';
+    return;
+  }
+
+  list.innerHTML='<div class="grid">'+bookmarks.map((b,i)=>`
+    <div class="card">
+      <div class="title">${esc(b.title)}</div>
+      <div class="url">${esc(b.url)}</div>
+      <div class="actions">
+        <button class="open" onclick="openBookmark(${i})">페이지 열기</button>
+        <button class="edit" onclick="editBookmark(${i})">수정</button>
+        <button class="del" onclick="deleteBookmark(${i})">삭제</button>
+      </div>
+    </div>`).join("")+'</div>';
+}
+
+function esc(s){
+  return String(s).replace(/[&<>"']/g,c=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+}
+
+function extract(data){
+  const arr=Array.isArray(data)?data:
+            Array.isArray(data.bookmarks)?data.bookmarks:
+            Array.isArray(data.items)?data.items:null;
+  if(!arr)return [];
+
+  return arr.map(x=>{
+    if(!x)return null;
+    const title=x.title??x.name??"";
+    const url=normalizeUrl(x.url??x.address??x.href??"");
+    if(!String(title).trim()||!validUrl(url))return null;
+    return {title:String(title).trim(),url:url};
+  }).filter(Boolean);
+}
+
+function importBookmarks(data,mode){
+  const incoming=extract(data);
+  if(!incoming.length){
+    alert("JSON에서 유효한 북마크를 찾지 못했습니다.");
+    return false;
+  }
+
+  if(mode==="replace")bookmarks=incoming;
+  else bookmarks=bookmarks.concat(incoming);
+
+  saveLocal();
+  render();
+  return true;
+}
+
+function saveJson(){
+  const data={
+    type:"My Bookmark",
+    version:1,
+    bookmarks:bookmarks
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  const objectUrl=URL.createObjectURL(blob);
+  a.href=objectUrl;
+  a.download="bookmark.json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(objectUrl),1000);
+  status("bookmark.json 파일을 저장했습니다.");
+}
+
+function loadFile(){
+  document.getElementById("fileInput").click();
+}
+
+function readFile(event){
+  const file=event.target.files[0];
+  if(!file)return;
+
+  const reader=new FileReader();
+  reader.onload=function(){
+    try{
+      const data=JSON.parse(reader.result);
+      const incoming=extract(data);
+      if(!incoming.length){alert("유효한 북마크가 없습니다.");return}
+
+      let replace=false;
+      if(bookmarks.length){
+        replace=confirm(
+          incoming.length+"개의 북마크를 찾았습니다.\n\n"+
+          "확인 = 기존 목록을 교체\n취소 = 기존 목록에 추가"
+        );
+      }
+      importBookmarks(data,replace?"replace":"append");
+      status(incoming.length+"개의 북마크를 불러왔습니다.");
+    }catch(e){
+      alert("JSON 파일 형식이 올바르지 않습니다.");
+    }
+    event.target.value="";
+  };
+  reader.readAsText(file,"utf-8");
+}
+
+async function loadRemote(){
+  const url=document.getElementById("remoteUrl").value.trim();
+  if(!url){alert("JSON 주소를 입력해 주세요.");return}
+
+  status("온라인 JSON을 확인하는 중입니다...");
+
+  try{
+    const response=await fetch(url,{cache:"no-store"});
+    if(!response.ok)throw new Error("HTTP "+response.status);
+    const data=await response.json();
+    const incoming=extract(data);
+
+    if(!incoming.length)throw new Error("북마크 데이터 없음");
+
+    let replace=true;
+    if(bookmarks.length){
+      replace=confirm(
+        "온라인 JSON에서 "+incoming.length+"개의 북마크를 찾았습니다.\n\n"+
+        "확인 = 온라인 목록으로 교체\n취소 = 현재 목록 뒤에 추가"
+      );
+    }
+
+    importBookmarks(data,replace?"replace":"append");
+    status("온라인 JSON에서 "+incoming.length+"개를 불러왔습니다.");
+  }catch(e){
+    // 중요: 온라인 로딩 실패는 추가 기능에 영향을 주지 않습니다.
+    status("온라인 JSON을 불러오지 못했습니다. 현재 저장된 북마크를 사용합니다.",true);
+    console.error(e);
+  }
+}
+
+document.getElementById("addBtn").addEventListener("click",addBookmark);
+document.getElementById("saveBtn").addEventListener("click",saveJson);
+document.getElementById("fileBtn").addEventListener("click",loadFile);
+document.getElementById("fileInput").addEventListener("change",readFile);
+document.getElementById("clearBtn").addEventListener("click",clearAll);
+document.getElementById("remoteBtn").addEventListener("click",loadRemote);
+
+document.getElementById("title").addEventListener("keydown",e=>{
+  if(e.key==="Enter")document.getElementById("url").focus();
+});
+document.getElementById("url").addEventListener("keydown",e=>{
+  if(e.key==="Enter")addBookmark();
+});
+
+// 먼저 브라우저에 저장된 데이터 표시
+try{
+  const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
+  if(Array.isArray(saved))bookmarks=saved;
+}catch(e){bookmarks=[]}
+
+render();
+
+// 온라인 JSON 오류와 관계없이 페이지 자체는 먼저 정상적으로 표시됨.
+// 자동 불러오기는 별도로 실행.
+setTimeout(loadRemote,300);
+</script>
+</body>
+</html>
