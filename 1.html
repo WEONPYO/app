@@ -53,22 +53,15 @@
     button:hover {
       background-color: #3f449e;
     }
-
-    /* 알림 메시지 스타일 */
     .msg {
       font-size: 14px;
       margin-top: 12px;
       min-height: 20px;
       font-weight: bold;
     }
-    .msg.error {
-      color: #e74c3c;
-    }
-    .msg.success {
-      color: #2ecc71;
-    }
+    .msg.error { color: #e74c3c; }
+    .msg.success { color: #2ecc71; }
 
-    /* 틀렸을 때 흔들리는 애니메이션 */
     .shake {
       animation: shake 0.4s ease-in-out;
     }
@@ -78,10 +71,7 @@
       40%, 80% { transform: translateX(10px); }
     }
 
-    /* 암호 통과 후 표시될 영역 */
-    #success-content {
-      display: none;
-    }
+    #success-content { display: none; }
   </style>
 </head>
 <body>
@@ -95,7 +85,7 @@
     <div id="statusMsg" class="msg"></div>
   </div>
 
-  <!-- 2. 인증 성공 시 나타날 컨텐츠 영역 -->
+  <!-- 2. 인증 성공 시 나타날 콘텐츠 영역 -->
   <div id="success-content" class="container">
     <h2 style="color: #2ecc71;">🔓 접근 승인됨</h2>
     <p>비밀번호가 확인되었습니다.<br>다음 단계 내용이 여기에 표시됩니다.</p>
@@ -103,81 +93,19 @@
   </div>
 
   <script>
-    // '1824'의 SHA-256 해시값 (소스코드에 1824 노출 없음)
+    // '1824'의 SHA-256 해시값
     const TARGET_HASH = "7a268e3790ecdc4119e0b8e66e7465f299863863433e2bfae498687b1c31405e";
 
-    // 동기식 순수 JS SHA-256 함수 (로컬 file:// 환경에서도 100% 작동)
-    function sha256(ascii) {
-      function rightRotate(value, amount) {
-        return (value>>>amount) | (value<<(32-amount));
-      }
-      var mathPow = Math.pow;
-      var maxWord = mathPow(2, 32);
-      var i, j;
-      var result = '';
-      var words = [];
-      var asciiBitLength = ascii.length * 8;
-      var hash = sha256.h = sha256.h || [];
-      var k = sha256.k = sha256.k || [];
-      var primeCounter = k.length;
-      var isComposite = {};
-      for (var candidate = 2; primeCounter < 64; candidate++) {
-        if (!isComposite[candidate]) {
-          for (i = 0; i < 300; i += candidate) {
-            isComposite[i] = true;
-          }
-          hash[primeCounter] = (mathPow(candidate, .5) * maxWord) | 0;
-          k[primeCounter++] = (mathPow(candidate, 1/3) * maxWord) | 0;
-        }
-      }
-      ascii += '\x80';
-      while (ascii.length % 64 - 56) ascii += '\x00';
-      for (i = 0; i < ascii.length; i++) {
-        j = ascii.charCodeAt(i);
-        if (j >> 8) return;
-        words[i >> 2] |= j << ((3 - i % 4) * 8);
-      }
-      words[words.length] = ((asciiBitLength / maxWord) | 0);
-      words[words.length] = (asciiBitLength | 0);
-      for (j = 0; j < words.length;) {
-        var w = words.slice(j, j += 16);
-        var oldHash = hash;
-        hash = hash.slice(0, 8);
-        for (i = 0; i < 64; i++) {
-          var w15 = w[i - 15], w2 = w[i - 2];
-          var a = hash[0], e = hash[4];
-          var temp1 = hash[7]
-            + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25))
-            + ((e & hash[5]) ^ ((~e) & hash[6]))
-            + k[i]
-            + (w[i] = (i < 16) ? w[i] : (
-                w[i - 16]
-                + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3))
-                + w[i - 7]
-                + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))
-              ) | 0
-            );
-          var temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22))
-            + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
-
-          hash = [(temp1 + temp2) | 0].concat(hash);
-          hash[4] = (hash[4] + temp1) | 0;
-        }
-        for (i = 0; i < 8; i++) {
-          hash[i] = (hash[i] + oldHash[i]) | 0;
-        }
-      }
-      for (i = 0; i < 8; i++) {
-        for (j = 3; j >= 0; j--) {
-          var b = (hash[i] >> (j * 8)) & 255;
-          result += (b < 16 ? 0 : '') + b.toString(16);
-        }
-      }
-      return result;
+    // 표준 Web Crypto API 기반 SHA-256 변환 함수
+    async function getSha256(str) {
+      const buffer = new TextEncoder().encode(str);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
     // 비밀번호 검증 처리 함수
-    function checkPassword() {
+    async function checkPassword() {
       const inputEl = document.getElementById('passwordInput');
       const cardEl = document.getElementById('login-card');
       const msgEl = document.getElementById('statusMsg');
@@ -189,8 +117,8 @@
         return;
       }
 
-      // 입력한 비밀번호 해시 계산
-      const inputHash = sha256(inputVal);
+      // 입력된 비밀번호 해시 계산
+      const inputHash = await getSha256(inputVal);
 
       if (inputHash === TARGET_HASH) {
         // [맞았을 때]
@@ -198,7 +126,6 @@
         msgEl.innerText = "비밀번호가 맞습니다! 이동 중...";
         inputEl.style.borderColor = "#2ecc71";
 
-        // 0.6초 후 다음 화면으로 전환
         setTimeout(() => {
           cardEl.style.display = 'none';
           document.getElementById('success-content').style.display = 'block';
@@ -210,12 +137,10 @@
         msgEl.innerText = "❌ 비밀번호가 올바르지 않습니다.";
         inputEl.style.borderColor = "#e74c3c";
         
-        // 카드 상자 좌우로 흔들리는 애니메이션 효과
         cardEl.classList.remove('shake');
-        void cardEl.offsetWidth; // 애니메이션 리셋 트릭
+        void cardEl.offsetWidth;
         cardEl.classList.add('shake');
 
-        // 입력창 비우고 포커스
         inputEl.value = '';
         inputEl.focus();
       }
