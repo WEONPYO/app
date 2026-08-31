@@ -4,11 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>실시간 바코드 스캐너</title>
-    <!-- 고성능 바코드 엔진 -->
+    <!-- 바코드 스캔 엔진 -->
     <script src="https://unpkg.com/html5-qrcode"></script>
-    <!-- WebRTC 통신 및 QR 코드 생성기 -->
+    <!-- WebRTC 실시간 통신 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.4.7/peerjs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -33,25 +32,25 @@
             flex-direction: column;
             padding: 8px;
             gap: 6px;
-            position: relative;
         }
 
-        /* 상단 상태바 */
+        /* 상단 상태 바 */
         .status-bar {
             background: #1e293b;
-            padding: 8px 10px;
+            padding: 6px 10px;
             border-radius: 6px;
             font-size: 0.75rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             color: #94a3b8;
+            flex-shrink: 0;
         }
 
         .badge {
             padding: 2px 8px;
             border-radius: 10px;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: bold;
         }
 
@@ -59,17 +58,14 @@
         .bg-green { background: #10b981; color: white; }
         .bg-yellow { background: #f59e0b; color: white; }
 
-        /* 모바일 스캐너 영역 */
+        /* 카메라 스캐너 영역 */
         .scanner-container {
-            height: 220px;
+            height: 200px;
             background: #000;
             border-radius: 8px;
             overflow: hidden;
             position: relative;
             flex-shrink: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
         }
 
         #reader {
@@ -83,28 +79,27 @@
             object-fit: cover !important;
         }
 
-        /* PC 연동안내 영역 */
-        .pc-connect-box {
-            background: #1e293b;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
+        /* Zoom 컨트롤 바 */
+        .zoom-box {
             display: flex;
-            flex-direction: column;
             align-items: center;
             gap: 8px;
-        }
-
-        #qrcode {
-            background: #fff;
-            padding: 8px;
+            background: #1e293b;
+            padding: 4px 8px;
             border-radius: 6px;
+            font-size: 0.75rem;
+            color: #38bdf8;
         }
 
+        .zoom-box input {
+            flex: 1;
+            accent-color: #0284c7;
+        }
+
+        /* 수동 입력창 */
         .input-box {
             display: flex;
             gap: 4px;
-            width: 100%;
             background: #1e293b;
             padding: 6px;
             border-radius: 6px;
@@ -121,10 +116,11 @@
             font-size: 0.8rem;
         }
 
-        /* 버튼 레이아웃 */
+        /* 버튼 그룹 */
         .btn-group {
             display: flex;
             gap: 4px;
+            flex-shrink: 0;
         }
 
         button {
@@ -145,7 +141,7 @@
         .btn-yellow { background: #fee500; color: #191919; flex: 1; }
         .btn-emerald { background: #10b981; color: white; flex: 1; }
 
-        /* 스캔 내역 리스트 */
+        /* 내역 리스트 영역 */
         .list-box {
             flex: 1;
             background: #1e293b;
@@ -153,6 +149,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            min-height: 0; /* flex 자식 스크롤 허용 */
         }
 
         .list-header {
@@ -163,6 +160,7 @@
             align-items: center;
             font-size: 0.75rem;
             font-weight: bold;
+            flex-shrink: 0;
         }
 
         ul {
@@ -206,12 +204,13 @@
             background: transparent;
         }
 
-        /* 하단 버전 표기 (작고 흐린 글씨) */
+        /* 하단 버전 고정 표시 */
         .version-tag {
             text-align: center;
             font-size: 0.65rem;
-            color: #475569;
-            padding: 2px 0;
+            color: #64748b;
+            padding: 4px 0 2px 0;
+            flex-shrink: 0;
             user-select: none;
         }
     </style>
@@ -221,29 +220,27 @@
 <div class="container">
     <!-- 상단 상태 바 -->
     <div class="status-bar">
-        <span id="mode-badge" style="font-weight: bold; color: #38bdf8;">모드 확인 중...</span>
-        <span id="conn-status" class="badge bg-red">대기 중</span>
+        <span id="mode-badge" style="font-weight: bold; color: #38bdf8;">모드 감지 중...</span>
+        <span id="pc-id-area" style="display: none;">PC ID: <strong id="my-id" style="color:#f59e0b; font-size: 0.85rem;">----</strong></span>
+        <span id="conn-status" class="badge bg-red">대기</span>
     </div>
 
-    <!-- 모바일 카메라 화면 -->
-    <div id="scanner-section" style="display: none; flex-direction: column; gap: 6px;">
+    <!-- 카메라 스캔 영역 (모바일) -->
+    <div id="scanner-section" style="display: none; flex-direction: column; gap: 4px; flex-shrink: 0;">
         <div class="scanner-container">
             <div id="reader"></div>
         </div>
+        <!-- 줌 컨트롤러 -->
+        <div class="zoom-box" id="zoom-area" style="display: none;">
+            <span>🔍 줌</span>
+            <input type="range" id="zoom-slider" min="1" max="5" step="0.1" value="1" oninput="changeZoom(this.value)">
+            <span id="zoom-value">1.0x</span>
+        </div>
+        <!-- 수동 입력 -->
         <div class="input-box">
             <input type="text" id="manual-input" placeholder="바코드 직접 입력" onkeydown="if(event.key==='Enter') addManualBar()">
             <button class="btn-blue" onclick="addManualBar()">추가</button>
         </div>
-    </div>
-
-    <!-- PC 대기 화면 (QR 코드 자동 생성) -->
-    <div id="pc-section" class="pc-connect-box" style="display: none;">
-        <span style="font-size: 0.85rem; font-weight: bold;">📱 모바일 카메라로 QR을 스캔하여 연결하세요</span>
-        <div id="qrcode"></div>
-        <div style="font-size: 0.75rem; color: #94a3b8;">
-            PC ID: <strong id="pc-id-text" style="color:#f59e0b;">생성 중...</strong>
-        </div>
-        <button class="btn-sky" style="width:100%;" onclick="copyConnectLink()">🔗 연동 링크 복사</button>
     </div>
 
     <!-- 버튼 메뉴 -->
@@ -258,7 +255,7 @@
         <button class="btn-emerald" onclick="downloadTXT()">💾 txt 저장</button>
     </div>
 
-    <!-- 내역 리스트 -->
+    <!-- 스캔 리스트 -->
     <div class="list-box">
         <div class="list-header">
             <span>스캔 내역 (최신순)</span>
@@ -269,7 +266,7 @@
         </ul>
     </div>
 
-    <!-- 버전 표기 -->
+    <!-- 최하단 버전 표기 -->
     <div class="version-tag">v26083101</div>
 </div>
 
@@ -279,15 +276,15 @@
     let conn = null;
     let barcodeList = [];
     let html5QrCode = null;
+    let videoTrack = null;
     let isScanning = false;
 
-    // WebRTC 연결을 위한 서버 설정
+    // WebRTC STUN 서버 설정
     const peerConfig = {
         config: {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun4.l.google.com:19302' }
+                { urls: 'stun:stun1.l.google.com:19302' }
             ]
         }
     };
@@ -301,41 +298,29 @@
 
         isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-        // URL 파라미터로 target ID 전달 확인
-        const urlParams = new URLSearchParams(window.location.search);
-        const targetPeerId = urlParams.get('target');
-
         if (isMobile) {
             document.getElementById('mode-badge').innerText = "📱 모바일 스캔 모드";
             document.getElementById('scanner-section').style.display = 'flex';
             document.getElementById('btn-connect').style.display = 'block';
             document.getElementById('btn-restart').style.display = 'block';
-
-            initPeerMobile(targetPeerId);
+            
+            initPeerMobile();
             initCamera();
         } else {
             document.getElementById('mode-badge').innerText = "💻 PC 수신 모드";
-            document.getElementById('pc-section').style.display = 'flex';
+            document.getElementById('pc-id-area').style.display = 'inline';
             
             initPeerPC();
         }
     };
 
-    /* WebRTC PC 모드 초기화 */
+    /* PC Peer 초기화 (4자리 ID 생성) */
     function initPeerPC() {
-        peer = new Peer(peerConfig);
+        const numId = Math.floor(1000 + Math.random() * 9000).toString();
+        peer = new Peer(numId, peerConfig);
 
         peer.on('open', function(id) {
-            document.getElementById('pc-id-text').innerText = id;
-            
-            // 접속 QR 코드 생성
-            const connectUrl = window.location.origin + window.location.pathname + '?target=' + id;
-            document.getElementById('qrcode').innerHTML = '';
-            new QRCode(document.getElementById('qrcode'), {
-                text: connectUrl,
-                width: 130,
-                height: 130
-            });
+            document.getElementById('my-id').innerText = id;
         });
 
         peer.on('connection', function(c) {
@@ -344,47 +329,38 @@
         });
 
         peer.on('error', function(err) {
-            console.error("PC Peer Error:", err);
-            updateStatus("오류 발생", "bg-red");
+            if (err.type === 'unavailable-id') {
+                initPeerPC();
+            } else {
+                updateStatus("오류", "bg-red");
+            }
         });
     }
 
-    /* WebRTC 모바일 모드 초기화 */
-    function initPeerMobile(targetId) {
+    /* 모바일 Peer 초기화 */
+    function initPeerMobile() {
         peer = new Peer(peerConfig);
-
-        peer.on('open', function() {
-            if (targetId) {
-                connectToPC(targetId);
-            }
-        });
-
-        peer.on('error', function(err) {
-            console.error("Mobile Peer Error:", err);
-            updateStatus("연결 실패", "bg-red");
-        });
     }
 
     function promptConnect() {
-        const inputId = prompt("PC 화면의 ID 또는 QR 스캔 URL의 ID를 입력하세요:");
-        if (inputId) {
-            connectToPC(inputId.trim());
+        const targetId = prompt("PC 화면 상단의 4자리 숫자 ID를 입력하세요:");
+        if (targetId) {
+            const trimmed = targetId.trim();
+            if (trimmed.length !== 4 || isNaN(trimmed)) {
+                return alert("4자리 숫자를 입력해 주세요.");
+            }
+            updateStatus("연동 중", "bg-yellow");
+            if (conn) conn.close();
+            conn = peer.connect(trimmed, { reliable: true });
+            setupConnection();
         }
-    }
-
-    function connectToPC(targetId) {
-        updateStatus("연결 시도 중...", "bg-yellow");
-        if (conn) conn.close();
-        
-        conn = peer.connect(targetId, { reliable: true });
-        setupConnection();
     }
 
     function setupConnection() {
         conn.on('open', function() {
-            updateStatus("PC 연결 완료", "bg-green");
+            updateStatus("연결됨", "bg-green");
 
-            // 최초 연결 성공 시 모바일 데이터 기준으로 PC에 덮어쓰기 동기화
+            // 최초 연결 시 모바일 기준 동기화
             if (isMobile) {
                 conn.send({ type: 'SYNC', list: barcodeList });
             }
@@ -407,7 +383,7 @@
         });
 
         conn.on('close', function() {
-            updateStatus("연결 끊김", "bg-red");
+            updateStatus("끊김", "bg-red");
         });
     }
 
@@ -417,12 +393,10 @@
         el.className = `badge ${bgClass}`;
     }
 
-    /* 고성능 모바일 카메라 엔진 제어 */
+    /* 모바일 고화질 카메라 및 Zoom 제어 */
     async function initCamera() {
         if (html5QrCode) {
-            try {
-                await html5QrCode.stop();
-            } catch (e) {}
+            try { await html5QrCode.stop(); } catch(e) {}
             html5QrCode = null;
         }
 
@@ -430,25 +404,57 @@
         html5QrCode = new Html5Qrcode("reader", { experimentalFeatures: { willReadFrequently: true } });
 
         const config = {
-            fps: 20,
-            aspectRatio: 1.0,
-            videoConstraints: {
-                facingMode: { exact: "environment" },
-                width: { ideal: 1920 },
-                height: { ideal: 1080 }
-            }
+            fps: 25,
+            aspectRatio: 1.0
         };
 
-        html5QrCode.start(
-            { facingMode: "environment" },
-            config,
-            onScanSuccess
-        ).catch(err => {
-            // 후면 카메라 전용 접근 실패 시 기본 카메라 적용
-            html5QrCode.start({ facingMode: "user" }, config, onScanSuccess).catch(e => {
-                alert("카메라 접근 권한이 필요합니다.");
-            });
-        });
+        try {
+            await html5QrCode.start(
+                { facingMode: { exact: "environment" } },
+                config,
+                onScanSuccess
+            );
+            setupZoomControl();
+        } catch (err) {
+            // 후면 카메라 실패 시 기본 카메라 시도
+            try {
+                await html5QrCode.start({ facingMode: "user" }, config, onScanSuccess);
+                setupZoomControl();
+            } catch(e) {
+                alert("카메라 권한을 확인해주세요.");
+            }
+        }
+    }
+
+    /* 카메라 하드웨어 Zoom 적용 */
+    function setupZoomControl() {
+        setTimeout(() => {
+            const videoEl = document.querySelector("#reader video");
+            if (videoEl && videoEl.srcObject) {
+                videoTrack = videoEl.srcObject.getVideoTracks()[0];
+                if (videoTrack && videoTrack.getCapabilities) {
+                    const capabilities = videoTrack.getCapabilities();
+                    if (capabilities.zoom) {
+                        const zoomArea = document.getElementById('zoom-area');
+                        const zoomSlider = document.getElementById('zoom-slider');
+                        zoomArea.style.display = 'flex';
+                        zoomSlider.min = capabilities.zoom.min || 1;
+                        zoomSlider.max = Math.min(capabilities.zoom.max || 5, 5);
+                        zoomSlider.step = capabilities.zoom.step || 0.1;
+                        zoomSlider.value = 1;
+                    }
+                }
+            }
+        }, 800);
+    }
+
+    function changeZoom(val) {
+        document.getElementById('zoom-value').innerText = `${parseFloat(val).toFixed(1)}x`;
+        if (videoTrack) {
+            videoTrack.applyConstraints({
+                advanced: [{ zoom: parseFloat(val) }]
+            }).catch(e => console.log(e));
+        }
     }
 
     function onScanSuccess(decodedText) {
@@ -572,16 +578,6 @@
             osc.start();
             osc.stop(ctx.currentTime + 0.15);
         } catch(e) {}
-    }
-
-    function copyConnectLink() {
-        const text = document.getElementById('pc-id-text').innerText;
-        if (!text || text === '생성 중...') return;
-        const connectUrl = window.location.origin + window.location.pathname + '?target=' + text;
-        
-        navigator.clipboard.writeText(connectUrl).then(() => {
-            alert("연동 링크가 클립보드에 복사되었습니다.");
-        });
     }
 
     async function copyOrShare() {
