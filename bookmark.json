@@ -1,1 +1,28 @@
 
+{
+  "type": "My Bookmark",
+  "version": 1,
+  "bookmarks": [
+    {
+      "title": "테니스 스코어보",
+      "url": "https://weonpyo.github.io/app/tennis_scoreboard.html"
+    },
+    {
+      "title": "테니스 예약 관리",
+      "url": "https://weonpyo.github.io/app/tennis_reservation.html"
+    }
+    {
+      "title": "PC연동 바코드 스캐너",
+      "url": "https://weonpyo.github.io/app/barcode_scanner.html"
+    }
+    {
+      "title": "LED 구축 계산기",
+      "url": "https://weonpyo.github.io/app/led_calculator.html"
+    }
+    {
+      "title": "돋보기",
+      "url": "https://weonpyo.github.io/app/magnifier.html"
+    }
+
+  ]
+}
