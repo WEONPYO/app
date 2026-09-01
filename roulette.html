@@ -81,7 +81,7 @@
       color: #ef4444;
     }
 
-    /* 메인 콘텐츠 레이아웃 (반응형/가로모드 대응) */
+    /* 메인 콘텐츠 레이아웃 */
     .main-wrapper {
       width: 100%;
       max-width: 900px;
@@ -161,55 +161,74 @@
       word-break: keep-all;
     }
 
-    /* 단일 뽑기 하단 설정 표시 박스 */
+    /* 단일 뽑기 하단 번호별 메모 표시 영역 */
     .single-info-box {
       width: 100%;
       margin-top: 12px;
       background: #0f172a;
-      border: 1px dashed var(--border-color);
-      border-radius: 10px;
-      padding: 10px 12px;
-      font-size: 0.8rem;
-      color: var(--text-muted);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
     }
 
     .single-info-header {
       color: var(--accent-gold-light);
       font-weight: bold;
-      font-size: 0.82rem;
-      margin-bottom: 6px;
+      font-size: 0.85rem;
+      margin-bottom: 8px;
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 4px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 6px;
     }
 
-    .info-tag-list {
+    .info-summary-tags {
       display: flex;
-      flex-wrap: wrap;
       gap: 6px;
-      margin-top: 4px;
     }
 
     .info-badge {
       background: #334155;
       color: var(--text-light);
-      padding: 2px 8px;
+      padding: 2px 6px;
       border-radius: 4px;
-      font-size: 0.75rem;
+      font-size: 0.7rem;
+      font-weight: normal;
     }
 
-    .memo-badge-list {
-      margin-top: 6px;
-      padding-top: 6px;
-      border-top: 1px solid #1e293b;
-      max-height: 80px;
+    .memo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 6px;
+      max-height: 120px;
       overflow-y: auto;
+      padding-right: 4px;
     }
 
-    .memo-item-text {
+    .memo-card-item {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .memo-card-num {
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: var(--accent-gold);
+    }
+
+    .memo-card-text {
       font-size: 0.75rem;
       color: var(--text-light);
-      line-height: 1.4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .control-box {
@@ -436,14 +455,16 @@
 
     <div id="resultDisplay">버튼을 눌러 추첨을 시작하세요!</div>
 
-    <!-- 단일 뽑기 설정 표시 하단 박스 -->
+    <!-- 단일 뽑기 하단 번호별 메모 표시 박스 -->
     <div id="singleInfoBox" class="single-info-box" style="display: none;">
-      <div class="single-info-header">⚙️ 현재 단일 뽑기 설정</div>
-      <div class="info-tag-list">
-        <span class="info-badge" id="infoRange">범위: 1 ~ 10</span>
-        <span class="info-badge" id="infoDuplicate">중복 미허용</span>
+      <div class="single-info-header">
+        <span>📝 번호별 설정 메모</span>
+        <div class="info-summary-tags">
+          <span class="info-badge" id="infoRange">1~10번</span>
+          <span class="info-badge" id="infoDuplicate">중복미허용</span>
+        </div>
       </div>
-      <div id="infoMemoList" class="memo-badge-list"></div>
+      <div id="memoGrid" class="memo-grid"></div>
     </div>
   </div>
 
@@ -619,13 +640,13 @@
       box.innerHTML += `
         <div class="memo-item">
           <label>${i}번:</label>
-          <input type="text" class="memo-input" data-num="${i}" value="${val}" placeholder="메모">
+          <input type="text" class="memo-input" data-num="${i}" value="${val}" placeholder="메모 내용">
         </div>
       `;
     }
   }
 
-  // 룰렛 하단에 단일 뽑기 설정 내용 출력
+  // 룰렛 하단에 번호별 메모 정보 표시
   function updateSingleInfoDisplay() {
     const infoBox = document.getElementById('singleInfoBox');
     if (state.mode !== 'single') {
@@ -634,22 +655,23 @@
     }
 
     infoBox.style.display = 'block';
-    document.getElementById('infoRange').innerText = `범위: ${state.minNum} ~ ${state.maxNum}번`;
-    document.getElementById('infoDuplicate').innerText = state.allowDuplicate ? '중복 허용' : '중복 미허용';
+    document.getElementById('infoRange').innerText = `${state.minNum}~${state.maxNum}번`;
+    document.getElementById('infoDuplicate').innerText = state.allowDuplicate ? '중복허용' : '중복미허용';
 
-    const memoList = document.getElementById('infoMemoList');
-    memoList.innerHTML = '';
-    let hasMemo = false;
+    const grid = document.getElementById('memoGrid');
+    grid.innerHTML = '';
 
     for (let i = state.minNum; i <= state.maxNum; i++) {
-      if (state.numberMemos[i] && state.numberMemos[i].trim() !== '') {
-        hasMemo = true;
-        memoList.innerHTML += `<div class="memo-item-text">📌 <strong>${i}번:</strong> ${state.numberMemos[i]}</div>`;
-      }
-    }
+      const memoText = state.numberMemos[i] && state.numberMemos[i].trim() !== '' 
+        ? state.numberMemos[i] 
+        : '(메모 없음)';
 
-    if (!hasMemo) {
-      memoList.innerHTML = '<div style="font-size:0.75rem; color:var(--text-muted);">설정된 메모가 없습니다.</div>';
+      grid.innerHTML += `
+        <div class="memo-card-item">
+          <span class="memo-card-num">${i}번</span>
+          <span class="memo-card-text" title="${memoText}">${memoText}</span>
+        </div>
+      `;
     }
   }
 
@@ -867,17 +889,20 @@
         grid.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem;">당첨 내역이 없습니다.</div>';
         return;
       }
-      let tags = state.history.map((num, i) => `<span class="member-tag">${i+1}회: ${num}번</span>`).join('');
+      let tags = state.history.map((num, i) => {
+        const memo = state.numberMemos[num] ? ` (${state.numberMemos[num]})` : '';
+        return `<span class="member-tag">${i+1}회: ${num}번${memo}</span>`;
+      }).join('');
       grid.innerHTML = `<div class="member-list">${tags}</div>`;
     }
   }
 
   function saveState() {
-    localStorage.setItem('rouletteConfig3D_v8', JSON.stringify(state));
+    localStorage.setItem('rouletteConfig3D_v9', JSON.stringify(state));
   }
 
   function loadState() {
-    const saved = localStorage.getItem('rouletteConfig3D_v8');
+    const saved = localStorage.getItem('rouletteConfig3D_v9');
     if (saved) {
       try {
         state = JSON.parse(saved);
