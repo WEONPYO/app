@@ -308,22 +308,32 @@
     .team-item-title {
       font-weight: bold;
       color: var(--accent-gold);
-      margin-bottom: 4px;
+      margin-bottom: 6px;
       display: flex;
       justify-content: space-between;
     }
 
     .member-list {
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: column;
       gap: 4px;
     }
 
     .member-tag {
       background: #334155;
-      padding: 2px 6px;
+      padding: 4px 8px;
       border-radius: 4px;
       font-size: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .member-order {
+      color: var(--accent-gold-light);
+      font-size: 0.7rem;
+      font-weight: bold;
+      margin-right: 4px;
     }
 
     /* 모달 팝업 */
@@ -646,7 +656,6 @@
     }
   }
 
-  // 룰렛 하단에 번호별 메모 정보 표시
   function updateSingleInfoDisplay() {
     const infoBox = document.getElementById('singleInfoBox');
     if (state.mode !== 'single') {
@@ -841,9 +850,22 @@
       playFanfare();
 
       if (state.mode === 'team') {
-        const text = nameVal ? `🎉 [ ${nameVal} ] ➡️ ${selectedValue}번 팀` : `🎉 당첨: [ ${selectedValue}번 팀 ]`;
+        const orderNum = state.history.length + 1; // 전체 추첨 순서 번호
+        const displayName = nameVal ? nameVal : `${orderNum}번째`;
+        
+        const text = nameVal 
+          ? `🎉 [ ${nameVal} ] ➡️ ${selectedValue}번 팀 (${orderNum}번째 추첨)` 
+          : `🎉 당첨: [ ${selectedValue}번 팀 ] (${orderNum}번째)`;
+        
         document.getElementById('resultDisplay').innerText = text;
-        state.teams[selectedValue].push(nameVal || `${state.history.length + 1}번째`);
+        
+        // 팀 데이터 구조에 순서(order)와 이름(name) 함께 저장
+        state.teams[selectedValue].push({
+          order: orderNum,
+          name: displayName
+        });
+        
+        state.history.push({ team: selectedValue, name: displayName, order: orderNum });
         state.remainingItems.splice(selectedIdx, 1);
       } else {
         const memo = state.numberMemos[selectedValue] ? ` (${state.numberMemos[selectedValue]})` : '';
@@ -873,8 +895,19 @@
       title.innerText = '📊 팀별 인원 배치 현황';
       for (let teamId in state.teams) {
         const members = state.teams[teamId];
-        let tags = members.map(m => `<span class="member-tag">${m}</span>`).join('');
-        if (!members.length) tags = '<span style="color:var(--text-muted)">미배치</span>';
+        let tags = members.map(m => {
+          // 객체 데이터 또는 하위 호환성 문자열 처리
+          const orderStr = typeof m === 'object' ? `${m.order}번째` : '배치됨';
+          const nameStr = typeof m === 'object' ? m.name : m;
+          return `
+            <div class="member-tag">
+              <span class="member-order">[${orderStr}]</span>
+              <span>${nameStr}</span>
+            </div>
+          `;
+        }).join('');
+        
+        if (!members.length) tags = '<div style="color:var(--text-muted); font-size:0.75rem; text-align:center; padding:4px;">미배치</div>';
 
         grid.innerHTML += `
           <div class="team-item">
@@ -891,18 +924,23 @@
       }
       let tags = state.history.map((num, i) => {
         const memo = state.numberMemos[num] ? ` (${state.numberMemos[num]})` : '';
-        return `<span class="member-tag">${i+1}회: ${num}번${memo}</span>`;
+        return `
+          <div class="member-tag">
+            <span class="member-order">${i+1}회</span>
+            <span>${num}번${memo}</span>
+          </div>
+        `;
       }).join('');
       grid.innerHTML = `<div class="member-list">${tags}</div>`;
     }
   }
 
   function saveState() {
-    localStorage.setItem('rouletteConfig3D_v9', JSON.stringify(state));
+    localStorage.setItem('rouletteConfig3D_v10', JSON.stringify(state));
   }
 
   function loadState() {
-    const saved = localStorage.getItem('rouletteConfig3D_v9');
+    const saved = localStorage.getItem('rouletteConfig3D_v10');
     if (saved) {
       try {
         state = JSON.parse(saved);
