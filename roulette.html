@@ -91,7 +91,6 @@
       gap: 16px;
     }
 
-    /* 스마트폰 가로 모드 및 데스크톱 지원 */
     @media (min-width: 768px) or (orientation: landscape) and (max-height: 500px) {
       .main-wrapper {
         flex-direction: row;
@@ -142,7 +141,6 @@
       height: 280px;
     }
 
-    /* 스마트폰 가로모드 시 룰렛 크기 자동 감소 */
     @media (max-height: 500px) and (orientation: landscape) {
       canvas {
         width: 200px;
@@ -161,6 +159,57 @@
       min-height: 2.2em;
       color: #38bdf8;
       word-break: keep-all;
+    }
+
+    /* 단일 뽑기 하단 설정 표시 박스 */
+    .single-info-box {
+      width: 100%;
+      margin-top: 12px;
+      background: #0f172a;
+      border: 1px dashed var(--border-color);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .single-info-header {
+      color: var(--accent-gold-light);
+      font-weight: bold;
+      font-size: 0.82rem;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .info-tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .info-badge {
+      background: #334155;
+      color: var(--text-light);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+    }
+
+    .memo-badge-list {
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px solid #1e293b;
+      max-height: 80px;
+      overflow-y: auto;
+    }
+
+    .memo-item-text {
+      font-size: 0.75rem;
+      color: var(--text-light);
+      line-height: 1.4;
     }
 
     .control-box {
@@ -199,7 +248,7 @@
       transform: scale(0.98);
     }
 
-    /* 현황 카드 (팀 / 결과 기록) */
+    /* 현황 카드 */
     .status-card {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
@@ -258,7 +307,7 @@
       font-size: 0.75rem;
     }
 
-    /* 모달 팝업 스타일 */
+    /* 모달 팝업 */
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -386,6 +435,16 @@
     </div>
 
     <div id="resultDisplay">버튼을 눌러 추첨을 시작하세요!</div>
+
+    <!-- 단일 뽑기 설정 표시 하단 박스 -->
+    <div id="singleInfoBox" class="single-info-box" style="display: none;">
+      <div class="single-info-header">⚙️ 현재 단일 뽑기 설정</div>
+      <div class="info-tag-list">
+        <span class="info-badge" id="infoRange">범위: 1 ~ 10</span>
+        <span class="info-badge" id="infoDuplicate">중복 미허용</span>
+      </div>
+      <div id="infoMemoList" class="memo-badge-list"></div>
+    </div>
   </div>
 
   <!-- 결과 현황 카드 -->
@@ -422,11 +481,11 @@
       </div>
       <div class="form-group">
         <label for="minNum">시작 번호</label>
-        <input type="number" id="minNum" value="1">
+        <input type="number" id="minNum" value="1" onchange="generateMemoInputs()">
       </div>
       <div class="form-group">
         <label for="maxNum">끝 번호</label>
-        <input type="number" id="maxNum" value="10">
+        <input type="number" id="maxNum" value="10" onchange="generateMemoInputs()">
       </div>
 
       <div class="form-group">
@@ -522,6 +581,7 @@
     loadState();
     drawRoulette();
     updateStatusBoard();
+    updateSingleInfoDisplay();
   };
 
   function openModal() {
@@ -565,7 +625,34 @@
     }
   }
 
-  // 초기화 기능 (현재 설정 상태 유지하면서 추첨 내역 초기화)
+  // 룰렛 하단에 단일 뽑기 설정 내용 출력
+  function updateSingleInfoDisplay() {
+    const infoBox = document.getElementById('singleInfoBox');
+    if (state.mode !== 'single') {
+      infoBox.style.display = 'none';
+      return;
+    }
+
+    infoBox.style.display = 'block';
+    document.getElementById('infoRange').innerText = `범위: ${state.minNum} ~ ${state.maxNum}번`;
+    document.getElementById('infoDuplicate').innerText = state.allowDuplicate ? '중복 허용' : '중복 미허용';
+
+    const memoList = document.getElementById('infoMemoList');
+    memoList.innerHTML = '';
+    let hasMemo = false;
+
+    for (let i = state.minNum; i <= state.maxNum; i++) {
+      if (state.numberMemos[i] && state.numberMemos[i].trim() !== '') {
+        hasMemo = true;
+        memoList.innerHTML += `<div class="memo-item-text">📌 <strong>${i}번:</strong> ${state.numberMemos[i]}</div>`;
+      }
+    }
+
+    if (!hasMemo) {
+      memoList.innerHTML = '<div style="font-size:0.75rem; color:var(--text-muted);">설정된 메모가 없습니다.</div>';
+    }
+  }
+
   function resetRoulette() {
     if (isSpinning) return;
     if (!confirm('추첨 내역과 진행 상황을 모두 초기화하시겠습니까?')) return;
@@ -589,6 +676,7 @@
     saveState();
     drawRoulette();
     updateStatusBoard();
+    updateSingleInfoDisplay();
     document.getElementById('resultDisplay').innerText = '초기화되었습니다. 다시 추첨할 수 있습니다!';
   }
 
@@ -625,6 +713,7 @@
     saveState();
     drawRoulette();
     updateStatusBoard();
+    updateSingleInfoDisplay();
     toggleModeUI();
     closeModal();
     document.getElementById('resultDisplay').innerText = '설정이 적용되었습니다!';
@@ -784,11 +873,11 @@
   }
 
   function saveState() {
-    localStorage.setItem('rouletteConfig3D_v7', JSON.stringify(state));
+    localStorage.setItem('rouletteConfig3D_v8', JSON.stringify(state));
   }
 
   function loadState() {
-    const saved = localStorage.getItem('rouletteConfig3D_v7');
+    const saved = localStorage.getItem('rouletteConfig3D_v8');
     if (saved) {
       try {
         state = JSON.parse(saved);
