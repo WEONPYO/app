@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OFFICIAL TENNIS TOURNAMENT</title>
+<style>
+:root{--navy:#102a43;--blue:#1769aa;--gold:#c79a3b;--bg:#eef2f6;--line:#d7dee7;--green:#2e7d32;--red:#b3261e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:#17212b;font-family:Arial,"Noto Sans KR",sans-serif}
+header{background:linear-gradient(135deg,#0b2138,#173f5f);color:#fff;border-bottom:5px solid var(--gold)}
+.header-inner{max-width:1100px;margin:auto;padding:22px 18px;text-align:center}
+.eyebrow{font-size:12px;letter-spacing:3px;opacity:.85}
+header h1{margin:5px 0;font-size:27px;letter-spacing:1px}
+header p{margin:5px 0 0;color:#dbe7f2}
+.container{max-width:1100px;margin:auto;padding:16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:15px;box-shadow:0 3px 12px #102a4312;overflow:hidden}
+.card-head{background:#f7f9fb;border-bottom:1px solid var(--line);padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
+.card-head h2{margin:0;color:var(--navy);font-size:18px}
+.card-body{padding:16px}
+.menu{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:15px}
+.menu button{min-height:72px;border:1px solid #cbd5df;background:#fff;border-radius:10px;color:var(--navy);font-weight:bold;box-shadow:0 2px 5px #0000000b}
+.menu button:hover{border-color:var(--blue);background:#f5faff}
+.menu .active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.menu .wide{grid-column:span 3}
+.view{display:none}.view.active{display:block}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.field{flex:1;min-width:170px}
+label{display:block;font-weight:bold;font-size:13px;margin-bottom:5px}
+input,select{width:100%;padding:10px;border:1px solid #b9c4cf;border-radius:6px;background:#fff;font:inherit}
+button{font:inherit;cursor:pointer}
+.action{padding:10px 15px;border:0;border-radius:6px;font-weight:bold}
+.primary{background:var(--blue);color:#fff}.secondary{background:#e7edf3;color:var(--navy)}
+.danger{background:var(--red);color:#fff}
+.gold{background:var(--gold);color:#fff}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid var(--line);padding:9px;text-align:center}
+th{background:#edf2f7;color:var(--navy);font-size:13px}
+.team-box{border:1px solid var(--line);border-radius:8px;padding:11px;margin-top:9px}
+.member-row{display:flex;gap:7px;margin-top:7px}
+.member-row input{flex:1}
+.badge{display:inline-block;padding:4px 8px;border-radius:20px;background:#e8f0f8;color:var(--navy);font-size:12px}
+.note{font-size:12px;color:#687785;line-height:1.6}
+.section-title{font-weight:bold;color:var(--navy);margin:0 0 10px}
+.match{display:grid;grid-template-columns:1fr 150px 1fr;gap:10px;align-items:center;border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:8px;padding:10px;margin:9px 0;background:#fbfcfd}
+.team{padding:8px;text-align:center}.team b{font-size:16px}.scorebox{display:flex;gap:5px}.score{width:100%!important;text-align:center;padding:9px}
+.match-no{font-size:11px;color:#71808d;margin-top:4px;text-align:center}
+.rest{font-size:11px;color:#687785;text-align:center;margin-top:3px}
+.manual-badge{display:inline-block;margin-left:5px;padding:2px 6px;border-radius:10px;background:#fff0c7;color:#775717;font-size:10px;font-weight:bold}.tie-panel{margin-top:15px;padding:14px;border:2px solid var(--gold);border-radius:9px;background:#fffdf7}.tie-panel h3{margin:0 0 7px;color:#775717}.tie-group{border-top:1px solid #eadfca;padding-top:10px;margin-top:10px}.tie-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:8px 0 12px}.tie-item{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:8px}.tie-item select{width:90px;padding:7px}.empty{text-align:center;padding:28px;color:#73808c}
+.rank1{font-weight:bold;background:#fff8e5}.rank2{background:#f6f8fa}.rank3{background:#fdf1e8}
+.final-box{border:2px solid var(--gold);border-radius:9px;padding:14px;margin:10px 0;background:#fffdf7}
+.final-box h3{margin:0 0 8px;color:#775717}
+.footer{text-align:center;color:#788692;font-size:11px;padding:8px}
+@media(max-width:700px){
+ .menu{grid-template-columns:repeat(2,1fr)}.menu .wide{grid-column:span 2}
+ .match{grid-template-columns:1fr 110px 1fr}.team b{font-size:14px}
+ th,td{font-size:12px;padding:7px}.card-body{padding:12px}
+}
+</style>
+</head>
+<body>
+<header><div class="header-inner">
+<div class="eyebrow">OFFICIAL TENNIS TOURNAMENT</div>
+<h1>🎾 TENNIS DRAW & RESULTS</h1>
+<p>예선 풀 리그 · 순위 결정 · 3·4위전 · 1·2위전</p>
+</div></header>
+
+<div class="container">
+<nav class="menu">
+<button id="btnSettings" class="active" onclick="showView('settings')">⚙️<br>대회 설정</button>
+<button id="btnTeams" onclick="showView('teams')">👥<br>팀 구성</button>
+<button id="btnDraw" onclick="showView('draw')">📋<br>예선 대진표</button>
+<button id="btnRank" onclick="showView('rank')">🏆<br>예선 순위</button>
+<button id="btnPlayoff" onclick="showView('playoff')">🎖️<br>순위 결정전</button>
+<button id="btnFinal" onclick="showView('final')">🥇<br>최종 결과</button>
+</nav>
+
+<section id="settings" class="view active card">
+<div class="card-head"><h2>01 · TOURNAMENT SETUP</h2><span class="badge">OFFICIAL</span></div>
+<div class="card-body">
+<div class="row">
+<div class="field"><label>경기 방식</label><select id="mode" onchange="renderTeamInputs()"><option value="singles">단식 · SINGLES</option><option value="doubles">복식 · DOUBLES</option></select></div>
+<div class="field"><label>팀 수</label><input id="teamCount" type="number" min="2" max="16" value="4" onchange="renderTeamInputs()"></div>
+<button class="action primary" onclick="createTournament()">대회 생성 / 적용</button>
+<button class="action secondary" onclick="resetAll()">전체 초기화</button>
+</div>
+<div id="teamInputs"></div>
+<p class="note">※ 예선은 모든 팀이 서로 한 번씩 경기합니다. 대진은 같은 팀이 연속해서 경기하지 않도록 가능한 한 휴식 팀을 교차 배치하는 방식으로 자동 생성합니다.</p>
+</div>
+</section>
+
+<section id="teams" class="view card">
+<div class="card-head"><h2>02 · TEAM ROSTER</h2><span class="badge">TEAM LIST</span></div>
+<div class="card-body" id="teamsView"></div>
+</section>
+
+<section id="draw" class="view card">
+<div class="card-head"><h2>03 · QUALIFYING ROUND DRAW</h2><span class="badge">ROUND ROBIN</span></div>
+<div class="card-body">
+<p class="note">각 경기는 1세트 경기입니다. 예: 6 : 4 / 7 : 5. 대진 순서는 한 팀에 경기가 몰리지 않도록 휴식 시간을 고려하여 자동 배치합니다.</p>
+<div id="drawView"></div>
+</div>
+</section>
+
+<section id="rank" class="view card">
+<div class="card-head"><h2>04 · QUALIFYING STANDINGS</h2><span class="badge">LIVE STANDINGS</span></div>
+<div class="card-body" id="rankView"></div>
+</section>
+
+<section id="playoff" class="view card">
+<div class="card-head"><h2>05 · PLACEMENT MATCHES</h2><span class="badge">3rd / 4th · 1st / 2nd</span></div>
+<div class="card-body">
+<div id="thirdView"></div><div id="finalView"></div>
+</div>
+</section>
+
+<section id="final" class="view card">
+<div class="card-head"><h2>06 · OFFICIAL FINAL RESULTS</h2><span class="badge">FINAL</span></div>
+<div class="card-body" id="resultView"></div>
+</section>
+<div class="footer">TENNIS TOURNAMENT MANAGEMENT · 1 SET FORMAT</div>
+</div>
+
+<script>
+let state={mode:"singles",teams:[],matches:[],playoff:{third:null,final:null},manualRanks:{}};
+
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function showView(id){
+ document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+ document.getElementById(id).classList.add("active");
+ document.querySelectorAll(".menu button").forEach(x=>x.classList.remove("active"));
+ const b=document.getElementById("btn"+id.charAt(0).toUpperCase()+id.slice(1)); if(b)b.classList.add("active");
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+function renderTeamInputs(){
+ let n=Math.max(2,Math.min(16,parseInt(document.getElementById("teamCount").value)||4));
+ let mode=document.getElementById("mode").value, count=mode==="doubles"?2:1, h="";
+ for(let i=0;i<n;i++){
+   h+=`<div class="team-box"><b>TEAM ${String(i+1).padStart(2,"0")}</b> · 팀 ${i+1}`;
+   h+=`<div class="member-row">`;
+   for(let j=0;j<count;j++)h+=`<input id="t_${i}_${j}" placeholder="${count===2?"선수 "+(j+1):"선수 이름"}">`;
+   h+="</div></div>";
+ }
+ document.getElementById("teamInputs").innerHTML=h;
+}
+function createTournament(){
+ let n=Math.max(2,Math.min(16,parseInt(document.getElementById("teamCount").value)||4));
+ let mode=document.getElementById("mode").value,count=mode==="doubles"?2:1,teams=[];
+ for(let i=0;i<n;i++){
+   let mem=[];for(let j=0;j<count;j++)mem.push((document.getElementById(`t_${i}_${j}`).value||`선수 ${j+1}`).trim());
+   teams.push({id:i,name:"팀 "+(i+1),members:mem});
+ }
+ state={mode,teams,matches:makeBalancedSchedule(n),playoff:{third:null,final:null}};
+ save();renderAll();showView("draw");
+}
+function makeBalancedSchedule(n){
+ // Circle method: each round has at most one match per team.
+ // For even n, all teams play every round; for odd n, one team rests.
+ let ids=Array.from({length:n},(_,i)=>i), rounds=[];
+ if(n%2){ids.push(-1);n++}
+ let fixed=ids[0], arr=ids.slice(1), roundsN=n-1;
+ for(let r=0;r<roundsN;r++){
+   let list=[fixed,...arr], pairs=[];
+   for(let i=0;i<n/2;i++){
+     let a=list[i],b=list[n-1-i];
+     if(a!==-1&&b!==-1)pairs.push([a,b]);
+   }
+   rounds.push(pairs);
+   arr=[arr[arr.length-1],...arr.slice(0,-1)];
+ }
+ // Interleave rounds to avoid the same team playing in consecutive blocks where possible.
+ // Within each round, matches are ordered by their first team's position.
+ let out=[], id=0;
+ rounds.forEach((pairs,r)=>{
+   pairs.sort((p,q)=>Math.min(p[0],p[1])-Math.min(q[0],q[1]));
+   pairs.forEach(p=>out.push({id:id++,round:r+1,a:p[0],b:p[1],scoreA:"",scoreB:""}));
+ });
+ // Local improvement: reorder match list so adjacent matches share no team whenever possible.
+ let remaining=out.slice(), ordered=[];
+ while(remaining.length){
+   let prev=ordered.length?ordered[ordered.length-1]:null;
+   let idx=remaining.findIndex(m=>!prev||m.a!==prev.a&&m.a!==prev.b&&m.b!==prev.a&&m.b!==prev.b);
+   if(idx<0)idx=0;
+   ordered.push(remaining.splice(idx,1)[0]);
+ }
+ return ordered;
+}
+function teamName(i){return state.teams[i]?.name||"-"}
+function rankOrderBadge(teamId,rank){
+ let manual=state.manualRanks||{};
+ return manual[teamId]?`<span class="manual-badge">수동 ${manual[teamId]}위</span>`:"";
+}
+
+function members(i){return state.teams[i]?.members.join(" / ")||""}
+function renderTeams(){
+ if(!state.teams.length){document.getElementById("teamsView").innerHTML='<div class="empty">대회를 먼저 생성하세요.</div>';return}
+ let h='<table><tr><th>TEAM</th><th>선수 구성</th></tr>';
+ state.teams.forEach(t=>h+=`<tr><td><b>${esc(t.name)}</b></td><td>${esc(t.members.join(" / "))}</td></tr>`);
+ h+="</table>";document.getElementById("teamsView").innerHTML=h;
+}
+function renderDraw(){
+ if(!state.matches.length){document.getElementById("drawView").innerHTML='<div class="empty">대진이 없습니다.</div>';return}
+ let h="",lastRound=0;
+ state.matches.forEach((m,i)=>{
+   if(m.round!==lastRound){h+=`<h3 style="color:var(--navy);border-bottom:1px solid var(--line);padding-bottom:7px;margin-top:16px">ROUND ${m.round}</h3>`;lastRound=m.round}
+   h+=`<div class="match">
+   <div class="team"><b>${esc(teamName(m.a))}</b><br><span class="note">${esc(members(m.a))}</span></div>
+   <div><div class="scorebox"><input class="score" inputmode="numeric" maxlength="2" value="${esc(m.scoreA)}" placeholder="-" onchange="setScore(${m.id},'A',this.value)"><input class="score" inputmode="numeric" maxlength="2" value="${esc(m.scoreB)}" placeholder="-" onchange="setScore(${m.id},'B',this.value)"></div><div class="match-no">MATCH ${String(i+1).padStart(2,"0")} · 1 SET</div></div>
+   <div class="team"><b>${esc(teamName(m.b))}</b><br><span class="note">${esc(members(m.b))}</span></div>
+   </div>`;
+ });
+ document.getElementById("drawView").innerHTML=h;
+}
+function setScore(id,side,val){
+ val=String(val).replace(/[^0-9]/g,"");if(val!==""&&+val>7)val="7";
+ let m=state.matches.find(x=>x.id===id);if(m)m[side==="A"?"scoreA":"scoreB"]=val;
+ save();renderRank();renderPlayoffs();renderFinal();
+}
+function calcRank(){
+ let a=state.teams.map(t=>({id:t.id,played:0,wins:0,losses:0,draws:0,gf:0,ga:0,points:0}));
+ state.matches.forEach(m=>{
+  if(m.scoreA===""||m.scoreB==="")return;
+  let x=+m.scoreA,y=+m.scoreB,A=a[m.a],B=a[m.b];
+  A.played++;B.played++;A.gf+=x;A.ga+=y;B.gf+=y;B.ga+=x;
+  if(x>y){A.wins++;A.points+=3;B.losses++}
+  else if(y>x){B.wins++;B.points+=3;A.losses++}
+  else{A.draws++;B.draws++;A.points++;B.points++}
+ });
+ a.forEach(x=>x.diff=x.gf-x.ga);
+
+ // 기본 순위: 승점 → 득실차 → 득수 → 승수 → 팀 번호
+ a.sort((p,q)=>q.points-p.points||q.diff-p.diff||q.gf-p.gf||q.wins-p.wins||p.id-q.id);
+
+ // 수동 동률 순위가 저장되어 있으면 해당 그룹 내부에서 우선 적용
+ let groups=[];
+ for(let i=0;i<a.length;){
+   let j=i+1;
+   while(j<a.length &&
+     a[j].points===a[i].points &&
+     a[j].diff===a[i].diff &&
+     a[j].gf===a[i].gf &&
+     a[j].wins===a[i].wins) j++;
+   if(j-i>1) groups.push(a.slice(i,j));
+   i=j;
+ }
+ groups.forEach(group=>{
+   let ids=group.map(x=>x.id);
+   let manual=state.manualRanks||{};
+   group.sort((p,q)=>{
+     let mp=Number(manual[p.id]),mq=Number(manual[q.id]);
+     let hp=Number.isInteger(mp)&&mp>=1, hq=Number.isInteger(mq)&&mq>=1;
+     if(hp&&hq&&mp!==mq)return mp-mq;
+     if(hp&&!hq)return -1;
+     if(!hp&&hq)return 1;
+     return p.id-q.id;
+   });
+ });
+
+ a.forEach((x,i)=>x.rank=i+1);
+ return a;
+}
+function renderRank(){
+ if(!state.teams.length)return;
+ let r=calcRank(),h='<table><tr><th>최종 순위</th><th>팀</th><th>경기</th><th>승</th><th>패</th><th>무</th><th>득</th><th>실</th><th>득실차</th><th>승점</th></tr>';
+ r.forEach(x=>h+=`<tr class="${x.rank===1?'rank1':x.rank===2?'rank2':x.rank===3?'rank3':''}">
+ <td><b>${x.rank}</b></td>
+ <td><b>${esc(teamName(x.id))}</b>${rankOrderBadge(x.id,x.rank)}<br><span class="note">${esc(members(x.id))}</span></td>
+ <td>${x.played}</td><td>${x.wins}</td><td>${x.losses}</td><td>${x.draws}</td>
+ <td>${x.gf}</td><td>${x.ga}</td><td>${x.diff}</td><td><b>${x.points}</b></td></tr>`);
+ h+="</table>";
+
+ let groups=[];
+ for(let i=0;i<r.length;){
+   let j=i+1;
+   while(j<r.length &&
+     r[j].points===r[i].points &&
+     r[j].diff===r[i].diff &&
+     r[j].gf===r[i].gf &&
+     r[j].wins===r[i].wins) j++;
+   if(j-i>1)groups.push(r.slice(i,j));
+   i=j;
+ }
+
+ if(groups.length){
+   h+=`<div class="tie-panel"><h3>⚖️ 동률 팀 순위 결정</h3>
+   <p class="note">아래에서 동률 팀의 순위를 선택하면 <b>위 예선 결과표의 최종 순위</b>에도 즉시 반영됩니다. 적용된 팀에는 「수동 ○위」가 표시됩니다.</p>`;
+   groups.forEach((g,gi)=>{
+     h+=`<div class="tie-group"><b>동률 그룹 ${gi+1}</b><div class="tie-grid">`;
+     g.forEach(x=>{
+       let val=(state.manualRanks||{})[x.id]||"";
+       h+=`<div class="tie-item"><span><b>${esc(teamName(x.id))}</b><br><span class="note">${esc(members(x.id))}</span></span>
+       <select id="manualRank_${x.id}" onchange="manualRankChanged(${x.id},this.value)">
+       <option value="">선택</option>`;
+       for(let n=1;n<=g.length;n++)h+=`<option value="${n}" ${String(val)===String(n)?"selected":""}>${n}위</option>`;
+       h+=`</select></div>`;
+     });
+     h+=`</div></div>`;
+   });
+   h+=`<button class="action gold" onclick="applyManualRanks()">수동 순위 적용</button>
+   <button class="action secondary" onclick="clearManualRanks()">수동 순위 해제</button></div>`;
+ }else{
+   h+="<p class='note'>현재 동률 팀이 없습니다. 기본 순위는 승점 → 득실차 → 득수 → 승수 순입니다.</p>";
+ }
+ document.getElementById("rankView").innerHTML=h;
+}
+
+function manualRankChanged(teamId,val){
+ if(!state.manualRanks)state.manualRanks={};
+ if(val==="")delete state.manualRanks[teamId];
+ else state.manualRanks[teamId]=Number(val);
+}
+
+function applyManualRanks(){
+ let r=calcRank();
+ let valid=true;
+ let groups=[];
+ for(let i=0;i<r.length;){
+   let j=i+1;
+   while(j<r.length&&r[j].points===r[i].points&&r[j].diff===r[i].diff&&r[j].gf===r[i].gf&&r[j].wins===r[i].wins)j++;
+   if(j-i>1)groups.push(r.slice(i,j));
+   i=j;
+ }
+ groups.forEach(g=>{
+   let vals=g.map(x=>Number((state.manualRanks||{})[x.id]));
+   if(vals.some(v=>!Number.isInteger(v)||v<1||v>g.length)||new Set(vals).size!==vals.length)valid=false;
+ });
+ if(!valid){alert("동률 그룹의 순위를 서로 중복되지 않게 모두 선택해주세요.");return}
+ save();renderRank();renderPlayoffs();renderFinal();
+ showView("rank");
+}
+
+function clearManualRanks(){
+ state.manualRanks={};save();renderAll();
+}
+function playoffHtml(obj,key,title,icon){
+ if(!obj)return `<div class="empty">${title} 대진이 아직 없습니다.</div>`;
+ return `<div class="final-box"><h3>${icon} ${title}</h3><div class="match">
+ <div class="team"><b>${esc(teamName(obj.a))}</b><br><span class="note">${esc(members(obj.a))}</span></div>
+ <div><div class="scorebox"><input class="score" inputmode="numeric" maxlength="2" value="${esc(obj.scoreA||"")}" placeholder="-" onchange="setPlayoffScore('${key}','A',this.value)"><input class="score" inputmode="numeric" maxlength="2" value="${esc(obj.scoreB||"")}" placeholder="-" onchange="setPlayoffScore('${key}','B',this.value)"></div><div class="match-no">1 SET</div></div>
+ <div class="team"><b>${esc(teamName(obj.b))}</b><br><span class="note">${esc(members(obj.b))}</span></div></div></div>`;
+}
+function renderPlayoffs(){
+ let r=calcRank();
+
+ // 1·2위전은 2팀 이상이면 생성.
+ // 3·4위전은 4팀 이상일 때만 생성.
+ if(r.length<2){
+   document.getElementById("thirdView").innerHTML='<div class="empty">3·4위전은 최소 4팀이 필요합니다.</div>';
+   document.getElementById("finalView").innerHTML='<div class="empty">1·2위전을 만들려면 최소 2팀이 필요합니다.</div>';
+   return;
+ }
+
+ let aF=r[0].id,bF=r[1].id;
+
+ // 순위가 바뀌었을 경우 새로운 1·2위전 대진을 만들되,
+ // 동일 대진의 기존 점수는 유지합니다.
+ if(!state.playoff.final ||
+    state.playoff.final.a!==aF ||
+    state.playoff.final.b!==bF){
+   state.playoff.final={a:aF,b:bF,scoreA:"",scoreB:""};
+ }
+
+ if(r.length>=4){
+   let a3=r[2].id,b3=r[3].id;
+   if(!state.playoff.third ||
+      state.playoff.third.a!==a3 ||
+      state.playoff.third.b!==b3){
+     state.playoff.third={a:a3,b:b3,scoreA:"",scoreB:""};
+   }
+   document.getElementById("thirdView").innerHTML=
+     playoffHtml(state.playoff.third,"third","3·4위전","🥉");
+ }else{
+   state.playoff.third=null;
+   document.getElementById("thirdView").innerHTML=
+     '<div class="empty">3·4위전은 4팀 이상일 때 생성됩니다.</div>';
+ }
+
+ document.getElementById("finalView").innerHTML=
+   playoffHtml(state.playoff.final,"final","1·2위전","🥇");
+
+ save();
+}
+function setPlayoffScore(key,side,val){
+ val=String(val).replace(/[^0-9]/g,"");if(val!==""&&+val>7)val="7";
+ state.playoff[key][side==="A"?"scoreA":"scoreB"]=val;save();renderFinal();
+}
+function renderFinal(){
+ let r=calcRank();
+ if(r.length<2){
+   document.getElementById("resultView").innerHTML='<div class="empty">최소 2팀이 필요합니다.</div>';
+   return;
+ }
+ let p=state.playoff,h='<p class="note">최종 결과는 순위 결정전 결과 입력 후 확정됩니다.</p>';
+
+ if(p.final&&p.final.scoreA!==""&&p.final.scoreB!==""){
+  let x=+p.final.scoreA,y=+p.final.scoreB,w=x>y?p.final.a:p.final.b,l=x>y?p.final.b:p.final.a;
+  h+=`<div class="final-box"><h3>🥇 CHAMPION</h3><table><tr><th>1위</th><th>2위</th></tr><tr><td><b>${esc(teamName(w))}</b><br>${esc(members(w))}</td><td><b>${esc(teamName(l))}</b><br>${esc(members(l))}</td></tr></table></div>`;
+ }else h+="<div class='empty'>1·2위전 결과를 입력하세요.</div>";
+
+ if(r.length>=4){
+  if(p.third&&p.third.scoreA!==""&&p.third.scoreB!==""){
+   let x=+p.third.scoreA,y=+p.third.scoreB,w=x>y?p.third.a:p.third.b,l=x>y?p.third.b:p.third.a;
+   h+=`<div class="final-box"><h3>🥉 3RD PLACE</h3><table><tr><th>3위</th><th>4위</th></tr><tr><td><b>${esc(teamName(w))}</b><br>${esc(members(w))}</td><td><b>${esc(teamName(l))}</b><br>${esc(members(l))}</td></tr></table></div>`;
+  }else h+="<div class='empty'>3·4위전 결과를 입력하세요.</div>";
+ }
+ document.getElementById("resultView").innerHTML=h;
+}
+function save(){localStorage.setItem("officialTennisTournament",JSON.stringify(state))}
+function load(){
+ try{let s=JSON.parse(localStorage.getItem("officialTennisTournament"));if(s&&s.teams){state=s;document.getElementById("mode").value=s.mode;document.getElementById("teamCount").value=s.teams.length;renderTeamInputs();renderAll()}}
+ catch(e){}
+}
+function resetAll(){
+ if(confirm("저장된 대회 데이터와 모든 결과를 삭제할까요?")){localStorage.removeItem("officialTennisTournament");state={mode:"singles",teams:[],matches:[],playoff:{third:null,final:null},manualRanks:{}};document.getElementById("mode").value="singles";document.getElementById("teamCount").value=4;renderTeamInputs();renderAll();showView("settings")}
+}
+function renderAll(){renderTeams();renderDraw();renderRank();renderPlayoffs();renderFinal()}
+renderTeamInputs();load();
+</script>
+</body>
+</html>
