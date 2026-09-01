@@ -51,24 +51,34 @@
       gap: 6px;
     }
 
-    .btn-config {
+    .header-btns {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-config, .btn-reset {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
       color: var(--text-light);
-      padding: 8px 14px;
+      padding: 8px 12px;
       border-radius: 8px;
       font-weight: 600;
       font-size: 0.85rem;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
       transition: all 0.2s;
     }
 
     .btn-config:hover {
       border-color: var(--accent-gold);
       color: var(--accent-gold);
+    }
+
+    .btn-reset:hover {
+      border-color: #ef4444;
+      color: #ef4444;
     }
 
     /* 메인 콘텐츠 레이아웃 (반응형/가로모드 대응) */
@@ -132,7 +142,7 @@
       height: 280px;
     }
 
-    /* 스마트폰 가로모드 시 룰렛 사이즈 자동 축소 */
+    /* 스마트폰 가로모드 시 룰렛 크기 자동 감소 */
     @media (max-height: 500px) and (orientation: landscape) {
       canvas {
         width: 200px;
@@ -336,7 +346,6 @@
       margin-top: 10px;
     }
 
-    /* 메모 입력 리스트 */
     .memo-item {
       display: flex;
       align-items: center;
@@ -355,7 +364,10 @@
 
 <header>
   <h1>🎡 룰렛 추첨기</h1>
-  <button class="btn-config" onclick="openModal()">⚙️ 추첨 설정</button>
+  <div class="header-btns">
+    <button class="btn-reset" onclick="resetRoulette()">🔄 초기화</button>
+    <button class="btn-config" onclick="openModal()">⚙️ 추첨 설정</button>
+  </div>
 </header>
 
 <div class="main-wrapper">
@@ -553,6 +565,33 @@
     }
   }
 
+  // 초기화 기능 (현재 설정 상태 유지하면서 추첨 내역 초기화)
+  function resetRoulette() {
+    if (isSpinning) return;
+    if (!confirm('추첨 내역과 진행 상황을 모두 초기화하시겠습니까?')) return;
+
+    if (state.mode === 'single') {
+      let items = [];
+      for (let i = state.minNum; i <= state.maxNum; i++) items.push(i);
+      state.remainingItems = shuffle(items);
+    } else {
+      let items = [];
+      for (let i = 0; i < state.totalSlots; i++) {
+        items.push((i % state.teamCount) + 1);
+      }
+      state.remainingItems = shuffle(items);
+
+      state.teams = {};
+      for (let i = 1; i <= state.teamCount; i++) state.teams[i] = [];
+    }
+
+    state.history = [];
+    saveState();
+    drawRoulette();
+    updateStatusBoard();
+    document.getElementById('resultDisplay').innerText = '초기화되었습니다. 다시 추첨할 수 있습니다!';
+  }
+
   function applySettings() {
     state.mode = document.getElementById('modeSelect').value;
 
@@ -650,7 +689,7 @@
   function spin() {
     if (isSpinning) return;
     if (state.remainingItems.length === 0) {
-      alert('더 이상 추첨할 항목이 없습니다. 설정에서 다시 적용해주세요.');
+      alert('더 이상 추첨할 항목이 없습니다. 상단 초기화 버튼을 누르거나 설정에서 다시 적용해주세요.');
       return;
     }
 
