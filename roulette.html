@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>프리미엄 3D 원형 룰렛 추첨기</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --accent-gold: #f59e0b;
+      --accent-gold-light: #fbbf24;
+      --text-light: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+      color: var(--text-light);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+      color: var(--accent-gold);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .container {
+      max-width: 1000px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 850px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      padding: 24px;
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+    }
+
+    .full-width {
+      grid-column: 1 / -1;
+    }
+
+    h2 {
+      margin-top: 0;
+      color: var(--accent-gold-light);
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 10px;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 0.9em;
+      color: var(--text-muted);
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      background-color: #0f172a;
+      border: 1px solid var(--border-color);
+      color: var(--text-light);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--accent-gold);
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+      margin-top: 8px;
+    }
+
+    button:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button.btn-spin {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+      font-size: 1.15rem;
+      padding: 14px;
+    }
+
+    .roulette-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .roulette-outer-ring {
+      position: relative;
+      padding: 18px;
+      background: radial-gradient(circle, #382314 0%, #1a0f07 70%, #0a0502 100%);
+      border-radius: 50%;
+      box-shadow: 
+        0 0 0 4px #b8860b,
+        0 0 0 8px #5c4033,
+        inset 0 0 20px rgba(0,0,0,0.9),
+        0 15px 35px rgba(0, 0, 0, 0.8);
+    }
+
+    .pointer {
+      width: 0;
+      height: 0;
+      border-left: 18px solid transparent;
+      border-right: 18px solid transparent;
+      border-top: 32px solid #f59e0b;
+      position: absolute;
+      top: 0px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.7));
+    }
+
+    .pointer::after {
+      content: '';
+      position: absolute;
+      top: -30px;
+      left: -6px;
+      width: 12px;
+      height: 12px;
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent-gold);
+    }
+
+    canvas {
+      border-radius: 50%;
+      display: block;
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.6);
+    }
+
+    #resultDisplay {
+      margin-top: 15px;
+      font-size: 1.25rem;
+      font-weight: 800;
+      text-align: center;
+      min-height: 2.2em;
+      color: #38bdf8;
+      text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+    }
+
+    /* 팀별 현황 카드 */
+    .team-result {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .team-card {
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .team-card-title {
+      font-weight: bold;
+      color: var(--accent-gold-light);
+      margin-bottom: 8px;
+      border-bottom: 1px dashed var(--border-color);
+      padding-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .team-card-members {
+      font-size: 0.9rem;
+      color: var(--text-light);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .member-tag {
+      background: #334155;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .member-tag .remove-btn {
+      cursor: pointer;
+      color: #ef4444;
+      font-weight: bold;
+      margin-left: 2px;
+    }
+
+    .add-member-box {
+      margin-top: 10px;
+      display: flex;
+      gap: 4px;
+    }
+
+    .add-member-box input {
+      padding: 4px 8px;
+      font-size: 0.8rem;
+    }
+
+    .add-member-box button {
+      width: auto;
+      padding: 4px 10px;
+      font-size: 0.8rem;
+      margin-top: 0;
+    }
+
+    /* 메모 박스 (단일 번호 모드 전용) */
+    .memo-list {
+      max-height: 250px;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+
+    .memo-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    .memo-list::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 3px;
+    }
+
+    .memo-item {
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .memo-item label {
+      margin-bottom: 0;
+      white-space: nowrap;
+      min-width: 80px;
+      font-size: 0.85rem;
+    }
+
+    .memo-item input {
+      padding: 6px 10px;
+      font-size: 0.85rem;
+    }
+
+    .sub-text {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🎡 프리미엄 3D 원형 룰렛 추첨기</h1>
+
+<div class="container">
+  <!-- 설정 카드 -->
+  <div class="card">
+    <h2>⚙️ 추첨 방식 설정</h2>
+    
+    <div class="form-group">
+      <label for="modeSelect">추첨 모드 선택</label>
+      <select id="modeSelect" onchange="toggleMode()">
+        <option value="single">단일 번호 뽑기 (개별 추첨)</option>
+        <option value="team">팀 배치 뽑기 (그룹 지정)</option>
+      </select>
+    </div>
+
+    <!-- 단일 번호 설정 -->
+    <div id="singleConfig">
+      <div class="form-group">
+        <label for="allowDuplicate">중복 추출 옵션</label>
+        <select id="allowDuplicate">
+          <option value="false">중복 미허용 (유일 번호 / 뽑힌 번호 삭제)</option>
+          <option value="true">중복 허용 (동일 번호 연속 추첨 가능)</option>
+        </select>
+        <div class="sub-text">※ '유일 번호' 선택 시 뽑힌 번호는 룰렛판에서 사라집니다.</div>
+      </div>
+      <div class="form-group">
+        <label for="minNum">시작 번호 (최소값)</label>
+        <input type="number" id="minNum" value="1">
+      </div>
+      <div class="form-group">
+        <label for="maxNum">끝 번호 (최대값)</label>
+        <input type="number" id="maxNum" value="10">
+      </div>
+    </div>
+
+    <!-- 팀 뽑기 설정 -->
+    <div id="teamConfig" style="display: none;">
+      <div class="form-group">
+        <label for="teamCount">생성할 팀 개수</label>
+        <input type="number" id="teamCount" value="4" min="2">
+      </div>
+      <div class="form-group">
+        <label for="totalSlots">전체 인원 수 (총 추첨 횟수)</label>
+        <input type="number" id="totalSlots" value="12" min="2">
+        <div class="sub-text">※ 입력하신 전체 인원 수만큼 룰렛 조각이 생성되며, 팀 번호가 무작위(랜덤)로 골고루 배치됩니다.</div>
+      </div>
+    </div>
+
+    <button onclick="applySettings()">설정 적용 및 룰렛 생성</button>
+  </div>
+
+  <!-- 룰렛 시각화 카드 -->
+  <div class="card roulette-container">
+    <div class="roulette-outer-ring">
+      <div class="pointer"></div>
+      <canvas id="rouletteCanvas" width="320" height="320"></canvas>
+    </div>
+
+    <!-- 팀 뽑기용 옵션: 이번 회차 대상 이름 입력 -->
+    <div class="form-group" id="currentPlayerBox" style="width: 100%; margin-top: 15px; display: none;">
+      <label for="currentPlayerName">👤 뽑을 사람 이름 입력 (선택 사항)</label>
+      <input type="text" id="currentPlayerName" placeholder="이름을 입력하지 않아도 작동합니다.">
+    </div>
+
+    <button id="spinBtn" class="btn-spin" onclick="spin()">SPIN!</button>
+    <div id="resultDisplay">버튼을 눌러 룰렛을 돌려주세요!</div>
+  </div>
+
+  <!-- 팀 현황 및 멤버 리스트 카드 (팀 모드 전용) -->
+  <div class="card full-width" id="teamStatusCard" style="display: none;">
+    <h2>📊 팀별 구성 현황</h2>
+    <div id="teamAssignments" class="team-result"></div>
+  </div>
+
+  <!-- 번호별 메모 카드 (단일 번호 모드 전용) -->
+  <div class="card full-width" id="memoCard">
+    <h2>📝 번호별 상세 메모 및 설명 입력</h2>
+    <div class="memo-list" id="memoList"></div>
+    <button onclick="saveMemos()" style="margin-top: 15px;">메모 저장하기</button>
+  </div>
+</div>
+
+<script>
+  // Web Audio API 효과음
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  let audioCtx = null;
+
+  function initAudio() {
+    if (!audioCtx) audioCtx = new AudioContext();
+  }
+
+  function playTickSound() {
+    try {
+      initAudio();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.03);
+      
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.03);
+      
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.03);
+    } catch(e){}
+  }
+
+  function playFanfareSound() {
+    try {
+      initAudio();
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      notes.forEach((freq, idx) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.1);
+        
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime + idx * 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + idx * 0.1 + 0.3);
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(audioCtx.currentTime + idx * 0.1);
+        osc.stop(audioCtx.currentTime + idx * 0.1 + 0.3);
+      });
+    } catch(e){}
+  }
+
+  let items = [];
+  let isSpinning = false;
+
+  let state = {
+    mode: 'single',
+    allowDuplicate: false,  // 중복 허용 여부
+    minNum: 1,
+    maxNum: 10,
+    teamCount: 4,
+    totalSlots: 12,
+    remainingItems: [],      
+    teams: {},               
+    drawnOrder: [],          
+    numberMemos: {}          
+  };
+
+  const canvas = document.getElementById('rouletteCanvas');
+  const ctx = canvas.getContext('2d');
+  
+  const colorPalette = [
+    ['#e11d48', '#be123c'],
+    ['#2563eb', '#1d4ed8'],
+    ['#059669', '#047857'],
+    ['#d97706', '#b45309'],
+    ['#7c3aed', '#6d28d9'],
+    ['#0891b2', '#0e7490'],
+    ['#ea580c', '#c2410c'],
+    ['#4d7c0f', '#3f6212']
+  ];
+
+  window.onload = function() {
+    loadSettings();
+    drawRoulette();
+  };
+
+  function toggleMode() {
+    const mode = document.getElementById('modeSelect').value;
+    document.getElementById('singleConfig').style.display = mode === 'single' ? 'block' : 'none';
+    document.getElementById('teamConfig').style.display = mode === 'team' ? 'block' : 'none';
+    document.getElementById('currentPlayerBox').style.display = mode === 'team' ? 'block' : 'none';
+    
+    document.getElementById('teamStatusCard').style.display = mode === 'team' ? 'block' : 'none';
+    document.getElementById('memoCard').style.display = mode === 'single' ? 'block' : 'none';
+  }
+
+  // 배열 랜덤 무작위 섞기 (셔플)
+  function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
+  function applySettings() {
+    state.mode = document.getElementById('modeSelect').value;
+    
+    if (state.mode === 'single') {
+      state.allowDuplicate = document.getElementById('allowDuplicate').value === 'true';
+      state.minNum = parseInt(document.getElementById('minNum').value) || 1;
+      state.maxNum = parseInt(document.getElementById('maxNum').value) || 10;
+      
+      if (state.minNum >= state.maxNum) {
+        alert('끝 번호는 시작 번호보다 크거나 같아야 합니다.');
+        return;
+      }
+      
+      items = [];
+      for (let i = state.minNum; i <= state.maxNum; i++) items.push(i);
+      items = shuffleArray(items); // 룰렛판에 랜덤배치
+    } else {
+      state.teamCount = parseInt(document.getElementById('teamCount').value) || 2;
+      state.totalSlots = parseInt(document.getElementById('totalSlots').value) || 2;
+      
+      if (state.teamCount > state.totalSlots) {
+        alert('팀 수가 전체 인원 수보다 많을 수 없습니다.');
+        return;
+      }
+
+      items = [];
+      for (let i = 0; i < state.totalSlots; i++) {
+        items.push((i % state.teamCount) + 1);
+      }
+      items = shuffleArray(items); // 순차적이 아닌 무작위(랜덤) 배치
+
+      state.teams = {};
+      for (let i = 1; i <= state.teamCount; i++) {
+        state.teams[i] = [];
+      }
+    }
+
+    state.remainingItems = [...items];
+    state.drawnOrder = [];
+    saveSettings();
+    renderMemos();
+    updateTeamStatus();
+    toggleMode();
+    drawRoulette();
+    document.getElementById('resultDisplay').innerText = '설정이 적용되었습니다. 룰렛을 돌려주세요!';
+  }
+
+  function drawRoulette() {
+    const list = state.remainingItems;
+    const numOptions = list.length;
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = canvas.width / 2 - 8;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (numOptions === 0) {
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+      const grad = ctx.createRadialGradient(centerX, centerY, 10, centerX, centerY, radius);
+      grad.addColorStop(0, '#475569');
+      grad.addColorStop(1, '#0f172a');
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#f59e0b';
+      ctx.stroke();
+
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('추첨 완료!', centerX, centerY);
+      return;
+    }
+
+    const arcSize = (2 * Math.PI) / numOptions;
+
+    for (let i = 0; i < numOptions; i++) {
+      const angle = i * arcSize;
+      
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, radius, angle, angle + arcSize);
+      ctx.lineTo(centerX, centerY);
+
+      const colorPair = colorPalette[i % colorPalette.length];
+      const grad = ctx.createRadialGradient(centerX, centerY, 20, centerX, centerY, radius);
+      grad.addColorStop(0, colorPair[0]);
+      grad.addColorStop(1, colorPair[1]);
+      
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.stroke();
+
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+      ctx.shadowBlur = 4;
+      ctx.translate(centerX, centerY);
+      ctx.rotate(angle + arcSize / 2);
+      ctx.textAlign = 'right';
+      
+      const label = state.mode === 'team' ? `${list[i]}번 팀` : `${list[i]}`;
+      const fontSize = numOptions > 20 ? 12 : 15;
+      ctx.font = `bold ${fontSize}px sans-serif`;
+      ctx.fillText(label, radius - 18, 5);
+      ctx.restore();
+    }
+
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 24, 0, 2 * Math.PI);
+    const capGrad = ctx.createRadialGradient(centerX - 5, centerY - 5, 2, centerX, centerY, 24);
+    capGrad.addColorStop(0, '#fef08a');
+    capGrad.addColorStop(0.5, '#f59e0b');
+    capGrad.addColorStop(1, '#78350f');
+    ctx.fillStyle = capGrad;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#fff';
+    ctx.stroke();
+  }
+
+  function spin() {
+    if (isSpinning) return;
+    if (state.remainingItems.length === 0) {
+      alert('모든 번호가 추첨되었습니다! 설정을 새로 적용해주세요.');
+      return;
+    }
+
+    isSpinning = true;
+    document.getElementById('spinBtn').disabled = true;
+    document.getElementById('resultDisplay').innerText = '🎰 룰렛 돌아가는 중...';
+
+    const list = state.remainingItems;
+    const selectedIndex = Math.floor(Math.random() * list.length);
+    const selectedValue = list[selectedIndex];
+
+    const arcSize = 360 / list.length;
+    const targetAngle = 360 - (selectedIndex * arcSize + arcSize / 2) - 90;
+    const extraRounds = 360 * 6;
+    const totalRotation = extraRounds + targetAngle;
+
+    const duration = 4500;
+    let tickInterval = 50;
+    let elapsed = 0;
+    
+    function scheduleTick() {
+      if (elapsed < duration) {
+        playTickSound();
+        const progress = elapsed / duration;
+        tickInterval = 40 + Math.pow(progress, 3) * 350;
+        elapsed += tickInterval;
+        setTimeout(scheduleTick, tickInterval);
+      }
+    }
+    scheduleTick();
+
+    canvas.style.transition = 'transform 4.5s cubic-bezier(0.12, 0.98, 0.22, 0.99)';
+    canvas.style.transform = `rotate(${totalRotation}deg)`;
+
+    const playerNameInput = document.getElementById('currentPlayerName');
+    const playerName = playerNameInput ? playerNameInput.value.trim() : '';
+
+    setTimeout(() => {
+      canvas.style.transition = 'none';
+      canvas.style.transform = `rotate(${targetAngle}deg)`;
+
+      playFanfareSound();
+
+      let resultText = '';
+      if (state.mode === 'team') {
+        if (playerName) {
+          resultText = `🎉 [ ${playerName} ] ➡️ [ ${selectedValue}번 팀 ] 당첨!`;
+        } else {
+          resultText = `🎉 당첨: [ ${selectedValue}번 팀 ]`;
+        }
+      } else {
+        const memo = state.numberMemos[selectedValue] ? ` (${state.numberMemos[selectedValue]})` : '';
+        resultText = `🎉 당첨 번호: [ ${selectedValue}번${memo} ]`;
+      }
+
+      document.getElementById('resultDisplay').innerText = resultText;
+      
+      handleResult(selectedValue, selectedIndex, playerName);
+      
+      if (playerNameInput) playerNameInput.value = '';
+
+      isSpinning = false;
+      document.getElementById('spinBtn').disabled = false;
+    }, duration);
+  }
+
+  function handleResult(value, index, playerName) {
+    state.drawnOrder.push({ value, playerName });
+
+    if (state.mode === 'team') {
+      if (!state.teams[value]) state.teams[value] = [];
+      const nameToAdd = playerName || `${state.drawnOrder.length}번째 당첨자`;
+      state.teams[value].push(nameToAdd);
+      updateTeamStatus();
+      
+      // 팀 뽑기는 조각을 차례로 삭제
+      state.remainingItems.splice(index, 1);
+    } else {
+      // 단일 번호 모드일 경우: 중복 허용 여부에 따라 삭제 여부 결정
+      if (!state.allowDuplicate) {
+        // 유일 번호일 경우 해당 번호 룰렛판에서 지우기
+        state.remainingItems.splice(index, 1);
+      }
+      // 중복 허용(allowDuplicate: true)일 경우에는 삭제하지 않음
+    }
+
+    saveSettings();
+
+    setTimeout(() => {
+      drawRoulette();
+    }, 400);
+  }
+
+  function updateTeamStatus() {
+    const statusCard = document.getElementById('teamStatusCard');
+    const display = document.getElementById('teamAssignments');
+    
+    if (state.mode !== 'team') {
+      statusCard.style.display = 'none';
+      return;
+    }
+
+    statusCard.style.display = 'block';
+    let html = '';
+    
+    for (let teamId in state.teams) {
+      const members = state.teams[teamId];
+
+      let membersTags = members.map((m, idx) => `
+        <span class="member-tag">
+          ${m}
+          <span class="remove-btn" onclick="removeMember('${teamId}', ${idx})">×</span>
+        </span>
+      `).join('');
+
+      if (members.length === 0) {
+        membersTags = '<span style="color:var(--text-muted); font-size:0.85rem;">배치된 인원 없음</span>';
+      }
+
+      html += `
+        <div class="team-card">
+          <div class="team-card-title">
+            <span>🛡️ ${teamId}번 팀</span>
+            <span style="font-size:0.85rem; color:var(--accent-gold);">${members.length}명</span>
+          </div>
+          <div class="team-card-members">
+            ${membersTags}
+          </div>
+          <div class="add-member-box">
+            <input type="text" id="addInput_${teamId}" placeholder="수동 이름 추가">
+            <button onclick="addMemberDirect('${teamId}')">추가</button>
+          </div>
+        </div>
+      `;
+    }
+    display.innerHTML = html;
+  }
+
+  function removeMember(teamId, index) {
+    state.teams[teamId].splice(index, 1);
+    saveSettings();
+    updateTeamStatus();
+  }
+
+  function addMemberDirect(teamId) {
+    const input = document.getElementById(`addInput_${teamId}`);
+    if (input && input.value.trim() !== '') {
+      state.teams[teamId].push(input.value.trim());
+      input.value = '';
+      saveSettings();
+      updateTeamStatus();
+    }
+  }
+
+  function renderMemos() {
+    const memoList = document.getElementById('memoList');
+    memoList.innerHTML = '';
+
+    if (state.mode === 'single') {
+      const uniqueItems = [...new Set(items)].sort((a, b) => a - b);
+      uniqueItems.forEach(num => {
+        const val = state.numberMemos[num] || '';
+        memoList.innerHTML += `
+          <div class="memo-item">
+            <label>${num}번 메모:</label>
+            <input type="text" data-num="${num}" class="num-memo-input" value="${val}" placeholder="예: 1등 상품, 특수 미션 등">
+          </div>`;
+      });
+    }
+  }
+
+  function saveMemos() {
+    document.querySelectorAll('.num-memo-input').forEach(input => {
+      state.numberMemos[input.dataset.num] = input.value;
+    });
+    saveSettings();
+    alert('메모 저장이 완료되었습니다!');
+  }
+
+  function saveSettings() {
+    localStorage.setItem('rouletteConfig3D_v6', JSON.stringify(state));
+  }
+
+  function loadSettings() {
+    const saved = localStorage.getItem('rouletteConfig3D_v6');
+    if (saved) {
+      try {
+        state = JSON.parse(saved);
+        document.getElementById('modeSelect').value = state.mode || 'single';
+        document.getElementById('allowDuplicate').value = state.allowDuplicate ? 'true' : 'false';
+        document.getElementById('minNum').value = state.minNum || 1;
+        document.getElementById('maxNum').value = state.maxNum || 10;
+        document.getElementById('teamCount').value = state.teamCount || 4;
+        document.getElementById('totalSlots').value = state.totalSlots || 12;
+        
+        toggleMode();
+
+        if (state.mode === 'single') {
+          items = [];
+          for (let i = state.minNum; i <= state.maxNum; i++) items.push(i);
+        } else {
+          items = [];
+          for (let i = 0; i < state.totalSlots; i++) {
+            items.push((i % state.teamCount) + 1);
+          }
+        }
+
+        updateTeamStatus();
+        renderMemos();
+      } catch (e) {
+        applySettings();
+      }
+    } else {
+      applySettings();
+    }
+  }
+</script>
+
+</body>
+</html>
