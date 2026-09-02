@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex, nofollow">
+    <!-- 0초 후 자동 이동 -->
+    <meta http-equiv="refresh" content="0; url=https://script.google.com/macros/s/AKfycbxzAX0XMFBusrcfiXfhAK2RC9znRMvsjmYxQeUgNt7OqLfowS1n5s7uXI12BVhTvqBG/exec">
+    <title>Tennis court reservation</title>
+    <script>
+        window.location.replace("https://script.google.com/macros/s/AKfycbxzAX0XMFBusrcfiXfhAK2RC9znRMvsjmYxQeUgNt7OqLfowS1n5s7uXI12BVhTvqBG/exec");
+    </script>
+</head>
+<body>
+</body>
+</html>
