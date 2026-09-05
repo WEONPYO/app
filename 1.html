@@ -79,7 +79,7 @@
     body.mode-landscape .scoreboard { height: 70%; padding: 8px 10px 0 10px; }
 
     .team-card {
-      flex: 1; border-radius: 12px; padding: 10px 14px; display: flex;
+      flex: 1; border-radius: 12px; padding: 12px 14px; display: flex;
       flex-direction: column; justify-content: space-between; position: relative;
       box-shadow: 0 8px 20px rgba(0,0,0,0.6); overflow: hidden; border: 1px solid rgba(255,255,255,0.15);
     }
@@ -104,34 +104,41 @@
       padding: 4px 10px; border-radius: 6px;
     }
 
-    /* 점수 바디 및 정중앙 배치 조정 */
+    /* 점수 바디 수직/수평 정중앙 배치 수정 */
     .score-body {
-      flex: 1; display: flex; justify-content: center; align-items: center;
-      position: relative; z-index: 2; width: 100%; height: 100%;
-      overflow: hidden;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1;
+      pointer-events: none;
     }
 
     .games-score {
-      font-size: 1rem; font-weight: 700; opacity: 0.95; position: absolute; left: 0; bottom: 0px;
-      background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 4px; z-index: 4;
+      font-size: 0.9rem; font-weight: 700; opacity: 0.95; position: absolute; left: 14px; bottom: 12px;
+      background: rgba(0,0,0,0.4); padding: 3px 8px; border-radius: 4px; z-index: 4;
     }
 
-    /* 박스 80% 크기 유지 및 완전한 수평/수직 중앙 정렬 */
+    /* 수직 폰트 baseline 쏠림을 방지하여 완전한 정중앙 정렬 */
     .point-score {
-      font-size: min(25vw, 18vh);
+      font-size: min(28vw, 16vh);
       font-weight: 900;
       text-shadow: 4px 4px 16px rgba(0,0,0,0.9);
-      line-height: 1;
+      line-height: 0.8;
       text-align: center;
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 100%;
-      height: 100%;
       letter-spacing: -2px;
-      margin: auto;
+      margin: 0;
+      padding: 0;
+      transform: translateY(-2%); /* 폰트 고유 하단 여백 보정 */
     }
-    body.mode-landscape .point-score { font-size: min(35vw, 40vh); }
+    body.mode-landscape .point-score { font-size: min(35vw, 38vh); }
 
     .serve-ball {
       display: inline-block; width: 12px; height: 12px;
@@ -313,9 +320,9 @@
           <span class="sets-won" id="sets-a">Set: 0</span>
         </div>
         <div class="score-body">
-          <div class="games-score" id="games-a">Game: 0</div>
           <div class="point-score" id="points-a">0</div>
         </div>
+        <div class="games-score" id="games-a">Game: 0</div>
         <button class="btn-score-up" onclick="addPoint('A')"></button>
       </div>
 
@@ -334,9 +341,9 @@
           <span class="sets-won" id="sets-b">Set: 0</span>
         </div>
         <div class="score-body">
-          <div class="games-score" id="games-b">Game: 0</div>
           <div class="point-score" id="points-b">0</div>
         </div>
+        <div class="games-score" id="games-b">Game: 0</div>
         <button class="btn-score-up" onclick="addPoint('B')"></button>
       </div>
     </div>
@@ -674,7 +681,6 @@
 
       window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
 
-      /* 설정창 적용 버튼: 이전 점수를 리셋하지 않고 유지함 */
       document.getElementById('btn-save-settings').onclick = () => {
         saveSettings();
         modal.style.display = 'none';
@@ -750,7 +756,6 @@
       document.getElementById('p-b2').style.display = isSingles ? 'none' : 'block';
     }
 
-    /* 설정 변경 후 점수(state)를 유지한 채 렌더링만 갱신 */
     function saveSettings() {
       cancelServerAnnouncement();
       config.displayMode = document.getElementById('set-display-mode').value;
