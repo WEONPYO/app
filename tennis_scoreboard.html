@@ -3,20 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Tennis Scoreboard - Hybrid Landscape & Portrait</title>
+  <title>Tennis Scoreboard - Portrait Mode</title>
   <style>
     :root {
-      --bg-color: #0c1911;
-      --card-bg: #14281d;
-      --team-a-color: #0e3060;
-      --team-b-color: #531248;
-      --team-a-court: #0b3d22;
-      --team-b-court: #3b1935;
+      --bg-color: #08120c;
+      --card-bg: #102017;
+      --team-a-color: #0b4182;
+      --team-b-color: #6b1158;
       --line-color: #ffffff;
       --accent-yellow: #ccff00;
       --text-main: #ffffff;
-      --court-green: #0a4f29;
-      --court-purple: #4a1543;
     }
 
     * {
@@ -38,203 +34,116 @@
       touch-action: none;
     }
 
-    /* 레이아웃 모드 (Landscape vs Portrait) */
-    body.mode-landscape {
-      flex-direction: row;
-    }
-
-    body.mode-portrait {
-      flex-direction: column;
-      max-width: 500px;
-      margin: 0 auto;
-    }
+    body.mode-portrait { flex-direction: column; max-width: 500px; margin: 0 auto; }
+    body.mode-landscape { flex-direction: row; }
 
     #unauthorized-access {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: var(--bg-color);
-      color: #ff4d4d;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-      padding: 20px;
-      text-align: center;
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--bg-color); color: #ff4d4d; flex-direction: column;
+      justify-content: center; align-items: center; z-index: 9999; padding: 20px; text-align: center;
     }
 
     #fs-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: var(--bg-color);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 100;
-      padding: 20px;
-      text-align: center;
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--bg-color); display: flex; flex-direction: column;
+      justify-content: center; align-items: center; z-index: 100; padding: 20px; text-align: center;
     }
 
-    #fs-overlay h2 {
-      color: var(--accent-yellow);
-      font-size: 1.8rem;
-      margin-bottom: 25px;
-    }
+    #fs-overlay h2 { color: var(--accent-yellow); font-size: 1.8rem; margin-bottom: 25px; }
 
     .btn-fullscreen-start {
-      padding: 15px 35px;
-      font-size: 1.1rem;
-      font-weight: bold;
-      background-color: var(--accent-yellow);
-      border: none;
-      border-radius: 8px;
-      color: #000;
-      cursor: pointer;
+      padding: 15px 35px; font-size: 1.1rem; font-weight: bold;
+      background-color: var(--accent-yellow); border: none; border-radius: 8px;
+      color: #000; cursor: pointer;
     }
 
-    /* 메인 컨테이너 영역 */
     .main-app {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      width: 100%;
-      position: relative;
+      flex: 1; display: flex; flex-direction: column; height: 100%; width: 100%; position: relative;
     }
 
-    /* 헤더 (세로 모드 전용) */
     header {
-      background-color: var(--card-bg);
-      padding: 8px 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #234733;
+      background-color: var(--card-bg); padding: 8px 12px; display: flex;
+      justify-content: space-between; align-items: center; border-bottom: 1px solid #234733;
     }
     body.mode-landscape header { display: none; }
-
-    header h1 {
-      font-size: 1rem;
-      font-weight: 800;
-      color: var(--accent-yellow);
-    }
+    header h1 { font-size: 1rem; font-weight: 800; color: var(--accent-yellow); }
 
     .header-btns { display: flex; gap: 6px; }
-
     .btn-icon {
-      background: #1c3829;
-      border: 1px solid #2e5941;
-      color: white;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      font-weight: bold;
-      cursor: pointer;
+      background: #1c3829; border: 1px solid #2e5941; color: white;
+      padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer;
     }
 
-    /* 스코어보드 카드 영역 */
-    .scoreboard {
-      display: flex;
-      padding: 10px;
-      gap: 12px;
-    }
-
-    body.mode-portrait .scoreboard {
-      flex: 1.2;
-      flex-direction: column;
-    }
-
-    body.mode-landscape .scoreboard {
-      flex: 0 0 55%;
-      height: 52%;
-      padding: 16px 16px 0 16px;
-    }
+    .scoreboard { display: flex; padding: 8px; gap: 10px; }
+    body.mode-portrait .scoreboard { flex: 1.2; flex-direction: column; }
+    body.mode-landscape .scoreboard { height: 70%; padding: 8px 10px 0 10px; }
 
     .team-card {
-      flex: 1;
-      border-radius: 12px;
-      padding: 12px 16px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      position: relative;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.6);
-      overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.1);
+      flex: 1; border-radius: 12px; padding: 12px 14px; display: flex;
+      flex-direction: column; justify-content: space-between; position: relative;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.6); overflow: hidden; border: 1px solid rgba(255,255,255,0.15);
     }
 
-    .team-card.team-a { background: linear-gradient(135deg, var(--team-a-color), #091c38); }
-    .team-card.team-b { background: linear-gradient(135deg, var(--team-b-color), #30082b); }
+    .team-card.team-a { background: linear-gradient(135deg, var(--team-a-color), #051a36); }
+    .team-card.team-b { background: linear-gradient(135deg, var(--team-b-color), #2d0725); }
 
-    .team-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      z-index: 2;
-    }
-
+    .team-header { display: flex; justify-content: space-between; align-items: center; z-index: 2; }
     .team-info { display: flex; align-items: center; gap: 8px; }
-
-    .team-title-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .team-name { font-size: 1.2rem; font-weight: 800; }
+    .team-title-row { display: flex; align-items: center; gap: 6px; }
+    .team-name { font-size: 1.1rem; font-weight: 800; }
     .player-names { font-size: 0.8rem; opacity: 0.85; margin-top: 2px; }
 
     .court-arrow {
-      font-size: 0.9rem;
-      font-weight: 900;
-      color: var(--accent-yellow);
-      background: rgba(0, 0, 0, 0.4);
-      padding: 2px 6px;
-      border-radius: 4px;
+      font-size: 0.85rem; font-weight: 900; color: var(--accent-yellow);
+      background: rgba(0, 0, 0, 0.4); padding: 2px 6px; border-radius: 4px;
       border: 1px solid rgba(204, 255, 0, 0.4);
     }
 
     .sets-won {
-      font-size: 1.1rem; font-weight: 700;
-      background: rgba(0,0,0,0.3);
-      padding: 4px 8px; border-radius: 6px;
+      font-size: 1.1rem; font-weight: 700; background: rgba(0,0,0,0.3);
+      padding: 4px 10px; border-radius: 6px;
     }
 
+    /* 점수 바디 수직/수평 정중앙 배치 수정 */
     .score-body {
-      flex: 1;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       display: flex;
       justify-content: center;
       align-items: center;
-      position: relative;
-      z-index: 2;
-      width: 100%;
+      z-index: 1;
+      pointer-events: none;
     }
 
     .games-score {
-      font-size: 1.2rem;
-      font-weight: 700;
-      opacity: 0.9;
-      position: absolute;
-      left: 0;
-      bottom: 5px;
+      font-size: 0.9rem; font-weight: 700; opacity: 0.95; position: absolute; left: 14px; bottom: 12px;
+      background: rgba(0,0,0,0.4); padding: 3px 8px; border-radius: 4px; z-index: 4;
     }
 
+    /* 수직 폰트 baseline 쏠림을 방지하여 완전한 정중앙 정렬 */
     .point-score {
-      font-size: 5rem;
+      font-size: min(28vw, 16vh);
       font-weight: 900;
-      text-shadow: 3px 3px 10px rgba(0,0,0,0.8);
-      line-height: 1;
+      text-shadow: 4px 4px 16px rgba(0,0,0,0.9);
+      line-height: 0.8;
       text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: -2px;
+      margin: 0;
+      padding: 0;
+      transform: translateY(-2%); /* 폰트 고유 하단 여백 보정 */
     }
+    body.mode-landscape .point-score { font-size: min(35vw, 38vh); }
 
     .serve-ball {
-      display: inline-block;
-      width: 12px; height: 12px;
-      background-color: var(--accent-yellow);
-      border-radius: 50%;
-      box-shadow: 0 0 10px var(--accent-yellow);
-      visibility: hidden;
+      display: inline-block; width: 12px; height: 12px;
+      background-color: var(--accent-yellow); border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent-yellow); visibility: hidden;
     }
     .serve-ball.active { visibility: visible; }
 
@@ -243,331 +152,135 @@
       opacity: 0; cursor: pointer; z-index: 3;
     }
 
-    /* 사이드바 컨트롤 영역 (가로 모드 전용) */
     .sidebar-controls {
-      display: none;
-      width: 160px;
-      background-color: var(--card-bg);
-      border-left: 1px solid #234733;
-      padding: 12px;
-      flex-direction: column;
-      gap: 10px;
+      display: none; width: 110px; background-color: var(--card-bg);
+      border-left: 1px solid #234733; padding: 8px 6px; flex-direction: column; gap: 6px;
     }
     body.mode-landscape .sidebar-controls { display: flex; }
 
-    .sidebar-title {
-      font-size: 0.85rem;
-      font-weight: 800;
-      color: var(--accent-yellow);
-      text-align: center;
-      margin-bottom: 5px;
-    }
+    .sidebar-title { font-size: 0.7rem; font-weight: 800; color: var(--accent-yellow); text-align: center; margin-bottom: 2px; }
 
-    /* 하단 컨트롤 영역 (세로 모드 전용) */
-    .controls {
-      display: grid;
-      grid-template-columns: 1.2fr 1.2fr 1.2fr 1fr;
-      gap: 5px;
-      padding: 0 6px 6px 6px;
-    }
+    .controls { display: grid; grid-template-columns: 1.2fr 1.2fr 1.2fr 1fr; gap: 5px; padding: 0 6px 6px 6px; }
     body.mode-landscape .controls { display: none; }
 
     .btn-action {
-      background-color: #1c3829; color: white;
-      border: 1px solid #2e5941;
-      padding: 10px 0; border-radius: 6px;
-      font-size: 0.75rem; font-weight: bold;
+      background-color: #1c3829; color: white; border: 1px solid #2e5941;
+      padding: 8px 0; border-radius: 6px; font-size: 0.75rem; font-weight: bold;
       cursor: pointer; text-align: center;
     }
 
-    .sidebar-controls .btn-action {
-      width: 100%;
-      padding: 12px 0;
-      font-size: 0.8rem;
-    }
+    .sidebar-controls .btn-action { width: 100%; padding: 6px 0; font-size: 0.65rem; }
+    .btn-action.highlight { border-color: var(--accent-yellow); color: var(--accent-yellow); }
 
-    .btn-action.highlight {
-      border-color: var(--accent-yellow);
-      color: var(--accent-yellow);
-    }
-
-    /* 테니스 코트 3D 입체 디자인 */
     .court-section {
-      flex: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 10px;
-      position: relative;
+      display: flex; justify-content: center; align-items: center;
+      padding: 2px; position: relative;
     }
+    body.mode-landscape .court-section { height: 30%; }
+    body.mode-portrait .court-section { flex: 1; }
 
     .court-container {
-      width: 95%;
-      height: 90%;
-      max-width: 900px;
-      position: relative;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      width: 95%; height: 90%; max-width: 800px; position: relative;
+      display: flex; justify-content: center; align-items: center;
     }
 
-    /* 입체 가로형 3D 원근법 적용 */
-    body.mode-landscape .court-container {
-      perspective: 600px;
-    }
+    body.mode-landscape .court-container { perspective: 400px; }
 
     .court-inner {
-      width: 100%;
-      height: 100%;
-      border: 3px solid var(--line-color);
-      position: relative;
-      display: flex;
-      overflow: visible;
-      box-shadow: 0 15px 35px rgba(0,0,0,0.8);
-      transition: transform 0.5s ease;
+      width: 100%; height: 100%; border: 3px solid var(--line-color);
+      position: relative; display: flex; overflow: visible;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.8); transition: transform 0.5s ease;
     }
 
-    body.mode-landscape .court-inner {
-      transform: rotateX(28deg);
-      transform-style: preserve-3d;
-      border-radius: 4px;
-    }
+    body.mode-landscape .court-inner { transform: rotateX(20deg); transform-style: preserve-3d; border-radius: 4px; }
 
-    .court-side {
-      position: absolute;
-      top: 0; bottom: 0; width: 50%;
-      transition: background-color 0.3s ease;
-    }
+    .court-side { position: absolute; top: 0; bottom: 0; width: 50%; transition: background-color 0.3s ease; }
     .court-side.left { left: 0; }
     .court-side.right { right: 0; }
 
-    .bg-team-a { background-color: var(--court-green); }
-    .bg-team-b { background-color: var(--court-purple); }
+    .bg-team-a { background-color: var(--team-a-color) !important; }
+    .bg-team-b { background-color: var(--team-b-color) !important; }
 
     .net-line {
-      position: absolute;
-      left: 50%; top: -5%; bottom: -5%;
-      width: 4px; background-color: var(--line-color);
-      transform: translateX(-50%); z-index: 3;
-      box-shadow: 0 0 8px rgba(255,255,255,0.8);
+      position: absolute; left: 50%; top: -4%; bottom: -4%; width: 4px;
+      background-color: var(--line-color); transform: translateX(-50%); z-index: 3;
+      box-shadow: 0 0 6px rgba(255,255,255,0.8);
     }
 
-    .singles-line-top {
-      position: absolute; top: 15%; left: 0; right: 0;
-      height: 2px; background-color: var(--line-color); z-index: 2;
-    }
-    .singles-line-bottom {
-      position: absolute; bottom: 15%; left: 0; right: 0;
-      height: 2px; background-color: var(--line-color); z-index: 2;
-    }
+    .singles-line-top { position: absolute; top: 15%; left: 0; right: 0; height: 2px; background-color: var(--line-color); z-index: 2; }
+    .singles-line-bottom { position: absolute; bottom: 15%; left: 0; right: 0; height: 2px; background-color: var(--line-color); z-index: 2; }
+    .service-line-left { position: absolute; left: 25%; top: 15%; bottom: 15%; width: 2px; background-color: var(--line-color); z-index: 2; }
+    .service-line-right { position: absolute; right: 25%; top: 15%; bottom: 15%; width: 2px; background-color: var(--line-color); z-index: 2; }
+    .center-service-line { position: absolute; top: 50%; left: 25%; right: 25%; height: 2px; background-color: var(--line-color); transform: translateY(-50%); z-index: 2; }
+    .hash-left { position: absolute; left: 0; top: 50%; width: 6px; height: 2px; background-color: var(--line-color); transform: translateY(-50%); z-index: 2; }
+    .hash-right { position: absolute; right: 0; top: 50%; width: 6px; height: 2px; background-color: var(--line-color); transform: translateY(-50%); z-index: 2; }
 
-    .service-line-left {
-      position: absolute; left: 25%; top: 15%; bottom: 15%;
-      width: 2px; background-color: var(--line-color); z-index: 2;
-    }
-    .service-line-right {
-      position: absolute; right: 25%; top: 15%; bottom: 15%;
-      width: 2px; background-color: var(--line-color); z-index: 2;
-    }
-
-    .center-service-line {
-      position: absolute; top: 50%; left: 25%; right: 25%;
-      height: 2px; background-color: var(--line-color);
-      transform: translateY(-50%); z-index: 2;
-    }
-
-    .hash-left {
-      position: absolute; left: 0; top: 50%;
-      width: 8px; height: 2px; background-color: var(--line-color);
-      transform: translateY(-50%); z-index: 2;
-    }
-    .hash-right {
-      position: absolute; right: 0; top: 50%;
-      width: 8px; height: 2px; background-color: var(--line-color);
-      transform: translateY(-50%); z-index: 2;
-    }
-
-    .side-label {
-      position: absolute; font-size: 0.75rem; font-weight: bold;
-      color: rgba(255,255,255,0.7); pointer-events: none; z-index: 4;
-    }
-    .side-label.left { left: 8px; top: 4px; }
-    .side-label.right { right: 8px; top: 4px; }
+    .side-label { position: absolute; font-size: 0.65rem; font-weight: bold; color: rgba(255,255,255,0.8); pointer-events: none; z-index: 4; }
+    .side-label.left { left: 4px; top: 1px; }
+    .side-label.right { right: 4px; top: 1px; }
 
     .target-service-box {
-      position: absolute;
-      width: 25%; height: 35%;
-      background: rgba(204, 255, 0, 0.25);
-      border: 2px dashed var(--accent-yellow);
-      z-index: 4; pointer-events: none;
-      transition: all 0.3s ease;
+      position: absolute; width: 25%; height: 35%;
+      background: rgba(204, 255, 0, 0.35); border: 2px dashed var(--accent-yellow);
+      z-index: 4; pointer-events: none; transition: all 0.3s ease; box-sizing: border-box;
     }
 
-    /* 플레이어 마커 & 색상 강조 */
     .player-marker {
-      position: absolute;
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: 0.65rem;
-      font-weight: bold;
-      color: #fff;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.6);
-      transition: all 0.3s ease;
-      z-index: 5;
-      transform: translate(-50%, -50%);
-      white-space: nowrap;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      max-width: 95px;
+      position: absolute; padding: 2px 5px; border-radius: 4px; font-size: 0.55rem; font-weight: bold;
+      color: #fff; box-shadow: 0 3px 6px rgba(0,0,0,0.6); transition: all 0.3s ease; z-index: 5;
+      transform: translate(-50%, -50%); white-space: nowrap; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; text-align: center; max-width: 80px;
     }
 
-    .player-name-text {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      width: 100%;
-    }
+    .player-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
 
     .role-badge {
-      font-size: 0.5rem;
-      padding: 1px 4px;
-      border-radius: 3px;
-      background: rgba(0,0,0,0.6);
-      color: #fff;
-      margin-top: 2px;
-      font-weight: 800;
-      display: none;
+      font-size: 0.4rem; padding: 1px 2px; border-radius: 2px; background: rgba(0,0,0,0.6);
+      color: #fff; margin-top: 1px; font-weight: 800; display: none;
     }
-
     .role-badge.visible { display: inline-block; }
 
-    /* 서버 (형광 그린 강조) */
     .player-marker.server {
-      background-color: var(--accent-yellow) !important;
-      color: #000 !important;
-      border: 2px solid #000;
-      transform: translate(-50%, -50%) scale(1.15);
-      z-index: 10;
-      box-shadow: 0 0 12px var(--accent-yellow);
+      background-color: var(--accent-yellow) !important; color: #000 !important;
+      border: 2px solid #000; transform: translate(-50%, -50%) scale(1.1); z-index: 10;
+      box-shadow: 0 0 10px var(--accent-yellow);
     }
-
     .player-marker.server .role-badge { background: #000; color: var(--accent-yellow); }
 
-    /* 리시버 (하이라이트 강조) */
     .player-marker.receiver {
-      border: 2px solid var(--accent-yellow);
-      transform: translate(-50%, -50%) scale(1.08);
-      box-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
+      border: 2px solid var(--accent-yellow); transform: translate(-50%, -50%) scale(1.05);
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.9);
     }
-
     .player-marker.receiver .role-badge { background: var(--accent-yellow); color: #000; }
 
-    /* 모달 레이어 */
-    .modal {
-      display: none; position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.85);
-      z-index: 200; padding: 20px; overflow-y: auto;
-    }
+    .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 200; padding: 15px; overflow-y: auto; }
+    .modal-content { background: var(--card-bg); border-radius: 12px; padding: 16px; max-width: 400px; margin: 10px auto; border: 1px solid #2e5941; position: relative; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .modal-header h2 { color: var(--accent-yellow); font-size: 1.05rem; margin: 0; }
+    .btn-close-modal { background: transparent; border: none; color: #8b949e; font-size: 1.4rem; font-weight: bold; cursor: pointer; line-height: 1; }
+    .modal h3 { color: var(--accent-yellow); font-size: 0.85rem; margin: 12px 0 6px 0; border-top: 1px dashed #2e5941; padding-top: 8px; }
 
-    .modal-content {
-      background: var(--card-bg); border-radius: 12px;
-      padding: 20px; max-width: 420px; margin: 10px auto;
-      border: 1px solid #2e5941; position: relative;
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .modal-header h2 {
-      color: var(--accent-yellow);
-      font-size: 1.1rem;
-      margin: 0;
-    }
-
-    .btn-close-modal {
-      background: transparent;
-      border: none;
-      color: #8b949e;
-      font-size: 1.5rem;
-      font-weight: bold;
-      cursor: pointer;
-      line-height: 1;
-      padding: 0 4px;
-    }
-
-    .modal h3 { color: var(--accent-yellow); font-size: 0.95rem; margin: 16px 0 8px 0; border-top: 1px dashed #2e5941; padding-top: 10px; }
-    
-    .setting-group { margin-bottom: 12px; }
-    .setting-group label { display: block; font-size: 0.8rem; color: #8b949e; margin-bottom: 4px; }
-    .setting-group select, .setting-group input {
-      width: 100%; padding: 8px; border-radius: 6px;
-      border: 1px solid #2e5941; background: #0c1911; color: white; font-size: 0.85rem;
-    }
+    .setting-group { margin-bottom: 10px; }
+    .setting-group label { display: block; font-size: 0.75rem; color: #8b949e; margin-bottom: 3px; }
+    .setting-group select, .setting-group input { width: 100%; padding: 6px; border-radius: 6px; border: 1px solid #2e5941; background: #0c1911; color: white; font-size: 0.8rem; }
     .input-row { display: flex; gap: 6px; margin-top: 4px; }
+    .swipe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 
-    .swipe-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
+    .btn-save { width: 100%; padding: 10px; background: var(--accent-yellow); border: none; border-radius: 6px; font-weight: bold; color: #000; cursor: pointer; margin-top: 12px; font-size: 0.85rem; }
 
-    .btn-save {
-      width: 100%; padding: 10px; background: var(--accent-yellow);
-      border: none; border-radius: 6px; font-weight: bold; color: #000;
-      cursor: pointer; margin-top: 15px; font-size: 0.9rem;
-    }
-
-    .confirm-modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.85);
-      z-index: 250;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-    }
-
-    .confirm-box {
-      background: var(--card-bg);
-      border: 1px solid #2e5941;
-      border-radius: 12px;
-      padding: 20px;
-      width: 100%;
-      max-width: 320px;
-      text-align: center;
-    }
-
-    .confirm-box p {
-      font-size: 0.95rem;
-      line-height: 1.4;
-      color: #fff;
-      margin-bottom: 20px;
-    }
-
-    .confirm-btns { display: flex; gap: 10px; }
-    .confirm-btns button {
-      flex: 1; padding: 10px; border-radius: 6px;
-      font-size: 0.85rem; font-weight: bold; border: none; cursor: pointer;
-    }
+    .confirm-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.85); z-index: 250; justify-content: center; align-items: center; padding: 20px; }
+    .confirm-box { background: var(--card-bg); border: 1px solid #2e5941; border-radius: 12px; padding: 20px; width: 100%; max-width: 300px; text-align: center; }
+    .confirm-box p { font-size: 0.9rem; line-height: 1.4; color: #fff; margin-bottom: 16px; }
+    .confirm-btns { display: flex; gap: 8px; }
+    .confirm-btns button { flex: 1; padding: 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; border: none; cursor: pointer; }
 
     .btn-confirm-yes { background: var(--accent-yellow); color: #000; }
     .btn-confirm-no { background: #1c3829; color: #fff; border: 1px solid #2e5941 !important; }
 
-    #wakelock-video {
-      position: absolute; width: 1px; height: 1px; top: 0; left: 0; opacity: 0.01; pointer-events: none;
-    }
+    #wakelock-video { position: absolute; width: 1px; height: 1px; top: 0; left: 0; opacity: 0.01; pointer-events: none; }
   </style>
 </head>
-<body class="mode-landscape">
+<body class="mode-portrait">
 
   <div id="unauthorized-access">
     <h2>Access Denied</h2>
@@ -607,9 +320,9 @@
           <span class="sets-won" id="sets-a">Set: 0</span>
         </div>
         <div class="score-body">
-          <div class="games-score" id="games-a">Game: 0</div>
           <div class="point-score" id="points-a">0</div>
         </div>
+        <div class="games-score" id="games-a">Game: 0</div>
         <button class="btn-score-up" onclick="addPoint('A')"></button>
       </div>
 
@@ -628,9 +341,9 @@
           <span class="sets-won" id="sets-b">Set: 0</span>
         </div>
         <div class="score-body">
-          <div class="games-score" id="games-b">Game: 0</div>
           <div class="point-score" id="points-b">0</div>
         </div>
+        <div class="games-score" id="games-b">Game: 0</div>
         <button class="btn-score-up" onclick="addPoint('B')"></button>
       </div>
     </div>
@@ -672,7 +385,7 @@
   </div>
 
   <div class="sidebar-controls">
-    <div class="sidebar-title">CONTROLS</div>
+    <div class="sidebar-title">MENU</div>
     <button class="btn-action highlight" id="btn-toggle-serve-s" onclick="toggleServeTeam()">SERVE: TEAM A</button>
     <button class="btn-action" onclick="manualCourtChange()">CHANGE COURT</button>
     <button class="btn-action" onclick="undo()">CORRECTION</button>
@@ -692,8 +405,8 @@
       <div class="setting-group">
         <label>Display Mode (화면 방향)</label>
         <select id="set-display-mode" onchange="applyDisplayMode(this.value)">
-          <option value="landscape" selected>Landscape (가로형 - 입체 코트)</option>
-          <option value="portrait">Portrait (세로형)</option>
+          <option value="portrait" selected>Portrait (세로형)</option>
+          <option value="landscape">Landscape (가로형)</option>
         </select>
       </div>
 
@@ -716,7 +429,7 @@
       <div class="setting-group">
         <label>Sets to Win</label>
         <select id="set-sets">
-          <option value="1">1 Set (Single Set)</option>
+          <option value="1">1 Set</option>
           <option value="2">Best of 3 (2 Sets)</option>
           <option value="3" selected>Best of 5 (3 Sets)</option>
         </select>
@@ -752,7 +465,6 @@
         <select id="set-announce-server">
           <option value="3000" selected>3초 후 Call</option>
           <option value="5000">5초 후 Call</option>
-          <option value="7000">7초 후 Call</option>
           <option value="off">사용 안 함 (Off)</option>
         </select>
       </div>
@@ -775,33 +487,13 @@
 
       <h3>Swipe Gesture Settings</h3>
       <div class="swipe-grid">
-        <div class="setting-group">
-          <label>Swipe Up</label>
-          <select id="swipe-up"><option value="right_score">우측팀 득점</option><option value="left_score">좌측팀 득점</option><option value="court_change">코트 체인지</option><option value="undo">Correction</option></select>
-        </div>
-        <div class="setting-group">
-          <label>Swipe Down</label>
-          <select id="swipe-down"><option value="left_score">좌측팀 득점</option><option value="right_score">우측팀 득점</option><option value="court_change">코트 체인지</option><option value="undo">Correction</option></select>
-        </div>
-        <div class="setting-group">
-          <label>Swipe Left</label>
-          <select id="swipe-left"><option value="court_change" selected>코트 체인지</option><option value="left_score">좌측팀 득점</option><option value="right_score">우측팀 득점</option><option value="undo">Correction</option></select>
-        </div>
-        <div class="setting-group">
-          <label>Swipe Right</label>
-          <select id="swipe-right"><option value="undo" selected>Correction</option><option value="left_score">좌측팀 득점</option><option value="right_score">우측팀 득점</option><option value="court_change">코트 체인지</option></select>
-        </div>
+        <div class="setting-group"><label>Swipe Up</label><select id="swipe-up"><option value="right_score">우측팀 득점</option><option value="left_score">좌측팀 득점</option><option value="court_change">코트 체인지</option><option value="undo">Correction</option></select></div>
+        <div class="setting-group"><label>Swipe Down</label><select id="swipe-down"><option value="left_score">좌측팀 득점</option><option value="right_score">우측팀 득점</option><option value="court_change">코트 체인지</option><option value="undo">Correction</option></select></div>
+        <div class="setting-group"><label>Swipe Left</label><select id="swipe-left"><option value="court_change" selected>코트 체인지</option><option value="left_score">좌측팀 득점</option></select></div>
+        <div class="setting-group"><label>Swipe Right</label><select id="swipe-right"><option value="undo" selected>Correction</option><option value="right_score">우측팀 득점</option></select></div>
       </div>
 
-      <h3>Smartwatch / Media Key Controls</h3>
-      <div class="swipe-grid">
-        <div class="setting-group"><label>Next Track</label><select id="media-next"><option value="right_score" selected>우측팀 득점</option><option value="left_score">좌측팀 득점</option></select></div>
-        <div class="setting-group"><label>Previous Track</label><select id="media-prev"><option value="left_score" selected>좌측팀 득점</option><option value="right_score">우측팀 득점</option></select></div>
-        <div class="setting-group"><label>Pause</label><select id="media-pause"><option value="undo" selected>Correction</option></select></div>
-        <div class="setting-group"><label>Play</label><select id="media-play"><option value="court_change" selected>코트 체인지</option></select></div>
-      </div>
-
-      <button class="btn-save" id="btn-save-settings">Apply & Reset Match</button>
+      <button class="btn-save" id="btn-save-settings">Apply & Update Settings</button>
     </div>
   </div>
 
@@ -815,6 +507,8 @@
     </div>
   </div>
 
-  <script src="tennis_scoreboard.js"></script>
+  <script src="script.js"></script>
+</body>
+</html><script src="script.js"></script>
 </body>
 </html>
