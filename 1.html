@@ -3,15 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Tennis Scoreboard - Optimized Layout</title>
+  <title>Tennis Scoreboard - Portrait Mode</title>
   <style>
     :root {
       --bg-color: #08120c;
       --card-bg: #102017;
       --team-a-color: #0b4182;
-      --team-a-court: #0b4182;
       --team-b-color: #6b1158;
-      --team-b-court: #6b1158;
       --line-color: #ffffff;
       --accent-yellow: #ccff00;
       --text-main: #ffffff;
@@ -36,8 +34,8 @@
       touch-action: none;
     }
 
-    body.mode-landscape { flex-direction: row; }
     body.mode-portrait { flex-direction: column; max-width: 500px; margin: 0 auto; }
+    body.mode-landscape { flex-direction: row; }
 
     #unauthorized-access {
       display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -76,13 +74,9 @@
       padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer;
     }
 
-    /* 스코어보드 영역 (가로 모드: 70% 확보) */
     .scoreboard { display: flex; padding: 8px; gap: 10px; }
     body.mode-portrait .scoreboard { flex: 1.2; flex-direction: column; }
-    body.mode-landscape .scoreboard {
-      height: 70%;
-      padding: 8px 10px 0 10px;
-    }
+    body.mode-landscape .scoreboard { height: 70%; padding: 8px 10px 0 10px; }
 
     .team-card {
       flex: 1; border-radius: 12px; padding: 10px 14px; display: flex;
@@ -110,6 +104,7 @@
       padding: 4px 10px; border-radius: 6px;
     }
 
+    /* 점수 바디 및 정중앙 배치 조정 */
     .score-body {
       flex: 1; display: flex; justify-content: center; align-items: center;
       position: relative; z-index: 2; width: 100%; height: 100%;
@@ -117,16 +112,16 @@
     }
 
     .games-score {
-      font-size: 1.1rem; font-weight: 700; opacity: 0.95; position: absolute; left: 0; bottom: 0px;
+      font-size: 1rem; font-weight: 700; opacity: 0.95; position: absolute; left: 0; bottom: 0px;
       background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 4px; z-index: 4;
     }
 
-    /* 박스 크기의 80% 수준으로 크게 키운 점수 폰트 */
+    /* 박스 80% 크기 유지 및 완전한 수평/수직 중앙 정렬 */
     .point-score {
-      font-size: min(35vw, 40vh);
+      font-size: min(25vw, 18vh);
       font-weight: 900;
       text-shadow: 4px 4px 16px rgba(0,0,0,0.9);
-      line-height: 0.8;
+      line-height: 1;
       text-align: center;
       display: flex;
       align-items: center;
@@ -134,8 +129,9 @@
       width: 100%;
       height: 100%;
       letter-spacing: -2px;
+      margin: auto;
     }
-    body.mode-portrait .point-score { font-size: min(25vw, 20vh); }
+    body.mode-landscape .point-score { font-size: min(35vw, 40vh); }
 
     .serve-ball {
       display: inline-block; width: 12px; height: 12px;
@@ -149,27 +145,15 @@
       opacity: 0; cursor: pointer; z-index: 3;
     }
 
-    /* 우측 슬림 메뉴 */
     .sidebar-controls {
-      display: none;
-      width: 110px;
-      background-color: var(--card-bg);
-      border-left: 1px solid #234733;
-      padding: 8px 6px;
-      flex-direction: column;
-      gap: 6px;
+      display: none; width: 110px; background-color: var(--card-bg);
+      border-left: 1px solid #234733; padding: 8px 6px; flex-direction: column; gap: 6px;
     }
     body.mode-landscape .sidebar-controls { display: flex; }
 
-    .sidebar-title {
-      font-size: 0.7rem; font-weight: 800; color: var(--accent-yellow);
-      text-align: center; margin-bottom: 2px;
-    }
+    .sidebar-title { font-size: 0.7rem; font-weight: 800; color: var(--accent-yellow); text-align: center; margin-bottom: 2px; }
 
-    .controls {
-      display: grid; grid-template-columns: 1.2fr 1.2fr 1.2fr 1fr;
-      gap: 5px; padding: 0 6px 6px 6px;
-    }
+    .controls { display: grid; grid-template-columns: 1.2fr 1.2fr 1.2fr 1fr; gap: 5px; padding: 0 6px 6px 6px; }
     body.mode-landscape .controls { display: none; }
 
     .btn-action {
@@ -181,7 +165,6 @@
     .sidebar-controls .btn-action { width: 100%; padding: 6px 0; font-size: 0.65rem; }
     .btn-action.highlight { border-color: var(--accent-yellow); color: var(--accent-yellow); }
 
-    /* 3D 코트 영역 (가로 모드: 30% 영역) */
     .court-section {
       display: flex; justify-content: center; align-items: center;
       padding: 2px; position: relative;
@@ -202,20 +185,14 @@
       box-shadow: 0 6px 16px rgba(0,0,0,0.8); transition: transform 0.5s ease;
     }
 
-    body.mode-landscape .court-inner {
-      transform: rotateX(20deg);
-      transform-style: preserve-3d;
-      border-radius: 4px;
-    }
+    body.mode-landscape .court-inner { transform: rotateX(20deg); transform-style: preserve-3d; border-radius: 4px; }
 
-    .court-side {
-      position: absolute; top: 0; bottom: 0; width: 50%; transition: background-color 0.3s ease;
-    }
+    .court-side { position: absolute; top: 0; bottom: 0; width: 50%; transition: background-color 0.3s ease; }
     .court-side.left { left: 0; }
     .court-side.right { right: 0; }
 
-    .bg-team-a { background-color: var(--team-a-court) !important; }
-    .bg-team-b { background-color: var(--team-b-court) !important; }
+    .bg-team-a { background-color: var(--team-a-color) !important; }
+    .bg-team-b { background-color: var(--team-b-color) !important; }
 
     .net-line {
       position: absolute; left: 50%; top: -4%; bottom: -4%; width: 4px;
@@ -225,47 +202,34 @@
 
     .singles-line-top { position: absolute; top: 15%; left: 0; right: 0; height: 2px; background-color: var(--line-color); z-index: 2; }
     .singles-line-bottom { position: absolute; bottom: 15%; left: 0; right: 0; height: 2px; background-color: var(--line-color); z-index: 2; }
-
     .service-line-left { position: absolute; left: 25%; top: 15%; bottom: 15%; width: 2px; background-color: var(--line-color); z-index: 2; }
     .service-line-right { position: absolute; right: 25%; top: 15%; bottom: 15%; width: 2px; background-color: var(--line-color); z-index: 2; }
-
-    .center-service-line {
-      position: absolute; top: 50%; left: 25%; right: 25%; height: 2px;
-      background-color: var(--line-color); transform: translateY(-50%); z-index: 2;
-    }
-
+    .center-service-line { position: absolute; top: 50%; left: 25%; right: 25%; height: 2px; background-color: var(--line-color); transform: translateY(-50%); z-index: 2; }
     .hash-left { position: absolute; left: 0; top: 50%; width: 6px; height: 2px; background-color: var(--line-color); transform: translateY(-50%); z-index: 2; }
     .hash-right { position: absolute; right: 0; top: 50%; width: 6px; height: 2px; background-color: var(--line-color); transform: translateY(-50%); z-index: 2; }
 
-    .side-label {
-      position: absolute; font-size: 0.65rem; font-weight: bold;
-      color: rgba(255,255,255,0.8); pointer-events: none; z-index: 4;
-    }
+    .side-label { position: absolute; font-size: 0.65rem; font-weight: bold; color: rgba(255,255,255,0.8); pointer-events: none; z-index: 4; }
     .side-label.left { left: 4px; top: 1px; }
     .side-label.right { right: 4px; top: 1px; }
 
-    /* 대각선 서비스 타겟 박스 */
     .target-service-box {
       position: absolute; width: 25%; height: 35%;
       background: rgba(204, 255, 0, 0.35); border: 2px dashed var(--accent-yellow);
-      z-index: 4; pointer-events: none; transition: all 0.3s ease;
-      box-sizing: border-box;
+      z-index: 4; pointer-events: none; transition: all 0.3s ease; box-sizing: border-box;
     }
 
     .player-marker {
-      position: absolute; padding: 2px 5px; border-radius: 4px;
-      font-size: 0.55rem; font-weight: bold; color: #fff;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.6); transition: all 0.3s ease;
-      z-index: 5; transform: translate(-50%, -50%); white-space: nowrap;
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; text-align: center; max-width: 80px;
+      position: absolute; padding: 2px 5px; border-radius: 4px; font-size: 0.55rem; font-weight: bold;
+      color: #fff; box-shadow: 0 3px 6px rgba(0,0,0,0.6); transition: all 0.3s ease; z-index: 5;
+      transform: translate(-50%, -50%); white-space: nowrap; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; text-align: center; max-width: 80px;
     }
 
     .player-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
 
     .role-badge {
-      font-size: 0.4rem; padding: 1px 2px; border-radius: 2px;
-      background: rgba(0,0,0,0.6); color: #fff; margin-top: 1px; font-weight: 800; display: none;
+      font-size: 0.4rem; padding: 1px 2px; border-radius: 2px; background: rgba(0,0,0,0.6);
+      color: #fff; margin-top: 1px; font-weight: 800; display: none;
     }
     .role-badge.visible { display: inline-block; }
 
@@ -282,57 +246,26 @@
     }
     .player-marker.receiver .role-badge { background: var(--accent-yellow); color: #000; }
 
-    .modal {
-      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.85); z-index: 200; padding: 15px; overflow-y: auto;
-    }
-
-    .modal-content {
-      background: var(--card-bg); border-radius: 12px; padding: 16px;
-      max-width: 400px; margin: 10px auto; border: 1px solid #2e5941; position: relative;
-    }
-
+    .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 200; padding: 15px; overflow-y: auto; }
+    .modal-content { background: var(--card-bg); border-radius: 12px; padding: 16px; max-width: 400px; margin: 10px auto; border: 1px solid #2e5941; position: relative; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .modal-header h2 { color: var(--accent-yellow); font-size: 1.05rem; margin: 0; }
-
-    .btn-close-modal {
-      background: transparent; border: none; color: #8b949e;
-      font-size: 1.4rem; font-weight: bold; cursor: pointer; line-height: 1;
-    }
-
+    .btn-close-modal { background: transparent; border: none; color: #8b949e; font-size: 1.4rem; font-weight: bold; cursor: pointer; line-height: 1; }
     .modal h3 { color: var(--accent-yellow); font-size: 0.85rem; margin: 12px 0 6px 0; border-top: 1px dashed #2e5941; padding-top: 8px; }
-    
+
     .setting-group { margin-bottom: 10px; }
     .setting-group label { display: block; font-size: 0.75rem; color: #8b949e; margin-bottom: 3px; }
-    .setting-group select, .setting-group input {
-      width: 100%; padding: 6px; border-radius: 6px; border: 1px solid #2e5941;
-      background: #0c1911; color: white; font-size: 0.8rem;
-    }
+    .setting-group select, .setting-group input { width: 100%; padding: 6px; border-radius: 6px; border: 1px solid #2e5941; background: #0c1911; color: white; font-size: 0.8rem; }
     .input-row { display: flex; gap: 6px; margin-top: 4px; }
     .swipe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 
-    .btn-save {
-      width: 100%; padding: 10px; background: var(--accent-yellow); border: none;
-      border-radius: 6px; font-weight: bold; color: #000; cursor: pointer; margin-top: 12px; font-size: 0.85rem;
-    }
+    .btn-save { width: 100%; padding: 10px; background: var(--accent-yellow); border: none; border-radius: 6px; font-weight: bold; color: #000; cursor: pointer; margin-top: 12px; font-size: 0.85rem; }
 
-    .confirm-modal {
-      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.85); z-index: 250; justify-content: center;
-      align-items: center; padding: 20px;
-    }
-
-    .confirm-box {
-      background: var(--card-bg); border: 1px solid #2e5941; border-radius: 12px;
-      padding: 20px; width: 100%; max-width: 300px; text-align: center;
-    }
-
+    .confirm-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.85); z-index: 250; justify-content: center; align-items: center; padding: 20px; }
+    .confirm-box { background: var(--card-bg); border: 1px solid #2e5941; border-radius: 12px; padding: 20px; width: 100%; max-width: 300px; text-align: center; }
     .confirm-box p { font-size: 0.9rem; line-height: 1.4; color: #fff; margin-bottom: 16px; }
     .confirm-btns { display: flex; gap: 8px; }
-    .confirm-btns button {
-      flex: 1; padding: 8px; border-radius: 6px; font-size: 0.8rem;
-      font-weight: bold; border: none; cursor: pointer;
-    }
+    .confirm-btns button { flex: 1; padding: 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; border: none; cursor: pointer; }
 
     .btn-confirm-yes { background: var(--accent-yellow); color: #000; }
     .btn-confirm-no { background: #1c3829; color: #fff; border: 1px solid #2e5941 !important; }
@@ -340,7 +273,7 @@
     #wakelock-video { position: absolute; width: 1px; height: 1px; top: 0; left: 0; opacity: 0.01; pointer-events: none; }
   </style>
 </head>
-<body class="mode-landscape">
+<body class="mode-portrait">
 
   <div id="unauthorized-access">
     <h2>Access Denied</h2>
@@ -465,8 +398,8 @@
       <div class="setting-group">
         <label>Display Mode (화면 방향)</label>
         <select id="set-display-mode" onchange="applyDisplayMode(this.value)">
-          <option value="landscape" selected>Landscape (가로형)</option>
-          <option value="portrait">Portrait (세로형)</option>
+          <option value="portrait" selected>Portrait (세로형)</option>
+          <option value="landscape">Landscape (가로형)</option>
         </select>
       </div>
 
@@ -553,7 +486,7 @@
         <div class="setting-group"><label>Swipe Right</label><select id="swipe-right"><option value="undo" selected>Correction</option><option value="right_score">우측팀 득점</option></select></div>
       </div>
 
-      <button class="btn-save" id="btn-save-settings">Apply & Reset Match</button>
+      <button class="btn-save" id="btn-save-settings">Apply & Update Settings</button>
     </div>
   </div>
 
@@ -579,7 +512,7 @@
     }
 
     let config = {
-      displayMode: 'landscape',
+      displayMode: 'portrait',
       type: 'doubles',
       firstServeTeam: 'A',
       setsToWin: 3,
@@ -722,7 +655,7 @@
     window.onload = async () => {
       if (!checkDomainAuth()) return;
       loadStorage();
-      applyDisplayMode(config.displayMode || 'landscape');
+      applyDisplayMode(config.displayMode || 'portrait');
       setupEvents();
       setupSwipeEvents();
       populateSettingsModal();
@@ -741,11 +674,10 @@
 
       window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
 
+      /* 설정창 적용 버튼: 이전 점수를 리셋하지 않고 유지함 */
       document.getElementById('btn-save-settings').onclick = () => {
-        showCustomConfirm("설정을 적용하고 경기 점수를 초기화하시겠습니까?", () => {
-          saveSettings();
-          modal.style.display = 'none';
-        });
+        saveSettings();
+        modal.style.display = 'none';
       };
     }
 
@@ -791,7 +723,7 @@
     }
 
     function populateSettingsModal() {
-      document.getElementById('set-display-mode').value = config.displayMode || 'landscape';
+      document.getElementById('set-display-mode').value = config.displayMode || 'portrait';
       document.getElementById('set-type').value = config.type;
       document.getElementById('set-first-serve').value = config.firstServeTeam;
       document.getElementById('set-sets').value = config.setsToWin;
@@ -818,6 +750,7 @@
       document.getElementById('p-b2').style.display = isSingles ? 'none' : 'block';
     }
 
+    /* 설정 변경 후 점수(state)를 유지한 채 렌더링만 갱신 */
     function saveSettings() {
       cancelServerAnnouncement();
       config.displayMode = document.getElementById('set-display-mode').value;
@@ -842,7 +775,7 @@
       };
 
       saveConfigToStorage();
-      resetMatch();
+      render();
     }
 
     function saveState() {
