@@ -897,11 +897,24 @@
       }
     }
 
+    /* TTS 음성 발음 최적화 함수 */
+    function getSpokenText(text) {
+      return text
+        .replace(/\b15\b/g, "Fifteen")
+        .replace(/\b30\b/g, "Thirty")
+        .replace(/\b40\b/g, "Forty")
+        .replace(/\b0\b/g, "Love")
+        .replace(/(\d+)\s*-\s*All/g, "$1 All")
+        .replace(/(\d+)\s+games?\s+to\s+(\d+)/gi, "$1 games to $2")
+        .replace(/(\d+)\s+sets?\s+to\s+(\d+)/gi, "$1 sets to $2");
+    }
+
     function speak(text) {
       if ('speechSynthesis' in window) {
         try {
           window.speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance(text);
+          const spokenText = getSpokenText(text);
+          const utterance = new SpeechSynthesisUtterance(spokenText);
           utterance.lang = 'en-US';
           utterance.rate = 1.0;
           window.speechSynthesis.speak(utterance);
@@ -922,11 +935,11 @@
           else if (pA > pB) callText = `Advantage, ${getTeamDisplayName('A')}`;
           else callText = `Advantage, ${getTeamDisplayName('B')}`;
         } else {
-          if (pA === pB) callText = pointTerms[pA] === "Love" ? "Love All" : `${pointTerms[pA]}-All`;
+          if (pA === pB) callText = pointTerms[pA] === "Love" ? "Love All" : `${pointTerms[pA]} All`;
           else {
             const sPts = state.currentServerTeam === 'A' ? pA : pB;
             const rPts = state.currentServerTeam === 'A' ? pB : pA;
-            callText = `${pointTerms[sPts]}, , ${pointTerms[rPts]}`;
+            callText = `${pointTerms[sPts]}, ${pointTerms[rPts]}`;
           }
         }
       }
