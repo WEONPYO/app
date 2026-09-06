@@ -399,6 +399,14 @@
       </div>
 
       <div class="setting-group">
+        <label>Voice Language / Accent</label>
+        <select id="set-voice-lang">
+          <option value="en-GB" selected>영국 영어 (UK English)</option>
+          <option value="en-US">미국 영어 (US English)</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
         <label>First Serve Team</label>
         <select id="set-first-serve">
           <option value="A" selected>Team A</option>
@@ -500,6 +508,7 @@
 
     let config = {
       type: 'doubles',
+      voiceLang: 'en-GB',
       firstServeTeam: 'A',
       setsToWin: 3,
       gamesPerSet: 6,
@@ -547,7 +556,7 @@
         if (config.type !== 'doubles') return;
         const serverTeam = state.currentServerTeam;
         const activeServerIdx = (serverTeam === 'A') ? state.serverIdxA : state.serverIdxB;
-        const callText = (activeServerIdx === 0) ? "First server" : "Second server";
+        const callText = (activeServerIdx === 0) ? "First server." : "Second server.";
         speak(callText);
         serverAnnounceTimer = null;
       }, delayMs);
@@ -666,6 +675,7 @@
 
     function populateSettingsModal() {
       document.getElementById('set-type').value = config.type;
+      document.getElementById('set-voice-lang').value = config.voiceLang || 'en-GB';
       document.getElementById('set-first-serve').value = config.firstServeTeam;
       document.getElementById('set-sets').value = config.setsToWin;
       document.getElementById('set-games').value = config.gamesPerSet;
@@ -695,6 +705,7 @@
       cancelServerAnnouncement();
 
       config.type = document.getElementById('set-type').value;
+      config.voiceLang = document.getElementById('set-voice-lang').value;
       config.firstServeTeam = document.getElementById('set-first-serve').value;
       config.setsToWin = parseInt(document.getElementById('set-sets').value, 10);
       config.gamesPerSet = parseInt(document.getElementById('set-games').value, 10);
@@ -745,7 +756,7 @@
       historyStack = [];
       saveStateToStorage();
       render();
-      speak("Reset");
+      speak("Reset.");
     }
 
     function toggleServeTeam() {
@@ -754,7 +765,7 @@
       state.currentServerTeam = state.currentServerTeam === 'A' ? 'B' : 'A';
       saveStateToStorage();
       render();
-      speak(`Service Team ${state.currentServerTeam}`);
+      speak(`Service Team ${state.currentServerTeam}.`);
     }
 
     function addPoint(team) {
@@ -823,7 +834,7 @@
 
       const gWin = team === 'A' ? state.gamesA : state.gamesB;
       const gLose = team === 'A' ? state.gamesB : state.gamesA;
-      let gameAnnouncement = `Game ${winnerCall}., , ${state.gamesA} games to ${state.gamesB}`;
+      let gameAnnouncement = `Game ${winnerCall}. ${state.gamesA} games to ${state.gamesB}.`;
 
       const totalGames = state.gamesA + state.gamesB;
       const isAutoCourtChange = (config.courtChange === 'auto' && totalGames % 2 === 1 && !state.isTiebreak);
@@ -836,7 +847,7 @@
         winSet(team, false);
       } else if (gWin === config.gamesPerSet && gLose === config.gamesPerSet) {
         state.isTiebreak = true;
-        if (!isAutoCourtChange) speak(`${gameAnnouncement}., , Tiebreak`);
+        if (!isAutoCourtChange) speak(`${gameAnnouncement} Tiebreak.`);
         switchServer();
         scheduleServerAnnouncement();
       } else {
@@ -858,9 +869,9 @@
 
       const sWin = team === 'A' ? state.setsA : state.setsB;
       if (sWin >= config.setsToWin) {
-        speak(`Game, set and match, ${winnerCall}., , ${state.setsA} sets to ${state.setsB}`);
+        speak(`Game, set and match, ${winnerCall}. ${state.setsA} sets to ${state.setsB}.`);
       } else {
-        speak(`Set, ${winnerCall}., , ${state.setsA} sets to ${state.setsB}`);
+        speak(`Set, ${winnerCall}. ${state.setsA} sets to ${state.setsB}.`);
         if (viaTiebreak && tiebreakFirstServer) {
           state.currentServerTeam = (tiebreakFirstServer === 'A') ? 'B' : 'A';
           if (config.courtChange === 'auto') manualCourtChange(true, false);
@@ -892,7 +903,7 @@
       saveStateToStorage();
       render();
       if (announce) {
-        speak("Change ends");
+        speak("Change ends.");
         scheduleServerAnnouncement(2500);
       }
     }
@@ -900,13 +911,13 @@
     /* TTS 음성 발음 최적화 함수 */
     function getSpokenText(text) {
       return text
-        .replace(/\b15\b/g, "Fifteen")
-        .replace(/\b30\b/g, "Thirty")
-        .replace(/\b40\b/g, "Forty")
-        .replace(/\b0\b/g, "Love")
-        .replace(/(\d+)\s*-\s*All/g, "$1 All")
-        .replace(/(\d+)\s+games?\s+to\s+(\d+)/gi, "$1 games to $2")
-        .replace(/(\d+)\s+sets?\s+to\s+(\d+)/gi, "$1 sets to $2");
+        .replace(/15/g, "Fifteen")
+        .replace(/30/g, "Thirty")
+        .replace(/40/g, "Forty")
+        .replace(/0/g, "Love")
+        .replace(/,\s*,+/g, ".")
+        .replace(/\s+/g, " ")
+        .trim();
     }
 
     function speak(text) {
@@ -915,8 +926,20 @@
           window.speechSynthesis.cancel();
           const spokenText = getSpokenText(text);
           const utterance = new SpeechSynthesisUtterance(spokenText);
-          utterance.lang = 'en-US';
-          utterance.rate = 1.0;
+          const selectedLang = config.voiceLang || 'en-GB';
+          utterance.lang = selectedLang;
+          utterance.rate = 0.92;
+          utterance.pitch = 1.0;
+
+          const voices = window.speechSynthesis.getVoices();
+          if (voices && voices.length > 0) {
+            const matchedVoice = voices.find(v => v.lang.replace('_', '-').toLowerCase() === selectedLang.toLowerCase()) ||
+                                 voices.find(v => v.lang.toLowerCase().startsWith(selectedLang.substring(0, 2).toLowerCase()));
+            if (matchedVoice) {
+              utterance.voice = matchedVoice;
+            }
+          }
+
           window.speechSynthesis.speak(utterance);
         } catch (e) {}
       }
@@ -925,21 +948,25 @@
     function speakCall(prefix = "") {
       let callText = "";
       if (state.isTiebreak) {
-        callText = `${state.ptsA}, ${state.ptsB}`;
+        if (state.ptsA === state.ptsB) {
+          callText = `${state.ptsA} all.`;
+        } else {
+          callText = `${state.ptsA}, ${state.ptsB}.`;
+        }
       } else {
         const pA = state.ptsA;
         const pB = state.ptsB;
 
         if (pA >= 3 && pB >= 3) {
-          if (pA === pB) callText = "Deuce";
-          else if (pA > pB) callText = `Advantage, ${getTeamDisplayName('A')}`;
-          else callText = `Advantage, ${getTeamDisplayName('B')}`;
+          if (pA === pB) callText = "Deuce.";
+          else if (pA > pB) callText = `Advantage, ${getTeamDisplayName('A')}.`;
+          else callText = `Advantage, ${getTeamDisplayName('B')}.`;
         } else {
-          if (pA === pB) callText = pointTerms[pA] === "Love" ? "Love All" : `${pointTerms[pA]} All`;
+          if (pA === pB) callText = pointTerms[pA] === "Love" ? "Love all." : `${pointTerms[pA]} all.`;
           else {
             const sPts = state.currentServerTeam === 'A' ? pA : pB;
             const rPts = state.currentServerTeam === 'A' ? pB : pA;
-            callText = `${pointTerms[sPts]}, ${pointTerms[rPts]}`;
+            callText = `${pointTerms[sPts]} ${pointTerms[rPts]}.`;
           }
         }
       }
