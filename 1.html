@@ -139,7 +139,6 @@
     }
 
     @media (orientation: portrait) {
-      /* 세로 모드 세트 스코어 위치 조정 */
       .sets-header-wrapper { display: none !important; }
       .bottom-scores-container {
         flex-direction: column;
@@ -324,11 +323,11 @@
           </div>
           <span class="sets-won sets-header-wrapper" id="sets-a-header">Set: 0</span>
         </div>
-        <div class="score-body" onclick="addPoint('A')">
+        <div class="score-body" id="score-body-a">
           <div class="point-score" id="points-a">0</div>
         </div>
         <div class="bottom-scores-container">
-          <div class="games-score" id="games-a" onclick="addGame('A')">Game: 0</div>
+          <div class="games-score" id="games-a">Game: 0</div>
           <div class="sets-won-portrait sets-portrait-wrapper" id="sets-a-portrait">Set: 0</div>
         </div>
       </div>
@@ -347,11 +346,11 @@
           </div>
           <span class="sets-won sets-header-wrapper" id="sets-b-header">Set: 0</span>
         </div>
-        <div class="score-body" onclick="addPoint('B')">
+        <div class="score-body" id="score-body-b">
           <div class="point-score" id="points-b">0</div>
         </div>
         <div class="bottom-scores-container">
-          <div class="games-score" id="games-b" onclick="addGame('B')">Game: 0</div>
+          <div class="games-score" id="games-b">Game: 0</div>
           <div class="sets-won-portrait sets-portrait-wrapper" id="sets-b-portrait">Set: 0</div>
         </div>
       </div>
@@ -554,85 +553,76 @@
     let serverAnnounceTimer = null;
     let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0;
 
-    // Long Press Event Control
-    let longPressTimer = null;
-    let isLongPress = false;
+    // 공통 롱프레스 등록 함수
+    function attachLongPress(element, onClick, onLongPress) {
+      if (!element) return;
+      let timer = null;
+      let isLong = false;
+
+      const start = (e) => {
+        e.stopPropagation();
+        isLong = false;
+        timer = setTimeout(() => {
+          isLong = true;
+          onLongPress();
+        }, 500);
+      };
+
+      const end = (e) => {
+        e.stopPropagation();
+        if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+        if (!isLong) {
+          onClick();
+        }
+      };
+
+      const cancel = (e) => {
+        if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+      };
+
+      element.addEventListener('mousedown', start);
+      element.addEventListener('mouseup', end);
+      element.addEventListener('mouseleave', cancel);
+
+      element.addEventListener('touchstart', start, { passive: true });
+      element.addEventListener('touchend', end);
+      element.addEventListener('touchcancel', cancel);
+    }
 
     function setupLongPressEvents() {
-      // 카드 전체 롱프레스 (Correction / Undo)
-      ['card-team-a', 'card-team-b'].forEach(id => {
-        const el = document.getElementById(id);
-
-        const startPress = (e) => {
-          if (e.target.closest('.sets-won') || e.target.closest('.sets-won-portrait') || e.target.closest('.games-score')) return;
-          isLongPress = false;
-          longPressTimer = setTimeout(() => {
-            isLongPress = true;
-            undo();
-          }, 500); // 500ms 이상 길게 누르면 감점(Correction)
-        };
-
-        const cancelPress = () => {
-          if (longPressTimer) {
-            clearTimeout(longPressTimer);
-            longPressTimer = null;
-          }
-        };
-
-        el.addEventListener('mousedown', startPress);
-        el.addEventListener('mouseup', cancelPress);
-        el.addEventListener('mouseleave', cancelPress);
-
-        el.addEventListener('touchstart', startPress, { passive: true });
-        el.addEventListener('touchend', cancelPress);
-        el.addEventListener('touchcancel', cancelPress);
-      });
-
-      // 세트 스코어 전용 롱프레스 (클릭 시 +, 길게 누를 시 -)
+      // 포인트, 게임, 세트 스코어 클릭(증가) 및 롱프레스(감소) 설정
       ['A', 'B'].forEach(team => {
-        const selectors = [`#sets-${team.toLowerCase()}-header`, `#sets-${team.toLowerCase()}-portrait`];
-        selectors.forEach(sel => {
-          const el = document.querySelector(sel);
-          if (!el) return;
+        // 포인트 스코어
+        const scoreBody = document.getElementById(`score-body-${team.toLowerCase()}`);
+        attachLongPress(
+          scoreBody,
+          () => addPoint(team),
+          () => subtractPoint(team)
+        );
 
-          let setTimer = null;
-          let isSetLongPress = false;
+        // 게임 스코어
+        const gameEl = document.getElementById(`games-${team.toLowerCase()}`);
+        attachLongPress(
+          gameEl,
+          () => addGame(team),
+          () => subtractGame(team)
+        );
 
-          const startSetPress = (e) => {
-            e.stopPropagation();
-            isSetLongPress = false;
-            setTimer = setTimeout(() => {
-              isSetLongPress = true;
-              subtractSet(team);
-            }, 500);
-          };
+        // 세트 스코어 (가로/세로)
+        const setHeaderEl = document.getElementById(`sets-${team.toLowerCase()}-header`);
+        const setPortraitEl = document.getElementById(`sets-${team.toLowerCase()}-portrait`);
 
-          const endSetPress = (e) => {
-            e.stopPropagation();
-            if (setTimer) {
-              clearTimeout(setTimer);
-              setTimer = null;
-            }
-            if (!isSetLongPress) {
-              addSet(team);
-            }
-          };
+        const handleSetAdd = () => addSet(team);
+        const handleSetSub = () => subtractSet(team);
 
-          const cancelSetPress = (e) => {
-            if (setTimer) {
-              clearTimeout(setTimer);
-              setTimer = null;
-            }
-          };
-
-          el.addEventListener('mousedown', startSetPress);
-          el.addEventListener('mouseup', endSetPress);
-          el.addEventListener('mouseleave', cancelSetPress);
-
-          el.addEventListener('touchstart', startSetPress, { passive: true });
-          el.addEventListener('touchend', endSetPress);
-          el.addEventListener('touchcancel', cancelSetPress);
-        });
+        attachLongPress(setHeaderEl, handleSetAdd, handleSetSub);
+        attachLongPress(setPortraitEl, handleSetAdd, handleSetSub);
       });
     }
 
@@ -865,7 +855,7 @@
       speak(`Service Team ${state.currentServerTeam}.`);
     }
 
-    // 게임 점수 추가 (직접 클릭)
+    // 게임 점수 증가 (+)
     function addGame(team) {
       cancelServerAnnouncement();
       saveState();
@@ -876,7 +866,21 @@
       speak(`Game ${getTeamDisplayName(team)}.`);
     }
 
-    // 세트 점수 추가 (+)
+    // 게임 점수 감소 (-)
+    function subtractGame(team) {
+      cancelServerAnnouncement();
+      saveState();
+      if (team === 'A') {
+        if (state.gamesA > 0) state.gamesA--;
+      } else {
+        if (state.gamesB > 0) state.gamesB--;
+      }
+      saveStateToStorage();
+      render();
+      speak(`Correction, Game ${getTeamDisplayName(team)}.`);
+    }
+
+    // 세트 점수 증가 (+)
     function addSet(team) {
       cancelServerAnnouncement();
       saveState();
@@ -887,7 +891,7 @@
       speak(`Set ${getTeamDisplayName(team)}.`);
     }
 
-    // 세트 점수 감수 (-)
+    // 세트 점수 감소 (-)
     function subtractSet(team) {
       cancelServerAnnouncement();
       saveState();
@@ -901,18 +905,28 @@
       speak(`Correction, Set ${getTeamDisplayName(team)}.`);
     }
 
-    // 포인트 점수 추가
+    // 포인트 점수 증가 (+)
     function addPoint(team) {
-      if (isLongPress) {
-        isLongPress = false;
-        return; // 롱프레스 시 점수 증가 방지
-      }
       cancelServerAnnouncement();
       saveState();
       if (state.isTiebreak) handleTiebreakPoint(team);
       else handleStandardPoint(team);
       saveStateToStorage();
       render();
+    }
+
+    // 포인트 점수 감소 (-)
+    function subtractPoint(team) {
+      cancelServerAnnouncement();
+      saveState();
+      if (team === 'A') {
+        if (state.ptsA > 0) state.ptsA--;
+      } else {
+        if (state.ptsB > 0) state.ptsB--;
+      }
+      saveStateToStorage();
+      render();
+      speakCall("Correction, ");
     }
 
     function handleStandardPoint(team) {
@@ -1125,7 +1139,6 @@
       document.getElementById('disp-players-b').innerText = config.type === 'doubles' 
         ? `${config.playersB[0]} / ${config.playersB[1]}` : config.playersB[0];
 
-      // 가로 모드 (헤더) 및 세로 모드 (하단) 세트 점수 업데이트
       const setAStr = `Set: ${state.setsA}`;
       const setBStr = `Set: ${state.setsB}`;
       document.getElementById('sets-a-header').innerText = setAStr;
