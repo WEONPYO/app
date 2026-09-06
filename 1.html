@@ -32,14 +32,9 @@
       width: 100vw;
       overflow: hidden;
       touch-action: none;
-    }
-
-    /* 기본 레이아웃 (스마트폰 가로 방향 기준: 우측 사이드바) */
-    body {
       flex-direction: row;
     }
 
-    /* 스마트폰 세로 방향일 경우: 하단으로 메뉴 배치 */
     @media (orientation: portrait) {
       body {
         flex-direction: column;
@@ -81,7 +76,7 @@
     .team-card.team-a { background: linear-gradient(135deg, var(--team-a-color), #051a36); }
     .team-card.team-b { background: linear-gradient(135deg, var(--team-b-color), #2d0725); }
 
-    .team-header { display: flex; justify-content: space-between; align-items: center; z-index: 2; }
+    .team-header { display: flex; justify-content: space-between; align-items: center; z-index: 5; }
     .team-info { display: flex; align-items: center; gap: 8px; }
     .team-title-row { display: flex; align-items: center; gap: 6px; }
     .team-name { font-size: 1.1rem; font-weight: 800; }
@@ -95,20 +90,24 @@
 
     .sets-won {
       font-size: 1.1rem; font-weight: 700; background: rgba(0,0,0,0.3);
-      padding: 4px 10px; border-radius: 6px;
+      padding: 4px 10px; border-radius: 6px; cursor: pointer; z-index: 10;
+      transition: background 0.2s;
     }
+    .sets-won:active { background: rgba(255,255,255,0.2); }
 
     .score-body {
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
       display: flex; justify-content: center; align-items: center;
-      z-index: 1; pointer-events: none;
+      z-index: 5; cursor: pointer;
     }
 
     .games-score {
       font-size: 0.9rem; font-weight: 700; opacity: 0.95; position: absolute; left: 14px; bottom: 12px;
-      background: rgba(0,0,0,0.4); padding: 3px 8px; border-radius: 4px; z-index: 4;
+      background: rgba(0,0,0,0.4); padding: 3px 8px; border-radius: 4px; z-index: 10;
+      cursor: pointer; transition: background 0.2s;
     }
+    .games-score:active { background: rgba(255,255,255,0.2); }
 
     .point-score {
       font-size: min(35vw, 38vh);
@@ -119,6 +118,7 @@
       display: flex; align-items: center; justify-content: center;
       letter-spacing: -2px; margin: 0; padding: 0;
       transform: translateY(-2%);
+      pointer-events: none;
     }
 
     .serve-ball {
@@ -128,18 +128,11 @@
     }
     .serve-ball.active { visibility: visible; }
 
-    .btn-score-up {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      opacity: 0; cursor: pointer; z-index: 3;
-    }
-
-    /* 사이드바/하단 메뉴 컨트롤 레이아웃 */
     .sidebar-controls {
       display: flex; width: 110px; background-color: var(--card-bg);
       border-left: 1px solid #234733; padding: 8px 6px; flex-direction: column; gap: 6px;
     }
 
-    /* 화면이 세로 방향(Portrait)일 때 메뉴 컨트롤을 하단 패널로 변환 */
     @media (orientation: portrait) {
       .sidebar-controls {
         width: 100%;
@@ -312,13 +305,12 @@
               <div class="player-names" id="disp-players-a">A. P1 / A. P2</div>
             </div>
           </div>
-          <span class="sets-won" id="sets-a">Set: 0</span>
+          <span class="sets-won" id="sets-a" onclick="addSet('A')">Set: 0</span>
         </div>
-        <div class="score-body">
+        <div class="score-body" onclick="addPoint('A')">
           <div class="point-score" id="points-a">0</div>
         </div>
-        <div class="games-score" id="games-a">Game: 0</div>
-        <button class="btn-score-up" onclick="addPoint('A')"></button>
+        <div class="games-score" id="games-a" onclick="addGame('A')">Game: 0</div>
       </div>
 
       <div class="team-card team-b" id="card-team-b" style="order: 2;">
@@ -333,13 +325,12 @@
               <div class="player-names" id="disp-players-b">B. P1 / B. P2</div>
             </div>
           </div>
-          <span class="sets-won" id="sets-b">Set: 0</span>
+          <span class="sets-won" id="sets-b" onclick="addSet('B')">Set: 0</span>
         </div>
-        <div class="score-body">
+        <div class="score-body" onclick="addPoint('B')">
           <div class="point-score" id="points-b">0</div>
         </div>
-        <div class="games-score" id="games-b">Game: 0</div>
-        <button class="btn-score-up" onclick="addPoint('B')"></button>
+        <div class="games-score" id="games-b" onclick="addGame('B')">Game: 0</div>
       </div>
     </div>
 
@@ -540,6 +531,41 @@
     let serverAnnounceTimer = null;
     let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0;
 
+    // Long Press Event Control
+    let longPressTimer = null;
+    let isLongPress = false;
+
+    function setupLongPressEvents() {
+      ['card-team-a', 'card-team-b'].forEach(id => {
+        const el = document.getElementById(id);
+        const team = id === 'card-team-a' ? 'A' : 'B';
+
+        const startPress = (e) => {
+          if (e.target.closest('.sets-won') || e.target.closest('.games-score')) return;
+          isLongPress = false;
+          longPressTimer = setTimeout(() => {
+            isLongPress = true;
+            undo();
+          }, 500); // 500ms 이상 길게 누르면 감점(Correction)
+        };
+
+        const cancelPress = () => {
+          if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+          }
+        };
+
+        el.addEventListener('mousedown', startPress);
+        el.addEventListener('mouseup', cancelPress);
+        el.addEventListener('mouseleave', cancelPress);
+
+        el.addEventListener('touchstart', startPress, { passive: true });
+        el.addEventListener('touchend', cancelPress);
+        el.addEventListener('touchcancel', cancelPress);
+      });
+    }
+
     function cancelServerAnnouncement() {
       if (serverAnnounceTimer) {
         clearTimeout(serverAnnounceTimer);
@@ -612,6 +638,7 @@
       loadStorage();
       setupEvents();
       setupSwipeEvents();
+      setupLongPressEvents();
       populateSettingsModal();
       await requestWakeLock();
       render();
@@ -768,7 +795,34 @@
       speak(`Service Team ${state.currentServerTeam}.`);
     }
 
+    // 게임 점수 추가 (직접 클릭)
+    function addGame(team) {
+      cancelServerAnnouncement();
+      saveState();
+      if (team === 'A') state.gamesA++;
+      else state.gamesB++;
+      saveStateToStorage();
+      render();
+      speak(`Game ${getTeamDisplayName(team)}.`);
+    }
+
+    // 세트 점수 추가 (직접 클릭)
+    function addSet(team) {
+      cancelServerAnnouncement();
+      saveState();
+      if (team === 'A') state.setsA++;
+      else state.setsB++;
+      saveStateToStorage();
+      render();
+      speak(`Set ${getTeamDisplayName(team)}.`);
+    }
+
+    // 포인트 점수 추가
     function addPoint(team) {
+      if (isLongPress) {
+        isLongPress = false;
+        return; // 롱프레스 시 점수 증가 방지
+      }
       cancelServerAnnouncement();
       saveState();
       if (state.isTiebreak) handleTiebreakPoint(team);
@@ -908,13 +962,12 @@
       }
     }
 
-    /* TTS 음성 발음 최적화 함수 */
     function getSpokenText(text) {
       return text
-        .replace(/15/g, "Fifteen")
-        .replace(/30/g, "Thirty")
-        .replace(/40/g, "Forty")
-        .replace(/0/g, "Love")
+        .replace(/ 15 /g, "Fifteen")
+        .replace(/ 30 /g, "Thirty")
+        .replace(/ 40 /g, "Forty")
+        .replace(/ 0 /g, "Love")
         .replace(/,\s*,+/g, ".")
         .replace(/\s+/g, " ")
         .trim();
