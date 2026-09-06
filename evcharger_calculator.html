@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4f6f8">
+<title>전기차 충전기 계산기</title>
+<style>
+*{box-sizing:border-box}
+:root{--bg:#f4f6f8;--card:#fff;--text:#20252b;--muted:#68717c;--line:#dfe4e9;--accent:#1976d2;--accent2:#0b5cab;--info:#eef6ff;--shadow:0 3px 14px rgba(0,0,0,.07)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",Arial,sans-serif}
+header{background:#fff;border-bottom:1px solid var(--line);padding:18px 16px 14px;position:sticky;top:0;z-index:5}
+header h1{font-size:21px;margin:0 0 5px} header p{font-size:13px;color:var(--muted);margin:0}
+main{max-width:780px;margin:0 auto;padding:14px 12px 40px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.tab{border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px 8px;font-weight:700;color:#56606b;cursor:pointer}
+.tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card h2{font-size:17px;margin:0 0 14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.field{margin-bottom:13px}.field label{display:block;font-size:13px;font-weight:800;margin-bottom:6px}
+.help{font-size:11px;line-height:1.55;color:var(--muted);background:var(--info);border-radius:7px;padding:7px 9px;margin-top:5px}
+select,input{width:100%;height:44px;border:1px solid #cfd5db;border-radius:9px;padding:0 11px;background:#fff;font-size:15px;color:var(--text);outline:none}
+select:focus,input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(25,118,210,.12)}
+.unit{position:relative}.unit input{padding-right:60px}.unit span{position:absolute;right:12px;top:13px;color:var(--muted);font-size:13px}
+button.calc{width:100%;height:46px;border:0;border-radius:10px;background:var(--accent);color:#fff;font-size:15px;font-weight:800;cursor:pointer;margin-top:4px}
+button.calc:hover{background:var(--accent2)}
+.result{margin-top:13px;background:#f7fafc;border:1px solid #dbe7f2;border-radius:12px;padding:14px}
+.result .big{font-size:27px;font-weight:900;color:var(--accent);margin:3px 0 12px}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.result-item{background:#fff;border:1px solid var(--line);border-radius:9px;padding:10px}
+.result-item .label{font-size:12px;color:var(--muted);margin-bottom:4px}.result-item .value{font-size:16px;font-weight:800}
+.note{font-size:12px;line-height:1.7;color:var(--muted);background:#fafafa;border-radius:9px;padding:10px;margin-top:10px}
+.hidden{display:none!important}
+.section-desc{font-size:12px;color:var(--muted);line-height:1.6;margin:-6px 0 14px}
+@media(max-width:520px){.grid{grid-template-columns:1fr}.card{padding:14px}.result-grid{grid-template-columns:1fr 1fr}header{padding-top:15px}}
+</style>
+</head>
+<body>
+<header>
+<h1>⚡ 전기차 충전기 계산기</h1>
+<p>충전기 전력·전류와 차량 충전시간·요금·예상 주행거리를 계산합니다.</p>
+</header>
+
+<main>
+<div class="tabs">
+<button class="tab active" onclick="showTab(1)">① 충전기 용량 → A / W</button>
+<button class="tab" onclick="showTab(2)">② 차량 충전 계산</button>
+</div>
+
+<section id="tab1">
+<div class="card">
+<h2>충전기 전력 및 전류 계산</h2>
+<p class="section-desc">충전기의 정격 용량과 전압 등을 입력하면 충전기에 필요한 전류(A)와 전력(W)을 계산합니다.</p>
+
+<div class="field">
+<label>충전기 종류</label>
+<select id="chargerType" onchange="chargerTypeChanged()">
+<option value="ac">단상 AC 완속</option><option value="dc">급속 DC</option>
+</select>
+<div class="help">단상 AC는 일반적인 가정·주차장용 완속 충전기, DC는 고출력 급속충전기를 의미합니다.</div>
+</div>
+
+<div class="field">
+<label>충전기 용량</label>
+<select id="chargerPreset" onchange="chargerPresetChanged()"></select>
+<div class="help">충전기가 차량에 공급할 수 있는 최대 전력입니다. 예: 7 kW는 최대 약 7,000 W를 공급합니다.</div>
+</div>
+
+<div class="field">
+<label>충전기 용량 직접 입력</label>
+<div class="unit"><input id="chargerKW" type="number" value="7" min="0.1" step="0.1"><span>kW</span></div>
+<div class="help">목록에 없는 충전기 용량을 사용할 경우 직접 입력합니다.</div>
+</div>
+
+<div class="grid">
+<div class="field">
+<label>전압 선택</label>
+<select id="voltagePreset" onchange="presetToInput('voltagePreset','voltage')"></select>
+<div class="help">충전기의 전기적 전압입니다. 실제 설비의 정격전압을 사용하는 것이 가장 정확합니다.</div>
+</div>
+<div class="field">
+<label>전압 직접 입력</label>
+<div class="unit"><input id="voltage" type="number" value="220" min="1" step="1"><span>V</span></div>
+</div>
+</div>
+
+<div class="grid">
+<div class="field">
+<label>역률 선택</label>
+<select id="pfPreset" onchange="presetToInput('pfPreset','pf')"></select>
+<div class="help">역률(PF)은 전기 입력이 실제 유효전력으로 얼마나 효율적으로 사용되는지를 나타내는 값입니다. 1에 가까울수록 좋습니다.</div>
+</div>
+<div class="field">
+<label>역률 직접 입력</label>
+<div class="unit"><input id="pf" type="number" value="0.95" min="0.1" max="1" step="0.01"><span>PF</span></div>
+</div>
+</div>
+
+<div class="grid">
+<div class="field">
+<label>효율 선택</label>
+<select id="effPreset" onchange="presetToInput('effPreset','chargerEff')"></select>
+<div class="help">효율은 충전기에 들어간 전력 중 실제 유효하게 사용되는 비율입니다. 예: 90%라면 약 10%가 손실됩니다.</div>
+</div>
+<div class="field">
+<label>효율 직접 입력</label>
+<div class="unit"><input id="chargerEff" type="number" value="90" min="1" max="100" step="1"><span>%</span></div>
+</div>
+</div>
+
+<button class="calc" onclick="calcPower()">계산하기</button>
+<div id="powerResult" class="result hidden"></div>
+</div>
+</section>
+
+<section id="tab2" class="hidden">
+<div class="card">
+<h2>차량 및 배터리</h2>
+<p class="section-desc">차량의 배터리 총 용량과 현재 충전 상태에서 목표 충전 상태까지 필요한 충전량을 계산합니다.</p>
+
+<div class="field">
+<label>차량 모델</label>
+<select id="vehicle" onchange="vehicleChanged()">
+<option value="ioniq5_58">현대 아이오닉 5 (약 58 kWh)</option>
+<option value="ioniq5_77">현대 아이오닉 5 (약 77.4 kWh)</option>
+<option value="ioniq6_77">현대 아이오닉 6 (약 77.4 kWh)</option>
+<option value="ev6_77">기아 EV6 (약 77.4 kWh)</option>
+<option value="ev9_99">기아 EV9 (약 99.8 kWh)</option>
+<option value="model3_60">Tesla Model 3 (약 60 kWh)</option>
+<option value="model3_79">Tesla Model 3 Long Range (약 79 kWh)</option>
+<option value="modely_79">Tesla Model Y Long Range (약 79 kWh)</option>
+<option value="kona_65">현대 코나 일렉트릭 (약 65.4 kWh)</option>
+<option value="niro_64">기아 니로 EV (약 64.8 kWh)</option>
+<option value="custom">직접 입력</option>
+</select>
+<div class="help">차량을 선택하면 대표적인 배터리 용량이 자동으로 입력됩니다. 실제 차량의 연식·트림별 용량은 다를 수 있으므로 직접 수정할 수 있습니다.</div>
+</div>
+
+<div class="field">
+<label>배터리 총 용량</label>
+<div class="unit"><input id="battery" type="number" value="58" min="0.1" step="0.1"><span>kWh</span></div>
+<div class="help">배터리가 완전히 충전되었을 때 저장할 수 있는 에너지의 양입니다. kWh가 클수록 일반적으로 더 많은 에너지를 저장합니다.</div>
+</div>
+
+<div class="grid">
+<div class="field">
+<label>현재 배터리</label>
+<select id="currentPreset" onchange="presetToInput('currentPreset','current')"></select>
+<div class="help">충전을 시작할 때 차량 배터리에 남아 있는 충전량(SOC)입니다. 예: 20%는 배터리 총 용량의 약 20%가 남아 있다는 뜻입니다.</div>
+</div>
+<div class="field">
+<label>현재 배터리 직접 입력</label>
+<div class="unit"><input id="current" type="number" value="20" min="0" max="100" step="0.1"><span>%</span></div>
+</div>
+</div>
+
+<div class="grid">
+<div class="field">
+<label>목표 배터리</label>
+<select id="targetPreset" onchange="presetToInput('targetPreset','target')"></select>
+<div class="help">충전을 끝내고 싶은 배터리 잔량(SOC)입니다. 예: 80%로 설정하면 배터리가 80%가 될 때까지 계산합니다.</div>
+</div>
+<div class="field">
+<label>목표 배터리 직접 입력</label>
+<div class="unit"><input id="target" type="number" value="80" min="0" max="100" step="0.1"><span>%</span></div>
+</div>
+</div>
+</div>
+
+<div class="card">
+<h2>충전기 및 요금 설정</h2>
+<p class="section-desc">충전기 출력, 충전 손실, 전기요금, 차량 전비를 설정하여 실제 충전과 비슷한 조건으로 예상값을 계산합니다.</p>
+
+<div class="field">
+<label>충전기 종류</label>
+<select id="carChargerType" onchange="carChargerTypeChanged()">
+<option value="ac">단상 AC 완속</option><option value="dc">급속 DC</option>
+</select>
+<div class="help">차량 충전에 사용하는 충전기의 종류입니다. AC 완속과 DC 급속은 충전 방식과 실제 충전시간 특성이 다릅니다.</div>
+</div>
+
+<div class="field">
+<label>충전기 용량</label>
+<select id="carChargerPreset" onchange="carChargerPresetChanged()"></select>
+<div class="help">충전기가 공급할 수 있는 정격 최대 출력입니다. 차량의 최대 AC/DC 충전속도가 더 낮으면 실제 충전속도는 차량 기준으로 제한됩니다.</div>
+</div>
+
+<div class="field">
+<label>충전기 용량 직접 입력</label>
+<div class="unit"><input id="carChargerKW" type="number" value="7" min="0.1" step="0.1"><span>kW</span></div>
+</div>
+
+<div class="grid">
+<div class="field">
+<label>충전 효율 선택</label>
+<select id="chargeEffPreset" onchange="presetToInput('chargeEffPreset','chargeEff')"></select>
+<div class="help">충전기에서 사용한 전력 중 배터리에 실제 저장되는 비율입니다. 충전 손실을 반영하기 위한 값입니다.</div>
+</div>
+<div class="field">
+<label>충전 효율 직접 입력</label>
+<div class="unit"><input id="chargeEff" type="number" value="90" min="1" max="100" step="1"><span>%</span></div>
+</div>
+</div>
+
+<div class="grid">
+<div class="field">
+<label>충전요금 선택</label>
+<select id="pricePreset" onchange="presetToInput('pricePreset','price')"></select>
+<div class="help">전기 1 kWh를 충전하는 데 적용할 단가입니다. 실제 요금은 충전사업자와 계약·시간대 등에 따라 달라질 수 있습니다.</div>
+</div>
+<div class="field">
+<label>충전요금 직접 입력</label>
+<div class="unit"><input id="price" type="number" value="300" min="0" step="1"><span>원/kWh</span></div>
+</div>
+</div>
+
+<div class="grid">
+<div class="field">
+<label>예상 전비 선택</label>
+<select id="efficiencyPreset" onchange="presetToInput('efficiencyPreset','efficiency')"></select>
+<div class="help">차량이 전기 1 kWh로 주행할 수 있는 예상 거리입니다. 값이 높을수록 같은 충전량으로 더 먼 거리를 주행할 수 있습니다.</div>
+</div>
+<div class="field">
+<label>전비 직접 입력</label>
+<div class="unit"><input id="efficiency" type="number" value="6" min="0.1" step="0.1"><span>km/kWh</span></div>
+</div>
+</div>
+
+<div class="field">
+<label>요금 계산 기준</label>
+<select id="costBasis">
+<option value="wall">충전기에서 소비되는 전력량 기준</option>
+<option value="battery">배터리에 실제 저장되는 전력량 기준</option>
+</select>
+<div class="help">‘소비 전력량 기준’은 충전 손실까지 포함한 전력량으로 계산하며, ‘배터리 저장량 기준’은 배터리에 실제 저장된 에너지만으로 계산합니다.</div>
+</div>
+
+<button class="calc" onclick="calcCar()">충전시간 · 요금 · 주행거리 계산</button>
+<div id="carResult" class="result hidden"></div>
+
+<div class="note">
+<strong>계산 예:</strong> 60 kWh 배터리에서 20% → 80%라면 배터리에 필요한 에너지는 36 kWh입니다.
+충전효율이 90%라면 충전기에서는 약 40 kWh를 소비한다고 보고 계산합니다.
+<br><br>
+※ 특히 DC 급속충전은 배터리 SOC가 높아질수록 충전 출력이 자동으로 낮아지는 특성이 있어 실제 충전시간이 계산값보다 길어질 수 있습니다.
+</div>
+</div>
+</section>
+</main>
+
+<footer style="max-width:780px;margin:0 auto;padding:0 16px 35px;color:#68717c;font-size:11px;line-height:1.65">
+※ 선택값은 계산을 쉽게 하기 위한 일반적인 참고값입니다.<br>
+※ 차량 배터리 용량과 최대 충전속도는 제조사·연식·트림에 따라 다를 수 있습니다.<br>
+※ 실제 전기요금은 충전사업자, 계약종별, 시간대, 기본요금, 부가요금 등에 따라 달라질 수 있습니다.<br>
+※ 전기설비의 차단기·케이블·콘센트 정격 선정은 실제 설비 조건과 관련 전기기준 및 제조사 사양을 따라야 합니다.
+</footer>
+
+<script>
+const vehicles={
+ioniq5_58:58,ioniq5_77:77.4,ioniq6_77:77.4,ev6_77:77.4,ev9_99:99.8,
+model3_60:60,model3_79:79,modely_79:79,kona_65:65.4,niro_64:64.8
+};
+const presets={
+acCharger:[["3.5 kW",3.5],["7 kW",7],["11 kW",11],["직접 입력","custom"]],
+dcCharger:[["35 kW",35],["50 kW",50],["100 kW",100],["200 kW",200],["240 kW",240],["직접 입력","custom"]],
+acVoltage:[["220 V (일반)",220],["230 V",230],["직접 입력","custom"]],
+dcVoltage:[["400 V (일반)",400],["500 V",500],["800 V",800],["직접 입력","custom"]],
+acPF:[["0.95 (일반)",.95],["0.90",.90],["0.98",.98],["1.00",1],["직접 입력","custom"]],
+dcPF:[["1.00 (참고)",1],["0.98",.98],["0.95",.95],["직접 입력","custom"]],
+acEff:[["90% (일반)",90],["92%",92],["94%",94],["95%",95],["직접 입력","custom"]],
+dcEff:[["95% (일반)",95],["94%",94],["96%",96],["97%",97],["직접 입력","custom"]],
+chargeEffAC:[["90% (일반)",90],["92%",92],["94%",94],["95%",95],["직접 입력","custom"]],
+chargeEffDC:[["95% (일반)",95],["94%",94],["96%",96],["97%",97],["직접 입력","custom"]],
+currentSOC:[["0%",0],["10%",10],["20%",20],["30%",30],["40%",40],["50%",50],["60%",60],["70%",70],["80%",80],["90%",90],["100%",100],["직접 입력","custom"]],
+targetSOC:[["50%",50],["60%",60],["70%",70],["80%",80],["90%",90],["100%",100],["직접 입력","custom"]],
+price:[["300 원/kWh (참고)",300],["250 원/kWh",250],["300 원/kWh",300],["350 원/kWh",350],["400 원/kWh",400],["500 원/kWh",500],["직접 입력","custom"]],
+efficiency:[["6 km/kWh (참고)",6],["5 km/kWh",5],["5.5 km/kWh",5.5],["6 km/kWh",6],["6.5 km/kWh",6.5],["7 km/kWh",7],["직접 입력","custom"]]
+};
+function fillSelect(id,list){
+const s=document.getElementById(id);s.innerHTML="";
+list.forEach(([text,val])=>{const o=document.createElement("option");o.textContent=text;o.value=val;s.appendChild(o)});
+}
+function presetToInput(selectId,inputId){
+const v=document.getElementById(selectId).value;
+if(v!=="custom")document.getElementById(inputId).value=v;
+}
+function setPreset(id,value){
+const s=document.getElementById(id),o=[...s.options].find(x=>x.value==String(value));
+s.value=o?String(value):"custom";
+}
+function chargerTypeChanged(){
+const type=document.getElementById("chargerType").value;
+fillSelect("chargerPreset",type==="ac"?presets.acCharger:presets.dcCharger);
+fillSelect("voltagePreset",type==="ac"?presets.acVoltage:presets.dcVoltage);
+fillSelect("pfPreset",type==="ac"?presets.acPF:presets.dcPF);
+fillSelect("effPreset",type==="ac"?presets.acEff:presets.dcEff);
+if(type==="ac"){
+document.getElementById("chargerKW").value=7;document.getElementById("voltage").value=220;document.getElementById("pf").value=.95;document.getElementById("chargerEff").value=90;
+setPreset("chargerPreset",7);setPreset("voltagePreset",220);setPreset("pfPreset",.95);setPreset("effPreset",90);
+}else{
+document.getElementById("chargerKW").value=50;document.getElementById("voltage").value=400;document.getElementById("pf").value=1;document.getElementById("chargerEff").value=95;
+setPreset("chargerPreset",50);setPreset("voltagePreset",400);setPreset("pfPreset",1);setPreset("effPreset",95);
+}}
+function chargerPresetChanged(){presetToInput("chargerPreset","chargerKW")}
+function carChargerTypeChanged(){
+const type=document.getElementById("carChargerType").value;
+fillSelect("carChargerPreset",type==="ac"?presets.acCharger:presets.dcCharger);
+fillSelect("chargeEffPreset",type==="ac"?presets.chargeEffAC:presets.chargeEffDC);
+if(type==="ac"){document.getElementById("carChargerKW").value=7;document.getElementById("chargeEff").value=90;setPreset("carChargerPreset",7);setPreset("chargeEffPreset",90)}
+else{document.getElementById("carChargerKW").value=50;document.getElementById("chargeEff").value=95;setPreset("carChargerPreset",50);setPreset("chargeEffPreset",95)}
+}
+function carChargerPresetChanged(){presetToInput("carChargerPreset","carChargerKW")}
+function vehicleChanged(){const v=document.getElementById("vehicle").value;if(v!=="custom")document.getElementById("battery").value=vehicles[v]}
+function showTab(n){
+document.getElementById("tab1").classList.toggle("hidden",n!==1);document.getElementById("tab2").classList.toggle("hidden",n!==2);
+document.querySelectorAll(".tab").forEach((b,i)=>b.classList.toggle("active",i===n-1));
+}
+function num(id){return parseFloat(document.getElementById(id).value)||0}
+function fmt(n,d=1){return Number(n).toLocaleString("ko-KR",{maximumFractionDigits:d})}
+function timeText(hours){
+if(!isFinite(hours)||hours<0)return "-";let h=Math.floor(hours),m=Math.round((hours-h)*60);if(m===60){h++;m=0}
+return h>0?`${h}시간 ${m}분`:`${m}분`;
+}
+function calcPower(){
+const kw=num("chargerKW"),v=num("voltage"),pf=num("pf"),eff=num("chargerEff")/100,type=document.getElementById("chargerType").value;
+if(kw<=0||v<=0||pf<=0||eff<=0){alert("입력값을 확인하세요.");return}
+const w=kw*1000,amp=type==="ac"?w/(v*pf):w/v,useful=kw*eff,r=document.getElementById("powerResult");
+r.classList.remove("hidden");r.innerHTML=`
+<div style="font-size:13px;color:#68717c">계산 결과</div><div class="big">${fmt(w,0)} W</div>
+<div class="result-grid">
+<div class="result-item"><div class="label">충전기 종류</div><div class="value">${type==="ac"?"단상 AC":"급속 DC"}</div></div>
+<div class="result-item"><div class="label">정격 전력</div><div class="value">${fmt(kw,2)} kW</div></div>
+<div class="result-item"><div class="label">계산 전류</div><div class="value">${fmt(amp,2)} A</div></div>
+<div class="result-item"><div class="label">전압</div><div class="value">${fmt(v,0)} V</div></div>
+<div class="result-item"><div class="label">역률</div><div class="value">${fmt(pf,2)}</div></div>
+<div class="result-item"><div class="label">효율 반영 출력</div><div class="value">${fmt(useful,2)} kW</div></div>
+</div>`;
+}
+function calcCar(){
+const battery=num("battery"),current=num("current"),target=num("target"),charger=num("carChargerKW"),eff=num("chargeEff")/100,price=num("price"),kmPerKwh=num("efficiency");
+if(battery<=0||charger<=0||eff<=0){alert("입력값을 확인하세요.");return}
+if(current<0||target<0||current>100||target>100){alert("현재 배터리와 목표 배터리는 0~100%로 입력하세요.");return}
+if(target<current){alert("목표 배터리는 현재 배터리보다 높아야 합니다.");return}
+const batteryAdd=battery*(target-current)/100,wallEnergy=batteryAdd/eff,hours=wallEnergy/charger;
+const costKwh=document.getElementById("costBasis").value==="wall"?wallEnergy:batteryAdd,cost=costKwh*price,range=batteryAdd*kmPerKwh,r=document.getElementById("carResult");
+r.classList.remove("hidden");r.innerHTML=`
+<div style="font-size:13px;color:#68717c">예상 충전 결과</div><div class="big">${timeText(hours)}</div>
+<div class="result-grid">
+<div class="result-item"><div class="label">충전 전 배터리</div><div class="value">${fmt(current,1)}%</div></div>
+<div class="result-item"><div class="label">충전 완료 배터리</div><div class="value">${fmt(target,1)}%</div></div>
+<div class="result-item"><div class="label">배터리 저장량 증가</div><div class="value">${fmt(batteryAdd,2)} kWh</div></div>
+<div class="result-item"><div class="label">충전기 소비 전력</div><div class="value">${fmt(wallEnergy,2)} kWh</div></div>
+<div class="result-item"><div class="label">예상 충전요금</div><div class="value">${fmt(cost,0)} 원</div></div>
+<div class="result-item"><div class="label">추가 주행 가능 거리</div><div class="value">${fmt(range,1)} km</div></div>
+</div>`;
+}
+window.addEventListener("DOMContentLoaded",()=>{
+chargerTypeChanged();carChargerTypeChanged();
+fillSelect("currentPreset",presets.currentSOC);fillSelect("targetPreset",presets.targetSOC);
+fillSelect("pricePreset",presets.price);fillSelect("efficiencyPreset",presets.efficiency);
+setPreset("currentPreset",20);setPreset("targetPreset",80);setPreset("pricePreset",300);setPreset("efficiencyPreset",6);
+});
+</script>
+</body>
+</html>
