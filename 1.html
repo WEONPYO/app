@@ -34,12 +34,10 @@
       touch-action: none;
     }
 
-    /* 기본 레이아웃 (스마트폰 가로 방향 기준: 우측 사이드바) */
     body {
       flex-direction: row;
     }
 
-    /* 스마트폰 세로 방향일 경우: 하단으로 메뉴 배치 */
     @media (orientation: portrait) {
       body {
         flex-direction: column;
@@ -135,11 +133,16 @@
 
     /* 사이드바/하단 메뉴 컨트롤 레이아웃 */
     .sidebar-controls {
-      display: flex; width: 125px; background-color: var(--card-bg);
-      border-left: 1px solid #234733; padding: 8px 6px; flex-direction: column; gap: 8px;
+      display: flex; width: 120px; background-color: var(--card-bg);
+      border-left: 1px solid #234733; padding: 10px 8px; flex-direction: column; gap: 8px;
+      justify-content: space-between;
     }
 
-    /* 세로 방향(Portrait) 하단 패널 레이아웃 */
+    .menu-group-main, .menu-group-bottom {
+      display: flex; flex-direction: column; gap: 8px; width: 100%;
+    }
+
+    /* 화면이 세로 방향(Portrait)일 때 메뉴 컨트롤을 하단 패널로 변환 */
     @media (orientation: portrait) {
       .sidebar-controls {
         width: 100%;
@@ -147,10 +150,15 @@
         border-left: none;
         border-top: 1px solid #234733;
         flex-direction: row;
-        flex-wrap: wrap;
         align-items: center;
         justify-content: space-around;
         padding: 6px;
+      }
+
+      .menu-group-main, .menu-group-bottom {
+        flex-direction: row;
+        width: auto;
+        flex: 1;
         gap: 4px;
       }
 
@@ -158,45 +166,38 @@
         display: none;
       }
 
-      .sidebar-controls .btn-main-action {
-        flex: 1 1 28%;
-        padding: 12px 2px !important;
-        font-size: 0.8rem !important;
-      }
-
-      .sidebar-controls .btn-secondary {
-        flex: 1 1 18%;
-        padding: 8px 2px !important;
-        font-size: 0.7rem !important;
-      }
-
-      .sidebar-controls .spacer {
-        display: none;
+      .sidebar-controls .btn-action, .sidebar-controls .btn-icon {
+        flex: 1;
+        padding: 10px 2px;
+        font-size: 0.7rem;
       }
     }
 
     .sidebar-title { font-size: 0.75rem; font-weight: 800; color: var(--accent-yellow); text-align: center; margin-bottom: 2px; }
 
-    /* 크게 강조된 메인 버튼 그룹 (서브순서변경, 코트체인지, 수정) */
-    .btn-main-action {
-      background-color: #1c3829; color: white; border: 1.5px solid #3e7354;
-      padding: 12px 4px; border-radius: 8px; font-size: 0.8rem; font-weight: 800;
-      cursor: pointer; text-align: center; width: 100%;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      transition: all 0.15s ease;
+    /* 메인 경기 제어 버튼 강조 스타일 */
+    .btn-action-large {
+      background-color: #1c3829; color: white; border: 1px solid #2e5941;
+      padding: 12px 4px; border-radius: 8px; font-size: 0.8rem; font-weight: bold;
+      cursor: pointer; text-align: center; line-height: 1.2;
     }
-    .btn-main-action:active { transform: scale(0.97); }
-    .btn-main-action.highlight { border-color: var(--accent-yellow); color: var(--accent-yellow); }
 
-    /* 보조 버튼 그룹 (리셋, 풀스크린, 세팅) */
-    .btn-secondary {
-      background-color: #12241a; border: 1px solid #234733; color: #a2b5a9;
-      padding: 7px 4px; border-radius: 6px; font-size: 0.7rem; font-weight: bold;
-      cursor: pointer; text-align: center; width: 100%;
+    .btn-action-large.highlight { 
+      border-color: var(--accent-yellow); 
+      color: var(--accent-yellow); 
+      background-color: #132b1e;
     }
-    .btn-secondary.danger { color: #ff6b6b; border-color: #522222; }
 
-    .spacer { flex: 1; }
+    .btn-icon {
+      background: #14261c; border: 1px solid #2e5941; color: #a0a0a0;
+      padding: 8px 4px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; cursor: pointer;
+      text-align: center;
+    }
+    
+    .btn-icon.danger {
+      color: #ff6b6b;
+      border-color: #592e2e;
+    }
 
     .court-section {
       display: flex; justify-content: center; align-items: center;
@@ -386,23 +387,20 @@
     </div>
   </div>
 
-  <!-- 메인 컨트롤 영역 -->
+  <!-- 사이드바 컨트롤 영역 (상단 메인 기능 / 하단 설정을 분리) -->
   <div class="sidebar-controls">
-    <div class="sidebar-title">MENU</div>
-    
-    <!-- 서브순서변경, 코트체인지, 수정 (버튼크기 강조) -->
-    <button class="btn-main-action highlight" id="btn-toggle-serve-s" onclick="toggleServeTeam()">SERVE: TEAM A</button>
-    <button class="btn-main-action" onclick="manualCourtChange()">CHANGE COURT</button>
-    <button class="btn-main-action" onclick="undo()">CORRECTION</button>
+    <div class="menu-group-main">
+      <div class="sidebar-title">MENU</div>
+      <button class="btn-action-large highlight" id="btn-toggle-serve-s" onclick="toggleServeTeam()">SERVE: TEAM A</button>
+      <button class="btn-action-large" onclick="manualCourtChange()">CHANGE COURT</button>
+      <button class="btn-action-large" onclick="undo()">CORRECTION</button>
+    </div>
 
-    <div class="spacer"></div>
-
-    <!-- 리셋 (세팅/풀스크린 위쪽 영역) -->
-    <button class="btn-secondary danger" onclick="confirmResetMatch()">RESET</button>
-    
-    <!-- 풀스크린 & 세팅 버튼 (최하단) -->
-    <button class="btn-secondary" onclick="toggleFullscreen()">Full Screen</button>
-    <button class="btn-secondary" id="btn-settings-sidebar">Settings</button>
+    <div class="menu-group-bottom">
+      <button class="btn-icon danger" onclick="confirmResetMatch()">RESET</button>
+      <button class="btn-icon" onclick="toggleFullscreen()">Full Screen</button>
+      <button class="btn-icon" id="btn-settings-sidebar">Settings</button>
+    </div>
   </div>
 
   <div class="modal" id="settings-modal">
@@ -549,8 +547,6 @@
       isTiebreak: false,
       tiebreakFirstServer: null,
       currentServerTeam: 'A',
-      serverIdxA: 0,
-      serverIdxB: 0,
       courtLeftTeam: 'A'
     };
 
@@ -561,6 +557,16 @@
     let wakeLock = null;
     let serverAnnounceTimer = null;
     let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0;
+
+    /* 현재 경기 합산 진행 상태에 대응하는 활성 서버 번호 (0: P1, 1: P2) 계산 */
+    function getActiveServerIndices() {
+      const totalGames = (state.setsA + state.setsB) * (config.gamesPerSet * 2) + state.gamesA + state.gamesB;
+      const cycle = Math.floor(totalGames / 2);
+      return {
+        serverIdxA: cycle % 2,
+        serverIdxB: cycle % 2
+      };
+    }
 
     function cancelServerAnnouncement() {
       if (serverAnnounceTimer) {
@@ -577,7 +583,8 @@
       serverAnnounceTimer = setTimeout(() => {
         if (config.type !== 'doubles') return;
         const serverTeam = state.currentServerTeam;
-        const activeServerIdx = (serverTeam === 'A') ? state.serverIdxA : state.serverIdxB;
+        const indices = getActiveServerIndices();
+        const activeServerIdx = (serverTeam === 'A') ? indices.serverIdxA : indices.serverIdxB;
         const callText = (activeServerIdx === 0) ? "First server." : "Second server.";
         speak(callText);
         serverAnnounceTimer = null;
@@ -773,7 +780,7 @@
         ptsA: 0, ptsB: 0, gamesA: 0, gamesB: 0, setsA: 0, setsB: 0,
         isTiebreak: false, tiebreakFirstServer: null,
         currentServerTeam: config.firstServeTeam,
-        serverIdxA: 0, serverIdxB: 0, courtLeftTeam: 'A'
+        courtLeftTeam: 'A'
       };
       historyStack = [];
       saveStateToStorage();
@@ -781,26 +788,10 @@
       speak("Reset.");
     }
 
-    /* 서브 팀 수동 변경 시 올바른 복식 서브 순서 규칙 적용 */
     function toggleServeTeam() {
       cancelServerAnnouncement();
       saveState();
-
-      if (config.type === 'doubles') {
-        if (state.currentServerTeam === 'A') {
-          // Team A -> Team B 로 서브권 전환
-          state.currentServerTeam = 'B';
-        } else {
-          // Team B -> Team A 로 서브권 전환 시, 올바른 복식 서브 순서 규칙에 따라 서브 번호 로테이션
-          state.currentServerTeam = 'A';
-          state.serverIdxA = (state.serverIdxA + 1) % 2;
-          state.serverIdxB = (state.serverIdxB + 1) % 2;
-        }
-      } else {
-        // 단식일 경우 서브 팀만 전환
-        state.currentServerTeam = state.currentServerTeam === 'A' ? 'B' : 'A';
-      }
-
+      state.currentServerTeam = state.currentServerTeam === 'A' ? 'B' : 'A';
       saveStateToStorage();
       render();
       speak(`Service Team ${state.currentServerTeam}.`);
@@ -922,17 +913,7 @@
     }
 
     function switchServer() {
-      if (config.type === 'singles') {
-        state.currentServerTeam = state.currentServerTeam === 'A' ? 'B' : 'A';
-      } else {
-        if (state.currentServerTeam === 'A') {
-          state.currentServerTeam = 'B';
-        } else {
-          state.currentServerTeam = 'A';
-          state.serverIdxA = (state.serverIdxA + 1) % 2;
-          state.serverIdxB = (state.serverIdxB + 1) % 2;
-        }
-      }
+      state.currentServerTeam = state.currentServerTeam === 'A' ? 'B' : 'A';
     }
 
     function manualCourtChange(announce = true, recordHistory = true) {
@@ -947,7 +928,6 @@
       }
     }
 
-    /* TTS 음성 발음 최적화 함수 */
     function getSpokenText(text) {
       return text
         .replace(/ 15 /g, "Fifteen")
@@ -1063,7 +1043,8 @@
       const isDoubles = (config.type === 'doubles');
 
       const serverTeam = state.currentServerTeam;
-      const activeServerIdx = isDoubles ? (serverTeam === 'A' ? state.serverIdxA : state.serverIdxB) : 0;
+      const indices = getActiveServerIndices();
+      const activeServerIdx = isDoubles ? (serverTeam === 'A' ? indices.serverIdxA : indices.serverIdxB) : 0;
 
       const pmA1 = document.getElementById('pm-a1');
       const pmA2 = document.getElementById('pm-a2');
