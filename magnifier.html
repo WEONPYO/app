@@ -121,6 +121,23 @@
       pointer-events: none;
     }
 
+    /* 화면 정지 상태 안내 뱃지 */
+    .freeze-badge {
+      display: none;
+      position: absolute;
+      top: calc(85px + env(safe-area-inset-top, 0px));
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 59, 48, 0.85);
+      color: #fff;
+      font-weight: bold;
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 10px;
+      z-index: 5;
+      pointer-events: none;
+    }
+
     /* 하단 컨트롤 영역 (절대 잘리지 않도록 크기 고정) */
     .bottom-controls {
       flex-shrink: 0; /* 화면이 작아져도 축소되지 않음 */
@@ -193,8 +210,8 @@
     }
     
     .sub-btn {
-      width: 48px;
-      height: 48px;
+      width: 52px;
+      height: 52px;
       border-radius: 50%;
       background: rgba(40, 40, 40, 0.8);
       border: 1px solid rgba(255, 255, 255, 0.15);
@@ -203,15 +220,20 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-size: 11px;
+      font-size: 10px;
       gap: 2px;
       cursor: pointer;
     }
-    .sub-btn .icon { font-size: 15px; }
+    .sub-btn .icon { font-size: 16px; }
     .sub-btn.active {
       background: rgba(10, 132, 255, 0.3);
       border-color: #0a84ff;
       color: #64d2ff;
+    }
+    .sub-btn.freeze-on {
+      background: rgba(255, 59, 48, 0.3);
+      border-color: #ff3b30;
+      color: #ff453a;
     }
     .sub-btn.flash-on {
       background: rgba(255, 204, 0, 0.3);
@@ -271,6 +293,7 @@
     <div class="video-container">
       <video id="webcam" autoplay playsinline></video>
       <div id="zoomBadge" class="zoom-badge">1.0x</div>
+      <div id="freezeBadge" class="freeze-badge">화면 정지됨</div>
     </div>
 
     <!-- 하단 컨트롤 영역 -->
@@ -305,14 +328,20 @@
 
       <!-- 하단 메인 액션 바 -->
       <div class="action-bar">
+        <!-- 화면 정지/재개 버튼 -->
+        <button id="btnFreeze" class="sub-btn">
+          <span class="icon">❄️</span>
+          <span id="freezeText">화면정지</span>
+        </button>
+
         <!-- 초점 모드 버튼 -->
         <button id="btnFocusToggle" class="sub-btn">
           <span class="icon">🎯</span>
           <span id="focusModeText">자동초점</span>
         </button>
 
-        <!-- 셔터 (사진 촬영) -->
-        <div id="btnCapture" class="shutter-btn-outer" role="button" aria-label="사진 촬영">
+        <!-- 셔터 (사진 저장) -->
+        <div id="btnCapture" class="shutter-btn-outer" role="button" aria-label="사진 저장">
           <div class="shutter-btn-inner"></div>
         </div>
 
@@ -336,8 +365,11 @@
     const btnScanCameras = document.getElementById('btnScanCameras');
     const zoomRange = document.getElementById('zoomRange');
     const zoomBadge = document.getElementById('zoomBadge');
+    const freezeBadge = document.getElementById('freezeBadge');
     const focusRange = document.getElementById('focusRange');
     const focusDistanceRow = document.getElementById('focusDistanceRow');
+    const btnFreeze = document.getElementById('btnFreeze');
+    const freezeText = document.getElementById('freezeText');
     const btnFocusToggle = document.getElementById('btnFocusToggle');
     const focusModeText = document.getElementById('focusModeText');
     const btnTorch = document.getElementById('btnTorch');
@@ -349,6 +381,7 @@
     let currentStream = null;
     let trackCapabilities = null;
     let currentZoom = 1;
+    let isFrozen = false;
 
     const settings = JSON.parse(localStorage.getItem('magnifier_settings_v3')) || {
       deviceId: '',
@@ -415,6 +448,8 @@
     }
 
     async function startCamera(deviceId) {
+      if (isFrozen) toggleFreeze(); // 카메라 변경 시 화면 정지 해제
+
       if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
       }
@@ -451,6 +486,23 @@
         }
       } catch (err) {
         statusInfo.textContent = "카메라를 열 수 없습니다.";
+      }
+    }
+
+    /* 화면 정지 / 라이브 토글 */
+    function toggleFreeze() {
+      if (isFrozen) {
+        video.play();
+        isFrozen = false;
+        btnFreeze.classList.remove('freeze-on');
+        freezeText.textContent = "화면정지";
+        freezeBadge.style.display = 'none';
+      } else {
+        video.pause();
+        isFrozen = true;
+        btnFreeze.classList.add('freeze-on');
+        freezeText.textContent = "화면개시";
+        freezeBadge.style.display = 'block';
       }
     }
 
@@ -607,6 +659,7 @@
     zoomRange.addEventListener('input', (e) => setZoom(e.target.value));
     presetBtns.forEach(btn => btn.addEventListener('click', () => setZoom(btn.dataset.zoom)));
     focusRange.addEventListener('input', (e) => applyFocusDistance(e.target.value));
+    btnFreeze.addEventListener('click', toggleFreeze);
     btnFocusToggle.addEventListener('click', () => applyFocusMode(settings.focusMode === 'manual' ? 'continuous' : 'manual'));
     btnTorch.addEventListener('click', () => applyTorch(!settings.torch));
     btnCapture.addEventListener('click', capturePhoto);
