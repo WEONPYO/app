@@ -1,110 +1,1167 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>애플워치 버튼 이벤트 수신기</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Tennis Scoreboard</title>
   <style>
+    :root {
+      --bg-color: #08120c;
+      --card-bg: #102017;
+      --team-a-color: #0b4182;
+      --team-b-color: #6b1158;
+      --line-color: #ffffff;
+      --accent-yellow: #ccff00;
+      --text-main: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
     body {
-      font-family: sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    /* 기본 레이아웃 (스마트폰 가로 방향 기준: 우측 사이드바) */
+    body {
+      flex-direction: row;
+    }
+
+    /* 스마트폰 세로 방향일 경우: 하단으로 메뉴 배치 */
+    @media (orientation: portrait) {
+      body {
+        flex-direction: column;
+      }
+    }
+
+    #unauthorized-access {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--bg-color); color: #ff4d4d; flex-direction: column;
+      justify-content: center; align-items: center; z-index: 9999; padding: 20px; text-align: center;
+    }
+
+    #fs-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--bg-color); display: flex; flex-direction: column;
+      justify-content: center; align-items: center; z-index: 100; padding: 20px; text-align: center;
+    }
+
+    #fs-overlay h2 { color: var(--accent-yellow); font-size: 1.8rem; margin-bottom: 25px; }
+
+    .btn-fullscreen-start {
+      padding: 15px 35px; font-size: 1.1rem; font-weight: bold;
+      background-color: var(--accent-yellow); border: none; border-radius: 8px;
+      color: #000; cursor: pointer;
+    }
+
+    .main-app {
+      flex: 1; display: flex; flex-direction: column; height: 100%; width: 100%; position: relative;
+    }
+
+    .scoreboard { display: flex; padding: 8px 10px 0 10px; gap: 10px; height: 70%; }
+
+    .team-card {
+      flex: 1; border-radius: 12px; padding: 12px 14px; display: flex;
+      flex-direction: column; justify-content: space-between; position: relative;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.6); overflow: hidden; border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .team-card.team-a { background: linear-gradient(135deg, var(--team-a-color), #051a36); }
+    .team-card.team-b { background: linear-gradient(135deg, var(--team-b-color), #2d0725); }
+
+    .team-header { display: flex; justify-content: space-between; align-items: center; z-index: 2; }
+    .team-info { display: flex; align-items: center; gap: 8px; }
+    .team-title-row { display: flex; align-items: center; gap: 6px; }
+    .team-name { font-size: 1.1rem; font-weight: 800; }
+    .player-names { font-size: 0.8rem; opacity: 0.85; margin-top: 2px; }
+
+    .court-arrow {
+      font-size: 0.85rem; font-weight: 900; color: var(--accent-yellow);
+      background: rgba(0, 0, 0, 0.4); padding: 2px 6px; border-radius: 4px;
+      border: 1px solid rgba(204, 255, 0, 0.4);
+    }
+
+    .sets-won {
+      font-size: 1.1rem; font-weight: 700; background: rgba(0,0,0,0.3);
+      padding: 4px 10px; border-radius: 6px;
+    }
+
+    .score-body {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex; justify-content: center; align-items: center;
+      z-index: 1; pointer-events: none;
+    }
+
+    .games-score {
+      font-size: 0.9rem; font-weight: 700; opacity: 0.95; position: absolute; left: 14px; bottom: 12px;
+      background: rgba(0,0,0,0.4); padding: 3px 8px; border-radius: 4px; z-index: 4;
+    }
+
+    .point-score {
+      font-size: min(35vw, 38vh);
+      font-weight: 900;
+      text-shadow: 4px 4px 16px rgba(0,0,0,0.9);
+      line-height: 0.8;
       text-align: center;
-      padding: 30px;
-      background-color: #f4f4f9;
+      display: flex; align-items: center; justify-content: center;
+      letter-spacing: -2px; margin: 0; padding: 0;
+      transform: translateY(-2%);
     }
-    .card {
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-      max-width: 400px;
-      margin: 0 auto;
+
+    .serve-ball {
+      display: inline-block; width: 12px; height: 12px;
+      background-color: var(--accent-yellow); border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent-yellow); visibility: hidden;
     }
-    button {
-      padding: 12px 24px;
-      font-size: 16px;
-      background-color: #007aff;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
+    .serve-ball.active { visibility: visible; }
+
+    .btn-score-up {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      opacity: 0; cursor: pointer; z-index: 3;
     }
-    #log {
-      margin-top: 20px;
-      font-weight: bold;
-      color: #333;
+
+    /* 사이드바/하단 메뉴 컨트롤 레이아웃 */
+    .sidebar-controls {
+      display: flex; width: 125px; background-color: var(--card-bg);
+      border-left: 1px solid #234733; padding: 8px 6px; flex-direction: column; gap: 8px;
     }
+
+    /* 세로 방향(Portrait) 하단 패널 레이아웃 */
+    @media (orientation: portrait) {
+      .sidebar-controls {
+        width: 100%;
+        height: auto;
+        border-left: none;
+        border-top: 1px solid #234733;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-around;
+        padding: 6px;
+        gap: 4px;
+      }
+
+      .sidebar-title {
+        display: none;
+      }
+
+      .sidebar-controls .btn-main-action {
+        flex: 1 1 28%;
+        padding: 12px 2px !important;
+        font-size: 0.8rem !important;
+      }
+
+      .sidebar-controls .btn-secondary {
+        flex: 1 1 18%;
+        padding: 8px 2px !important;
+        font-size: 0.7rem !important;
+      }
+
+      .sidebar-controls .spacer {
+        display: none;
+      }
+    }
+
+    .sidebar-title { font-size: 0.75rem; font-weight: 800; color: var(--accent-yellow); text-align: center; margin-bottom: 2px; }
+
+    /* 크게 강조된 메인 버튼 그룹 (서브순서변경, 코트체인지, 수정) */
+    .btn-main-action {
+      background-color: #1c3829; color: white; border: 1.5px solid #3e7354;
+      padding: 12px 4px; border-radius: 8px; font-size: 0.8rem; font-weight: 800;
+      cursor: pointer; text-align: center; width: 100%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      transition: all 0.15s ease;
+    }
+    .btn-main-action:active { transform: scale(0.97); }
+    .btn-main-action.highlight { border-color: var(--accent-yellow); color: var(--accent-yellow); }
+
+    /* 보조 버튼 그룹 (리셋, 풀스크린, 세팅) */
+    .btn-secondary {
+      background-color: #12241a; border: 1px solid #234733; color: #a2b5a9;
+      padding: 7px 4px; border-radius: 6px; font-size: 0.7rem; font-weight: bold;
+      cursor: pointer; text-align: center; width: 100%;
+    }
+    .btn-secondary.danger { color: #ff6b6b; border-color: #522222; }
+
+    .spacer { flex: 1; }
+
+    .court-section {
+      display: flex; justify-content: center; align-items: center;
+      padding: 2px; position: relative; height: 30%;
+    }
+
+    .court-container {
+      width: 95%; height: 90%; max-width: 800px; position: relative;
+      display: flex; justify-content: center; align-items: center;
+      perspective: 400px;
+    }
+
+    .court-inner {
+      width: 100%; height: 100%; border: 3px solid var(--line-color);
+      position: relative; display: flex; overflow: visible;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.8); transition: transform 0.5s ease;
+      transform: rotateX(20deg); transform-style: preserve-3d; border-radius: 4px;
+    }
+
+    .court-side { position: absolute; top: 0; bottom: 0; width: 50%; transition: background-color 0.3s ease; }
+    .court-side.left { left: 0; }
+    .court-side.right { right: 0; }
+
+    .bg-team-a { background-color: var(--team-a-color) !important; }
+    .bg-team-b { background-color: var(--team-b-color) !important; }
+
+    .net-line {
+      position: absolute; left: 50%; top: -4%; bottom: -4%; width: 4px;
+      background-color: var(--line-color); transform: translateX(-50%); z-index: 3;
+      box-shadow: 0 0 6px rgba(255,255,255,0.8);
+    }
+
+    .singles-line-top { position: absolute; top: 15%; left: 0; right: 0; height: 2px; background-color: var(--line-color); z-index: 2; }
+    .singles-line-bottom { position: absolute; bottom: 15%; left: 0; right: 0; height: 2px; background-color: var(--line-color); z-index: 2; }
+    .service-line-left { position: absolute; left: 25%; top: 15%; bottom: 15%; width: 2px; background-color: var(--line-color); z-index: 2; }
+    .service-line-right { position: absolute; right: 25%; top: 15%; bottom: 15%; width: 2px; background-color: var(--line-color); z-index: 2; }
+    .center-service-line { position: absolute; top: 50%; left: 25%; right: 25%; height: 2px; background-color: var(--line-color); transform: translateY(-50%); z-index: 2; }
+    .hash-left { position: absolute; left: 0; top: 50%; width: 6px; height: 2px; background-color: var(--line-color); transform: translateY(-50%); z-index: 2; }
+    .hash-right { position: absolute; right: 0; top: 50%; width: 6px; height: 2px; background-color: var(--line-color); transform: translateY(-50%); z-index: 2; }
+
+    .side-label { position: absolute; font-size: 0.65rem; font-weight: bold; color: rgba(255,255,255,0.8); pointer-events: none; z-index: 4; }
+    .side-label.left { left: 4px; top: 1px; }
+    .side-label.right { right: 4px; top: 1px; }
+
+    .target-service-box {
+      position: absolute; width: 25%; height: 35%;
+      background: rgba(204, 255, 0, 0.35); border: 2px dashed var(--accent-yellow);
+      z-index: 4; pointer-events: none; transition: all 0.3s ease; box-sizing: border-box;
+    }
+
+    .player-marker {
+      position: absolute; padding: 2px 5px; border-radius: 4px; font-size: 0.55rem; font-weight: bold;
+      color: #fff; box-shadow: 0 3px 6px rgba(0,0,0,0.6); transition: all 0.3s ease; z-index: 5;
+      transform: translate(-50%, -50%); white-space: nowrap; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; text-align: center; max-width: 80px;
+    }
+
+    .player-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
+
+    .role-badge {
+      font-size: 0.4rem; padding: 1px 2px; border-radius: 2px; background: rgba(0,0,0,0.6);
+      color: #fff; margin-top: 1px; font-weight: 800; display: none;
+    }
+    .role-badge.visible { display: inline-block; }
+
+    .player-marker.server {
+      background-color: var(--accent-yellow) !important; color: #000 !important;
+      border: 2px solid #000; transform: translate(-50%, -50%) scale(1.1); z-index: 10;
+      box-shadow: 0 0 10px var(--accent-yellow);
+    }
+    .player-marker.server .role-badge { background: #000; color: var(--accent-yellow); }
+
+    .player-marker.receiver {
+      border: 2px solid var(--accent-yellow); transform: translate(-50%, -50%) scale(1.05);
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.9);
+    }
+    .player-marker.receiver .role-badge { background: var(--accent-yellow); color: #000; }
+
+    .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 200; padding: 15px; overflow-y: auto; }
+    .modal-content { background: var(--card-bg); border-radius: 12px; padding: 16px; max-width: 400px; margin: 10px auto; border: 1px solid #2e5941; position: relative; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .modal-header h2 { color: var(--accent-yellow); font-size: 1.05rem; margin: 0; }
+    .btn-close-modal { background: transparent; border: none; color: #8b949e; font-size: 1.4rem; font-weight: bold; cursor: pointer; line-height: 1; }
+    .modal h3 { color: var(--accent-yellow); font-size: 0.85rem; margin: 12px 0 6px 0; border-top: 1px dashed #2e5941; padding-top: 8px; }
+
+    .setting-group { margin-bottom: 10px; }
+    .setting-group label { display: block; font-size: 0.75rem; color: #8b949e; margin-bottom: 3px; }
+    .setting-group select, .setting-group input { width: 100%; padding: 6px; border-radius: 6px; border: 1px solid #2e5941; background: #0c1911; color: white; font-size: 0.8rem; }
+    .input-row { display: flex; gap: 6px; margin-top: 4px; }
+    .swipe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+    .btn-save { width: 100%; padding: 10px; background: var(--accent-yellow); border: none; border-radius: 6px; font-weight: bold; color: #000; cursor: pointer; margin-top: 12px; font-size: 0.85rem; }
+
+    .confirm-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.85); z-index: 250; justify-content: center; align-items: center; padding: 20px; }
+    .confirm-box { background: var(--card-bg); border: 1px solid #2e5941; border-radius: 12px; padding: 20px; width: 100%; max-width: 300px; text-align: center; }
+    .confirm-box p { font-size: 0.9rem; line-height: 1.4; color: #fff; margin-bottom: 16px; }
+    .confirm-btns { display: flex; gap: 8px; }
+    .confirm-btns button { flex: 1; padding: 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; border: none; cursor: pointer; }
+
+    .btn-confirm-yes { background: var(--accent-yellow); color: #000; }
+    .btn-confirm-no { background: #1c3829; color: #fff; border: 1px solid #2e5941 !important; }
   </style>
 </head>
 <body>
 
-  <div class="card">
-    <h2>애플워치 미디어 컨트롤러</h2>
-    <p>아래 버튼을 눌러 오디오를 실행하면 애플워치 '지금 재생 중' 화면에 제어 버튼이 활성화됩니다.</p>
-    
-    <!-- 사용자 상호작용을 위해 필요한 무음/기본 오디오 -->
-    <audio id="audio" loop src="https://www.w3schools.com/html/horse.mp3"></audio>
-    
-    <button id="startBtn">1. 서비스 시작하기</button>
+  <div id="unauthorized-access">
+    <h2>Access Denied</h2>
+    <p>잘못된 접근입니다.</p>
+  </div>
 
-    <div id="log">상태: 대기 중...</div>
+  <div id="fs-overlay">
+    <h2>WP TENNIS SCOREBOARD</h2>
+    <button class="btn-fullscreen-start" onclick="startFullscreenApp()">전체화면으로 시작하기</button>
+  </div>
+
+  <div class="main-app">
+    <div class="scoreboard" id="scoreboard-container">
+      <div class="team-card team-a" id="card-team-a" style="order: 1;">
+        <div class="team-header">
+          <div class="team-info">
+            <span class="serve-ball" id="serve-a"></span>
+            <div>
+              <div class="team-title-row">
+                <span class="team-name">Team A</span>
+                <span class="court-arrow" id="arrow-a">◀</span>
+              </div>
+              <div class="player-names" id="disp-players-a">A. P1 / A. P2</div>
+            </div>
+          </div>
+          <span class="sets-won" id="sets-a">Set: 0</span>
+        </div>
+        <div class="score-body">
+          <div class="point-score" id="points-a">0</div>
+        </div>
+        <div class="games-score" id="games-a">Game: 0</div>
+        <button class="btn-score-up" onclick="addPoint('A')"></button>
+      </div>
+
+      <div class="team-card team-b" id="card-team-b" style="order: 2;">
+        <div class="team-header">
+          <div class="team-info">
+            <span class="serve-ball" id="serve-b"></span>
+            <div>
+              <div class="team-title-row">
+                <span class="team-name">Team B</span>
+                <span class="court-arrow" id="arrow-b">▶</span>
+              </div>
+              <div class="player-names" id="disp-players-b">B. P1 / B. P2</div>
+            </div>
+          </div>
+          <span class="sets-won" id="sets-b">Set: 0</span>
+        </div>
+        <div class="score-body">
+          <div class="point-score" id="points-b">0</div>
+        </div>
+        <div class="games-score" id="games-b">Game: 0</div>
+        <button class="btn-score-up" onclick="addPoint('B')"></button>
+      </div>
+    </div>
+
+    <div class="court-section">
+      <div class="court-container">
+        <div class="court-inner">
+          <div class="court-side left" id="side-left-bg"></div>
+          <div class="court-side right" id="side-right-bg"></div>
+
+          <div class="net-line"></div>
+          <div class="singles-line-top"></div>
+          <div class="singles-line-bottom"></div>
+          <div class="service-line-left"></div>
+          <div class="service-line-right"></div>
+          <div class="center-service-line"></div>
+          <div class="hash-left"></div>
+          <div class="hash-right"></div>
+
+          <span class="side-label left" id="label-left">TEAM A</span>
+          <span class="side-label right" id="label-right">TEAM B</span>
+
+          <div class="target-service-box" id="target-box"></div>
+
+          <div class="player-marker" id="pm-a1"></div>
+          <div class="player-marker" id="pm-a2"></div>
+          <div class="player-marker" id="pm-b1"></div>
+          <div class="player-marker" id="pm-b2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 메인 컨트롤 영역 -->
+  <div class="sidebar-controls">
+    <div class="sidebar-title">MENU</div>
+    
+    <!-- 서브순서변경, 코트체인지, 수정 (버튼크기 강조) -->
+    <button class="btn-main-action highlight" id="btn-toggle-serve-s" onclick="toggleServeTeam()">SERVE: TEAM A</button>
+    <button class="btn-main-action" onclick="manualCourtChange()">CHANGE COURT</button>
+    <button class="btn-main-action" onclick="undo()">CORRECTION</button>
+
+    <div class="spacer"></div>
+
+    <!-- 리셋 (세팅/풀스크린 위쪽 영역) -->
+    <button class="btn-secondary danger" onclick="confirmResetMatch()">RESET</button>
+    
+    <!-- 풀스크린 & 세팅 버튼 (최하단) -->
+    <button class="btn-secondary" onclick="toggleFullscreen()">Full Screen</button>
+    <button class="btn-secondary" id="btn-settings-sidebar">Settings</button>
+  </div>
+
+  <div class="modal" id="settings-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Match Settings</h2>
+        <button class="btn-close-modal" id="btn-close-settings">&times;</button>
+      </div>
+
+      <div class="setting-group">
+        <label>Match Type</label>
+        <select id="set-type" onchange="togglePlayerInputs()">
+          <option value="doubles" selected>Doubles</option>
+          <option value="singles">Singles</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label>Voice Language / Accent</label>
+        <select id="set-voice-lang">
+          <option value="en-GB" selected>영국 영어 (UK English)</option>
+          <option value="en-US">미국 영어 (US English)</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label>First Serve Team</label>
+        <select id="set-first-serve">
+          <option value="A" selected>Team A</option>
+          <option value="B">Team B</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label>Sets to Win</label>
+        <select id="set-sets">
+          <option value="1">1 Set</option>
+          <option value="2">Best of 3 (2 Sets)</option>
+          <option value="3" selected>Best of 5 (3 Sets)</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label>Games per Set</label>
+        <select id="set-games">
+          <option value="3">3 Games</option>
+          <option value="5">5 Games</option>
+          <option value="6" selected>6 Games</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label>Deuce Rule</label>
+        <select id="set-deuce">
+          <option value="no-ad">No-Ad (Sudden Death)</option>
+          <option value="ad" selected>Advantage (Standard)</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label>Court Change</label>
+        <select id="set-court">
+          <option value="manual" selected>Manual</option>
+          <option value="auto">Auto (Odd Games)</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label>Doubles Server Order Voice Call</label>
+        <select id="set-announce-server">
+          <option value="3000" selected>3초 후 Call</option>
+          <option value="5000">5초 후 Call</option>
+          <option value="off">사용 안 함 (Off)</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label>Team A Players</label>
+        <div class="input-row">
+          <input type="text" id="p-a1" value="A. P1" placeholder="Player 1" />
+          <input type="text" id="p-a2" value="A. P2" placeholder="Player 2" />
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label>Team B Players</label>
+        <div class="input-row">
+          <input type="text" id="p-b1" value="B. P1" placeholder="Player 1" />
+          <input type="text" id="p-b2" value="B. P2" placeholder="Player 2" />
+        </div>
+      </div>
+
+      <h3>Swipe Gesture Settings</h3>
+      <div class="swipe-grid">
+        <div class="setting-group"><label>Swipe Up</label><select id="swipe-up"><option value="right_score">우측팀 득점</option><option value="left_score">좌측팀 득점</option><option value="court_change">코트 체인지</option><option value="undo">Correction</option></select></div>
+        <div class="setting-group"><label>Swipe Down</label><select id="swipe-down"><option value="left_score">좌측팀 득점</option><option value="right_score">우측팀 득점</option><option value="court_change">코트 체인지</option><option value="undo">Correction</option></select></div>
+        <div class="setting-group"><label>Swipe Left</label><select id="swipe-left"><option value="court_change" selected>코트 체인지</option><option value="left_score">좌측팀 득점</option></select></div>
+        <div class="setting-group"><label>Swipe Right</label><select id="swipe-right"><option value="undo" selected>Correction</option><option value="right_score">우측팀 득점</option></select></div>
+      </div>
+
+      <button class="btn-save" id="btn-save-settings">Apply & Update Settings</button>
+    </div>
+  </div>
+
+  <div class="confirm-modal" id="custom-confirm-modal">
+    <div class="confirm-box">
+      <p id="confirm-message">안내문구</p>
+      <div class="confirm-btns">
+        <button class="btn-confirm-yes" id="btn-confirm-yes">확인</button>
+        <button class="btn-confirm-no" id="btn-confirm-no">취소</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    const audio = document.getElementById('audio');
-    const startBtn = document.getElementById('startBtn');
-    const log = document.getElementById('log');
+    function checkDomainAuth() {
+      const allowedHost = "weonpyo.github.io";
+      if (window.location.hostname !== allowedHost && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+        const authDiv = document.getElementById('unauthorized-access');
+        if (authDiv) authDiv.style.display = 'flex';
+        return false;
+      }
+      return true;
+    }
 
-    // 웹 오디오 재생 시작 및 미디어 세션 등록
-    startBtn.addEventListener('click', () => {
-      audio.play().then(() => {
-        log.innerText = "상태: 오디오 재생 중! 애플워치에서 이전/다음 버튼을 눌러보세요.";
-        initMediaSession();
-      }).catch(err => {
-        log.innerText = "오디오 재생 실패: " + err;
-      });
-    });
+    let config = {
+      type: 'doubles',
+      voiceLang: 'en-GB',
+      firstServeTeam: 'A',
+      setsToWin: 3,
+      gamesPerSet: 6,
+      deuceRule: 'ad',
+      courtChange: 'manual',
+      announceServer: '3000',
+      playersA: ['A. P1', 'A. P2'],
+      playersB: ['B. P1', 'B. P2'],
+      swipes: { up: 'right_score', down: 'left_score', left: 'court_change', right: 'undo' }
+    };
 
-    function initMediaSession() {
-      // 브라우저가 Media Session API를 지원하는지 확인
-      if ('mediaSession' in navigator) {
+    let state = {
+      ptsA: 0, ptsB: 0,
+      gamesA: 0, gamesB: 0,
+      setsA: 0, setsB: 0,
+      isTiebreak: false,
+      tiebreakFirstServer: null,
+      currentServerTeam: 'A',
+      serverIdxA: 0,
+      serverIdxB: 0,
+      courtLeftTeam: 'A'
+    };
 
-        // 애플워치 화면에 표시될 미디어 정보 등록
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title: '웹 컨트롤러 모드',
-          artist: '이벤트 수신 중...',
-          album: 'HTML5 Media Session'
-        });
+    let historyStack = [];
+    const MAX_HISTORY = 10;
+    const pointTerms = ["Love", "Fifteen", "Thirty", "Forty"];
 
-        // 1. [이전곡] 버튼 눌렀을 때 실행될 이벤트
-        navigator.mediaSession.setActionHandler('previoustrack', () => {
-          onPreviousTrackPressed();
-        });
+    let wakeLock = null;
+    let serverAnnounceTimer = null;
+    let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0;
 
-        // 2. [다음곡] 버튼 눌렀을 때 실행될 이벤트
-        navigator.mediaSession.setActionHandler('nexttrack', () => {
-          onNextTrackPressed();
-        });
-      } else {
-        log.innerText = "이 브라우저는 Media Session API를 지원하지 않습니다.";
+    function cancelServerAnnouncement() {
+      if (serverAnnounceTimer) {
+        clearTimeout(serverAnnounceTimer);
+        serverAnnounceTimer = null;
       }
     }
 
-    // --- 실행하고자 하는 특정 로직을 아래 함수에 작성하세요 ---
+    function scheduleServerAnnouncement(customDelayMs = null) {
+      cancelServerAnnouncement();
+      if (config.type !== 'doubles' || config.announceServer === 'off') return;
+      const delayMs = customDelayMs !== null ? customDelayMs : parseInt(config.announceServer || '3000', 10);
 
-    function onPreviousTrackPressed() {
-      const time = new Date().toLocaleTimeString();
-      log.innerText = `[${time}] '이전곡' 이벤트 수신 완료!`;
-      
-      // TODO: 실행할 작업 작성 (예: 카운터 감소, 페이지 이전 항목 이동 등)
-      document.body.style.backgroundColor = "#e0f7fa";
+      serverAnnounceTimer = setTimeout(() => {
+        if (config.type !== 'doubles') return;
+        const serverTeam = state.currentServerTeam;
+        const activeServerIdx = (serverTeam === 'A') ? state.serverIdxA : state.serverIdxB;
+        const callText = (activeServerIdx === 0) ? "First server." : "Second server.";
+        speak(callText);
+        serverAnnounceTimer = null;
+      }, delayMs);
     }
 
-    function onNextTrackPressed() {
-      const time = new Date().toLocaleTimeString();
-      log.innerText = `[${time}] '다음곡' 이벤트 수신 완료!`;
+    async function requestWakeLock() {
+      try {
+        if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+      } catch (err) {}
+    }
+
+    function showCustomConfirm(message, onConfirm) {
+      const confirmModal = document.getElementById('custom-confirm-modal');
+      const confirmMsg = document.getElementById('confirm-message');
+      const btnYes = document.getElementById('btn-confirm-yes');
+      const btnNo = document.getElementById('btn-confirm-no');
+
+      confirmMsg.innerText = message;
+      confirmModal.style.display = 'flex';
+
+      const handleYes = () => { cleanup(); confirmModal.style.display = 'none'; onConfirm(); };
+      const handleNo = () => { cleanup(); confirmModal.style.display = 'none'; };
+      const cleanup = () => { btnYes.removeEventListener('click', handleYes); btnNo.removeEventListener('click', handleNo); };
+
+      btnYes.addEventListener('click', handleYes);
+      btnNo.addEventListener('click', handleNo);
+    }
+
+    function loadStorage() {
+      const savedConfig = localStorage.getItem('tennis_config');
+      if (savedConfig) { try { config = { ...config, ...JSON.parse(savedConfig) }; } catch(e) {} }
+      const savedState = localStorage.getItem('tennis_state');
+      if (savedState) { try { state = JSON.parse(savedState); } catch(e) {} }
+    }
+
+    function saveConfigToStorage() { localStorage.setItem('tennis_config', JSON.stringify(config)); }
+    function saveStateToStorage() { localStorage.setItem('tennis_state', JSON.stringify(state)); }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(e => {});
+      else document.exitFullscreen().catch(e => {});
+    }
+
+    async function startFullscreenApp() {
+      toggleFullscreen();
+      await requestWakeLock();
+      document.getElementById('fs-overlay').style.display = 'none';
+      render();
+    }
+
+    window.onload = async () => {
+      if (!checkDomainAuth()) return;
+      loadStorage();
+      setupEvents();
+      setupSwipeEvents();
+      populateSettingsModal();
+      await requestWakeLock();
+      render();
+    };
+
+    function setupEvents() {
+      const modal = document.getElementById('settings-modal');
+      const openModal = () => { populateSettingsModal(); modal.style.display = 'block'; };
+
+      document.getElementById('btn-settings-sidebar').onclick = openModal;
+      document.getElementById('btn-close-settings').onclick = () => { modal.style.display = 'none'; };
+
+      window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+
+      document.getElementById('btn-save-settings').onclick = () => {
+        saveSettings();
+        modal.style.display = 'none';
+      };
+    }
+
+    function setupSwipeEvents() {
+      window.addEventListener('touchstart', (e) => {
+        if (e.target.closest('.modal') || e.target.closest('.confirm-modal')) return;
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+      }, { passive: true });
+
+      window.addEventListener('touchend', (e) => {
+        if (e.target.closest('.modal') || e.target.closest('.confirm-modal')) return;
+        touchEndX = e.changedTouches[0].screenX;
+        touchEndY = e.changedTouches[0].screenY;
+        handleSwipeGesture();
+      }, { passive: true });
+    }
+
+    function handleSwipeGesture() {
+      const deltaX = touchEndX - touchStartX;
+      const deltaY = touchEndY - touchStartY;
+      if (Math.abs(deltaX) < 40 && Math.abs(deltaY) < 40) return;
+
+      let action = 'none';
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        action = deltaX < 0 ? config.swipes.left : config.swipes.right;
+      } else {
+        action = deltaY < 0 ? config.swipes.up : config.swipes.down;
+      }
+      executeControlAction(action);
+    }
+
+    function executeControlAction(action) {
+      const leftTeam = state.courtLeftTeam;
+      const rightTeam = (leftTeam === 'A') ? 'B' : 'A';
+
+      switch (action) {
+        case 'left_score': addPoint(leftTeam); break;
+        case 'right_score': addPoint(rightTeam); break;
+        case 'court_change': manualCourtChange(); break;
+        case 'undo': undo(); break;
+      }
+    }
+
+    function populateSettingsModal() {
+      document.getElementById('set-type').value = config.type;
+      document.getElementById('set-voice-lang').value = config.voiceLang || 'en-GB';
+      document.getElementById('set-first-serve').value = config.firstServeTeam;
+      document.getElementById('set-sets').value = config.setsToWin;
+      document.getElementById('set-games').value = config.gamesPerSet;
+      document.getElementById('set-deuce').value = config.deuceRule;
+      document.getElementById('set-court').value = config.courtChange;
+      document.getElementById('set-announce-server').value = config.announceServer || '3000';
+      document.getElementById('p-a1').value = config.playersA[0] || '';
+      document.getElementById('p-a2').value = config.playersA[1] || '';
+      document.getElementById('p-b1').value = config.playersB[0] || '';
+      document.getElementById('p-b2').value = config.playersB[1] || '';
+
+      document.getElementById('swipe-up').value = config.swipes.up || 'right_score';
+      document.getElementById('swipe-down').value = config.swipes.down || 'left_score';
+      document.getElementById('swipe-left').value = config.swipes.left || 'court_change';
+      document.getElementById('swipe-right').value = config.swipes.right || 'undo';
+
+      togglePlayerInputs();
+    }
+
+    function togglePlayerInputs() {
+      const isSingles = document.getElementById('set-type').value === 'singles';
+      document.getElementById('p-a2').style.display = isSingles ? 'none' : 'block';
+      document.getElementById('p-b2').style.display = isSingles ? 'none' : 'block';
+    }
+
+    function saveSettings() {
+      cancelServerAnnouncement();
+
+      config.type = document.getElementById('set-type').value;
+      config.voiceLang = document.getElementById('set-voice-lang').value;
+      config.firstServeTeam = document.getElementById('set-first-serve').value;
+      config.setsToWin = parseInt(document.getElementById('set-sets').value, 10);
+      config.gamesPerSet = parseInt(document.getElementById('set-games').value, 10);
+      config.deuceRule = document.getElementById('set-deuce').value;
+      config.courtChange = document.getElementById('set-court').value;
+      config.announceServer = document.getElementById('set-announce-server').value;
       
-      // TODO: 실행할 작업 작성 (예: 카운터 증가, 페이지 다음 항목 이동 등)
-      document.body.style.backgroundColor = "#fff3e0";
+      config.playersA = [document.getElementById('p-a1').value || 'A. P1', document.getElementById('p-a2').value || 'A. P2'];
+      config.playersB = [document.getElementById('p-b1').value || 'B. P1', document.getElementById('p-b2').value || 'B. P2'];
+
+      config.swipes = {
+        up: document.getElementById('swipe-up').value,
+        down: document.getElementById('swipe-down').value,
+        left: document.getElementById('swipe-left').value,
+        right: document.getElementById('swipe-right').value
+      };
+
+      saveConfigToStorage();
+      render();
+    }
+
+    function saveState() {
+      historyStack.push(JSON.parse(JSON.stringify(state)));
+      if (historyStack.length > MAX_HISTORY) historyStack.shift();
+    }
+
+    function undo() {
+      cancelServerAnnouncement();
+      if (historyStack.length === 0) return;
+      state = historyStack.pop();
+      saveStateToStorage();
+      render();
+      speakCall("Correction, ");
+    }
+
+    function confirmResetMatch() {
+      showCustomConfirm("정말로 경기를 초기화하시겠습니까?", () => { resetMatch(); });
+    }
+
+    function resetMatch() {
+      cancelServerAnnouncement();
+      state = {
+        ptsA: 0, ptsB: 0, gamesA: 0, gamesB: 0, setsA: 0, setsB: 0,
+        isTiebreak: false, tiebreakFirstServer: null,
+        currentServerTeam: config.firstServeTeam,
+        serverIdxA: 0, serverIdxB: 0, courtLeftTeam: 'A'
+      };
+      historyStack = [];
+      saveStateToStorage();
+      render();
+      speak("Reset.");
+    }
+
+    /* 서브 팀 수동 변경 시 올바른 복식 서브 순서 규칙 적용 */
+    function toggleServeTeam() {
+      cancelServerAnnouncement();
+      saveState();
+
+      if (config.type === 'doubles') {
+        if (state.currentServerTeam === 'A') {
+          // Team A -> Team B 로 서브권 전환
+          state.currentServerTeam = 'B';
+        } else {
+          // Team B -> Team A 로 서브권 전환 시, 올바른 복식 서브 순서 규칙에 따라 서브 번호 로테이션
+          state.currentServerTeam = 'A';
+          state.serverIdxA = (state.serverIdxA + 1) % 2;
+          state.serverIdxB = (state.serverIdxB + 1) % 2;
+        }
+      } else {
+        // 단식일 경우 서브 팀만 전환
+        state.currentServerTeam = state.currentServerTeam === 'A' ? 'B' : 'A';
+      }
+
+      saveStateToStorage();
+      render();
+      speak(`Service Team ${state.currentServerTeam}.`);
+      scheduleServerAnnouncement();
+    }
+
+    function addPoint(team) {
+      cancelServerAnnouncement();
+      saveState();
+      if (state.isTiebreak) handleTiebreakPoint(team);
+      else handleStandardPoint(team);
+      saveStateToStorage();
+      render();
+    }
+
+    function handleStandardPoint(team) {
+      const isA = (team === 'A');
+      let pWin = isA ? state.ptsA : state.ptsB;
+      let pLose = isA ? state.ptsB : state.ptsA;
+
+      if (config.deuceRule === 'no-ad' && pWin === 3 && pLose === 3) { winGame(team); return; }
+
+      if (pWin >= 3 && pLose >= 3) {
+        if (pWin === pLose) {
+          if (isA) state.ptsA++; else state.ptsB++;
+          speakCall();
+        } else if ((isA && state.ptsA > state.ptsB) || (!isA && state.ptsB > state.ptsA)) {
+          winGame(team);
+        } else {
+          state.ptsA = 3; state.ptsB = 3;
+          speakCall();
+        }
+      } else if (pWin === 3) {
+        winGame(team);
+      } else {
+        if (isA) state.ptsA++; else state.ptsB++;
+        speakCall();
+      }
+    }
+
+    function handleTiebreakPoint(team) {
+      if (team === 'A') state.ptsA++; else state.ptsB++;
+      const totalPts = state.ptsA + state.ptsB;
+
+      if (totalPts % 2 === 1) switchServer();
+      if (config.courtChange === 'auto' && totalPts % 6 === 0) manualCourtChange(true, false);
+
+      if ((state.ptsA >= 7 || state.ptsB >= 7) && Math.abs(state.ptsA - state.ptsB) >= 2) {
+        winGame(state.ptsA > state.ptsB ? 'A' : 'B');
+      } else {
+        speakCall();
+      }
+    }
+
+    function getLastName(fullName) {
+      if (!fullName) return "";
+      const parts = fullName.trim().split(' ');
+      return parts[parts.length - 1];
+    }
+
+    function getTeamDisplayName(team) {
+      return config.type === 'singles' ? getLastName(team === 'A' ? config.playersA[0] : config.playersB[0]) : `Team ${team}`;
+    }
+
+    function winGame(team) {
+      cancelServerAnnouncement();
+      const winnerCall = getTeamDisplayName(team);
+      if (team === 'A') state.gamesA++; else state.gamesB++;
+      state.ptsA = 0; state.ptsB = 0;
+
+      const gWin = team === 'A' ? state.gamesA : state.gamesB;
+      const gLose = team === 'A' ? state.gamesB : state.gamesA;
+      let gameAnnouncement = `Game ${winnerCall}. ${state.gamesA} games to ${state.gamesB}.`;
+
+      const totalGames = state.gamesA + state.gamesB;
+      const isAutoCourtChange = (config.courtChange === 'auto' && totalGames % 2 === 1 && !state.isTiebreak);
+
+      if (isAutoCourtChange) manualCourtChange(true, false);
+
+      if (state.isTiebreak) {
+        winSet(team, true);
+      } else if (gWin >= config.gamesPerSet && (gWin - gLose) >= 2) {
+        winSet(team, false);
+      } else if (gWin === config.gamesPerSet && gLose === config.gamesPerSet) {
+        state.isTiebreak = true;
+        if (!isAutoCourtChange) speak(`${gameAnnouncement} Tiebreak.`);
+        switchServer();
+        scheduleServerAnnouncement();
+      } else {
+        if (!isAutoCourtChange) speak(gameAnnouncement);
+        switchServer();
+        scheduleServerAnnouncement();
+      }
+    }
+
+    function winSet(team, viaTiebreak = false) {
+      cancelServerAnnouncement();
+      const winnerCall = getTeamDisplayName(team);
+      if (team === 'A') state.setsA++; else state.setsB++;
+
+      const tiebreakFirstServer = state.tiebreakFirstServer;
+      state.gamesA = 0; state.gamesB = 0;
+      state.isTiebreak = false;
+      state.tiebreakFirstServer = null;
+
+      const sWin = team === 'A' ? state.setsA : state.setsB;
+      if (sWin >= config.setsToWin) {
+        speak(`Game, set and match, ${winnerCall}. ${state.setsA} sets to ${state.setsB}.`);
+      } else {
+        speak(`Set, ${winnerCall}. ${state.setsA} sets to ${state.setsB}.`);
+        if (viaTiebreak && tiebreakFirstServer) {
+          state.currentServerTeam = (tiebreakFirstServer === 'A') ? 'B' : 'A';
+          if (config.courtChange === 'auto') manualCourtChange(true, false);
+        } else {
+          switchServer();
+        }
+        scheduleServerAnnouncement();
+      }
+    }
+
+    function switchServer() {
+      if (config.type === 'singles') {
+        state.currentServerTeam = state.currentServerTeam === 'A' ? 'B' : 'A';
+      } else {
+        if (state.currentServerTeam === 'A') {
+          state.currentServerTeam = 'B';
+        } else {
+          state.currentServerTeam = 'A';
+          state.serverIdxA = (state.serverIdxA + 1) % 2;
+          state.serverIdxB = (state.serverIdxB + 1) % 2;
+        }
+      }
+    }
+
+    function manualCourtChange(announce = true, recordHistory = true) {
+      cancelServerAnnouncement();
+      if (recordHistory) saveState();
+      state.courtLeftTeam = (state.courtLeftTeam === 'A') ? 'B' : 'A';
+      saveStateToStorage();
+      render();
+      if (announce) {
+        speak("Change ends.");
+        scheduleServerAnnouncement(2500);
+      }
+    }
+
+    /* TTS 음성 발음 최적화 함수 */
+    function getSpokenText(text) {
+      return text
+        .replace(/ 15 /g, "Fifteen")
+        .replace(/ 30 /g, "Thirty")
+        .replace(/ 40 /g, "Forty")
+        .replace(/ 0 /g, "Love")
+        .replace(/,\s*,+/g, ".")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function speak(text) {
+      if ('speechSynthesis' in window) {
+        try {
+          window.speechSynthesis.cancel();
+          const spokenText = getSpokenText(text);
+          const utterance = new SpeechSynthesisUtterance(spokenText);
+          const selectedLang = config.voiceLang || 'en-GB';
+          utterance.lang = selectedLang;
+          utterance.rate = 0.92;
+          utterance.pitch = 1.0;
+
+          const voices = window.speechSynthesis.getVoices();
+          if (voices && voices.length > 0) {
+            const matchedVoice = voices.find(v => v.lang.replace('_', '-').toLowerCase() === selectedLang.toLowerCase()) ||
+                                 voices.find(v => v.lang.toLowerCase().startsWith(selectedLang.substring(0, 2).toLowerCase()));
+            if (matchedVoice) {
+              utterance.voice = matchedVoice;
+            }
+          }
+
+          window.speechSynthesis.speak(utterance);
+        } catch (e) {}
+      }
+    }
+
+    function speakCall(prefix = "") {
+      let callText = "";
+      if (state.isTiebreak) {
+        if (state.ptsA === state.ptsB) {
+          callText = `${state.ptsA} all.`;
+        } else {
+          callText = `${state.ptsA}, ${state.ptsB}.`;
+        }
+      } else {
+        const pA = state.ptsA;
+        const pB = state.ptsB;
+
+        if (pA >= 3 && pB >= 3) {
+          if (pA === pB) callText = "Deuce.";
+          else if (pA > pB) callText = `Advantage, ${getTeamDisplayName('A')}.`;
+          else callText = `Advantage, ${getTeamDisplayName('B')}.`;
+        } else {
+          if (pA === pB) callText = pointTerms[pA] === "Love" ? "Love all." : `${pointTerms[pA]} all.`;
+          else {
+            const sPts = state.currentServerTeam === 'A' ? pA : pB;
+            const rPts = state.currentServerTeam === 'A' ? pB : pA;
+            callText = `${pointTerms[sPts]} ${pointTerms[rPts]}.`;
+          }
+        }
+      }
+      speak(prefix + callText);
+    }
+
+    function formatScore(pts, oppPts) {
+      if (state.isTiebreak) return pts.toString();
+      if (pts >= 3 && oppPts >= 3) {
+        if (pts === oppPts) return "40";
+        return pts > oppPts ? "AD" : "40";
+      }
+      return pointTerms[pts] ? (pointTerms[pts] === "Love" ? "0" : (pts === 1 ? "15" : pts === 2 ? "30" : "40")) : "0";
+    }
+
+    function render() {
+      document.getElementById('disp-players-a').innerText = config.type === 'doubles' 
+        ? `${config.playersA[0]} / ${config.playersA[1]}` : config.playersA[0];
+      document.getElementById('disp-players-b').innerText = config.type === 'doubles' 
+        ? `${config.playersB[0]} / ${config.playersB[1]}` : config.playersB[0];
+
+      document.getElementById('sets-a').innerText = `Set: ${state.setsA}`;
+      document.getElementById('sets-b').innerText = `Set: ${state.setsB}`;
+      document.getElementById('games-a').innerText = `Game: ${state.gamesA}`;
+      document.getElementById('games-b').innerText = `Game: ${state.gamesB}`;
+
+      document.getElementById('points-a').innerText = formatScore(state.ptsA, state.ptsB);
+      document.getElementById('points-b').innerText = formatScore(state.ptsB, state.ptsA);
+
+      document.getElementById('serve-a').classList.toggle('active', state.currentServerTeam === 'A');
+      document.getElementById('serve-b').classList.toggle('active', state.currentServerTeam === 'B');
+
+      const btnServeText = `SERVE: TEAM ${state.currentServerTeam}`;
+      document.getElementById('btn-toggle-serve-s').innerText = btnServeText;
+
+      const leftTeam = state.courtLeftTeam;
+      const rightTeam = (leftTeam === 'A') ? 'B' : 'A';
+
+      const cardA = document.getElementById('card-team-a');
+      const cardB = document.getElementById('card-team-b');
+      cardA.style.order = (leftTeam === 'A') ? 1 : 2;
+      cardB.style.order = (leftTeam === 'B') ? 1 : 2;
+
+      document.getElementById('arrow-a').innerText = (leftTeam === 'A') ? '◀' : '▶';
+      document.getElementById('arrow-b').innerText = (leftTeam === 'B') ? '◀' : '▶';
+
+      document.getElementById('side-left-bg').className = `court-side left ${leftTeam === 'A' ? 'bg-team-a' : 'bg-team-b'}`;
+      document.getElementById('side-right-bg').className = `court-side right ${rightTeam === 'A' ? 'bg-team-a' : 'bg-team-b'}`;
+
+      document.getElementById('label-left').innerText = `TEAM ${leftTeam}`;
+      document.getElementById('label-right').innerText = `TEAM ${rightTeam}`;
+
+      const totalPts = state.ptsA + state.ptsB;
+      const isDeuceServe = (totalPts % 2 === 0);
+      const isDoubles = (config.type === 'doubles');
+
+      const serverTeam = state.currentServerTeam;
+      const activeServerIdx = isDoubles ? (serverTeam === 'A' ? state.serverIdxA : state.serverIdxB) : 0;
+
+      const pmA1 = document.getElementById('pm-a1');
+      const pmA2 = document.getElementById('pm-a2');
+      const pmB1 = document.getElementById('pm-b1');
+      const pmB2 = document.getElementById('pm-b2');
+
+      const updateMarkerContent = (el, name, role) => {
+        let badgeHtml = role ? `<span class="role-badge visible">${role}</span>` : `<span class="role-badge"></span>`;
+        el.innerHTML = `<span class="player-name-text">${name}</span>${badgeHtml}`;
+      };
+
+      const isA1_Server = (serverTeam === 'A' && activeServerIdx === 0);
+      const isA2_Server = (serverTeam === 'A' && activeServerIdx === 1);
+      const isB1_Server = (serverTeam === 'B' && activeServerIdx === 0);
+      const isB2_Server = (serverTeam === 'B' && activeServerIdx === 1);
+
+      const isA1_Receiver = (serverTeam === 'B' && isDeuceServe);
+      const isA2_Receiver = (serverTeam === 'B' && !isDeuceServe);
+      const isB1_Receiver = (serverTeam === 'A' && isDeuceServe);
+      const isB2_Receiver = (serverTeam === 'A' && !isDeuceServe);
+
+      updateMarkerContent(pmA1, config.playersA[0], isA1_Server ? 'SERVE' : (isA1_Receiver ? 'RECEIVER' : ''));
+      updateMarkerContent(pmA2, config.playersA[1], isA2_Server ? 'SERVE' : (isA2_Receiver ? 'RECEIVER' : ''));
+      updateMarkerContent(pmB1, config.playersB[0], isB1_Server ? 'SERVE' : (isB1_Receiver ? 'RECEIVER' : ''));
+      updateMarkerContent(pmB2, config.playersB[1], isB2_Server ? 'SERVE' : (isB2_Receiver ? 'RECEIVER' : ''));
+
+      pmA1.style.background = 'var(--team-a-color)';
+      pmA2.style.background = 'var(--team-a-color)';
+      pmB1.style.background = 'var(--team-b-color)';
+      pmB2.style.background = 'var(--team-b-color)';
+
+      pmA2.style.display = isDoubles ? 'flex' : 'none';
+      pmB2.style.display = isDoubles ? 'flex' : 'none';
+
+      document.querySelectorAll('.player-marker').forEach(m => m.classList.remove('server', 'receiver'));
+
+      if (serverTeam === 'A') {
+        if (activeServerIdx === 0) pmA1.classList.add('server'); else pmA2.classList.add('server');
+        if (isDeuceServe) pmB1.classList.add('receiver'); else pmB2.classList.add('receiver');
+      } else {
+        if (activeServerIdx === 0) pmB1.classList.add('server'); else pmB2.classList.add('server');
+        if (isDeuceServe) pmA1.classList.add('receiver'); else pmA2.classList.add('receiver');
+      }
+
+      const setPos = (el, x, y) => { el.style.left = `${x}%`; el.style.top = `${y}%`; };
+      const targetBox = document.getElementById('target-box');
+
+      const placeTeamPlayers = (team, isLeft) => {
+        const p1 = (team === 'A') ? pmA1 : pmB1;
+        const p2 = (team === 'A') ? pmA2 : pmB2;
+        const isServerTeam = (serverTeam === team);
+
+        if (isLeft) {
+          if (isServerTeam) {
+            if (isDeuceServe) {
+              setPos(activeServerIdx === 0 ? p1 : p2, 3, 70);
+              if (isDoubles) setPos(activeServerIdx === 0 ? p2 : p1, 38, 25);
+            } else {
+              setPos(activeServerIdx === 0 ? p1 : p2, 3, 30);
+              if (isDoubles) setPos(activeServerIdx === 0 ? p2 : p1, 38, 75);
+            }
+          } else {
+            setPos(p1, 14, 68);
+            if (isDoubles) setPos(p2, 14, 32);
+          }
+        } else {
+          if (isServerTeam) {
+            if (isDeuceServe) {
+              setPos(activeServerIdx === 0 ? p1 : p2, 97, 30);
+              if (isDoubles) setPos(activeServerIdx === 0 ? p2 : p1, 62, 75);
+            } else {
+              setPos(activeServerIdx === 0 ? p1 : p2, 97, 70);
+              if (isDoubles) setPos(activeServerIdx === 0 ? p2 : p1, 62, 25);
+            }
+          } else {
+            setPos(p1, 86, 32);
+            if (isDoubles) setPos(p2, 86, 68);
+          }
+        }
+      };
+
+      placeTeamPlayers(leftTeam, true);
+      placeTeamPlayers(rightTeam, false);
+
+      const serverOnLeft = (serverTeam === leftTeam);
+      targetBox.style.transform = 'none';
+
+      if (serverOnLeft) {
+        targetBox.style.left = '50%';
+        targetBox.style.width = '25%';
+        targetBox.style.height = '35%';
+        targetBox.style.top = isDeuceServe ? '15%' : '50%';
+      } else {
+        targetBox.style.left = '25%';
+        targetBox.style.width = '25%';
+        targetBox.style.height = '35%';
+        targetBox.style.top = isDeuceServe ? '50%' : '15%';
+      }
     }
   </script>
 </body>
