@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>스마트폰 돋보기 앱</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #121212;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* 카메라 뷰포트 */
+    .view-container {
+      flex: 1;
+      position: relative;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform-origin: center center;
+    }
+
+    /* 제어 패널 UI */
+    .controls {
+      background: rgba(20, 20, 20, 0.95);
+      padding: 15px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      border-top: 1px solid #333;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .control-group label {
+      font-size: 14px;
+      width: 70px;
+      color: #ccc;
+    }
+
+    select, input[type="range"], button {
+      flex: 1;
+      accent-color: #007aff;
+    }
+
+    select {
+      background: #2c2c2e;
+      color: #fff;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 5px;
+    }
+
+    button {
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: #007aff;
+      color: white;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    button.active {
+      background: #ff3b30;
+    }
+
+    .val-display {
+      width: 35px;
+      text-align: right;
+      font-size: 12px;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="view-container">
+    <video id="video" autoplay playsinline></video>
+  </div>
+
+  <div class="controls">
+    <!-- 카메라 렌즈 선택 -->
+    <div class="control-group">
+      <label for="cameraSelect">카메라</label>
+      <select id="cameraSelect">
+        <option value="">카메라 불러오는 중...</option>
+      </select>
+    </div>
+
+    <!-- 배율 (줌) -->
+    <div class="control-group">
+      <label for="zoomRange">확대</label>
+      <input type="range" id="zoomRange" min="1" max="5" step="0.1" value="1">
+      <span id="zoomVal" class="val-display">1.0x</span>
+    </div>
+
+    <!-- 대비/선명도 -->
+    <div class="control-group">
+      <label for="contrastRange">선명도</label>
+      <input type="range" id="contrastRange" min="100" max="250" step="10" value="100">
+      <span id="contrastVal" class="val-display">100%</span>
+    </div>
+
+    <!-- 버튼 영역 -->
+    <div class="btn-group">
+      <button id="freezeBtn">화면 멈춤 (정지)</button>
+    </div>
+  </div>
+
+  <script>
+    const video = document.getElementById('video');
+    const cameraSelect = document.getElementById('cameraSelect');
+    const zoomRange = document.getElementById('zoomRange');
+    const zoomVal = document.getElementById('zoomVal');
+    const contrastRange = document.getElementById('contrastRange');
+    const contrastVal = document.getElementById('contrastVal');
+    const freezeBtn = document.getElementById('freezeBtn');
+
+    let currentStream = null;
+    let isFrozen = false;
+
+    // 1. 카메라 목록 가져오기
+    async function getCameras() {
+      try {
+        // 권한 요청
+        await navigator.mediaDevices.getUserMedia({ video: true });
+        
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+        cameraSelect.innerHTML = '';
+        
+        videoDevices.forEach((device, index) => {
+          const option = document.createElement('option');
+          option.value = device.deviceId;
+          // 카메라 이름 노출 (렌즈 구분을 위한 label 사용)
+          option.text = device.label || `카메라 ${index + 1}`;
+          cameraSelect.appendChild(option);
+        });
+
+        // 후면 카메라 우선 선택 로직
+        const backCamera = videoDevices.find(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('environment'));
+        if (backCamera) {
+          cameraSelect.value = backCamera.deviceId;
+        }
+
+        if (videoDevices.length > 0) {
+          startCamera(cameraSelect.value);
+        }
+      } catch (err) {
+        alert('카메라 접근 권한이 필요하거나 카메라를 찾을 수 없습니다.');
+        console.error(err);
+      }
+    }
+
+    // 2. 선택한 카메라 실행
+    async function startCamera(deviceId) {
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+      }
+
+      const constraints = {
+        video: {
+          deviceId: deviceId ? { exact: deviceId } : undefined,
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
+      };
+
+      try {
+        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = currentStream;
+      } catch (err) {
+        console.error('카메라를 열 수 없습니다:', err);
+      }
+    }
+
+    // 3. 렌즈 변경 이벤트
+    cameraSelect.addEventListener('change', () => {
+      startCamera(cameraSelect.value);
+    });
+
+    // 4. 디지털 줌 (CSS Transform) 및 하드웨어 줌 적용
+    zoomRange.addEventListener('input', (e) => {
+      const zoomValue = e.target.value;
+      zoomVal.textContent = `${parseFloat(zoomValue).toFixed(1)}x`;
+
+      // 1) CSS 줌 (모든 기기 호환)
+      video.style.transform = `scale(${zoomValue})`;
+
+      // 2) 하드웨어 줌 (지원 디바이스용)
+      if (currentStream) {
+        const track = currentStream.getVideoTracks()[0];
+        const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+        if (capabilities.zoom) {
+          track.applyConstraints({
+            advanced: [{ zoom: zoomValue }]
+          }).catch(() => {});
+        }
+      }
+    });
+
+    // 5. 선명도 / 대비 (CSS Filter)
+    contrastRange.addEventListener('input', (e) => {
+      const val = e.target.value;
+      contrastVal.textContent = `${val}%`;
+      video.style.filter = `contrast(${val}%) brightness(${100 + (val - 100) / 4}%)`;
+    });
+
+    // 6. 화면 정지 (Freeze)
+    freezeBtn.addEventListener('click', () => {
+      if (!isFrozen) {
+        video.pause();
+        freezeBtn.textContent = '화면 다시 시작';
+        freezeBtn.classList.add('active');
+        isFrozen = true;
+      } else {
+        video.play();
+        freezeBtn.textContent = '화면 멈춤 (정지)';
+        freezeBtn.classList.remove('active');
+        isFrozen = false;
+      }
+    });
+
+    // 시작
+    getCameras();
+  </script>
+</body>
+</html>
