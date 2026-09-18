@@ -60,7 +60,7 @@
       gap: 4px;
       background: var(--border);
       padding: 3px;
-      border-radius: 8px;
+      border-radius: 4px;
     }
 
     .lang-btn {
@@ -70,7 +70,7 @@
       font-size: 0.75rem;
       font-weight: 600;
       color: var(--text-muted);
-      border-radius: 6px;
+      border-radius: 2px;
       cursor: pointer;
       transition: all 0.2s;
     }
@@ -91,7 +91,7 @@
       background: #ffffff;
       border: 1px solid var(--border);
       padding: 6px 10px;
-      border-radius: 8px;
+      border-radius: 4px;
       font-size: 0.8rem;
       font-weight: 600;
       color: var(--text-main);
@@ -126,7 +126,7 @@
       display: flex;
       background: #e2e8f0;
       padding: 4px;
-      border-radius: 12px;
+      border-radius: 4px;
       gap: 4px;
     }
 
@@ -134,7 +134,7 @@
       flex: 1;
       padding: 10px;
       border: none;
-      border-radius: 8px;
+      border-radius: 2px;
       font-size: 0.9rem;
       font-weight: 700;
       color: var(--text-muted);
@@ -161,7 +161,7 @@
     .card {
       background: var(--card-bg);
       padding: 18px;
-      border-radius: 16px;
+      border-radius: 4px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
       border: 1px solid var(--border);
     }
@@ -191,7 +191,7 @@
       width: 100%;
       padding: 10px 12px;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 4px;
       font-size: 0.9rem;
       background-color: #fafafa;
       color: var(--text-main);
@@ -219,7 +219,7 @@
       width: 100%;
       padding: 12px;
       border: none;
-      border-radius: 10px;
+      border-radius: 4px;
       font-size: 0.95rem;
       font-weight: 700;
       cursor: pointer;
@@ -272,7 +272,7 @@
     .result-card-item {
       background: var(--accent);
       padding: 12px 14px;
-      border-radius: 10px;
+      border-radius: 4px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -309,15 +309,15 @@
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 3px;
+      gap: 4px;
     }
 
     .diff-badge {
       display: inline-block;
-      font-size: 0.72rem;
+      font-size: 0.75rem;
       font-weight: 600;
-      padding: 2px 6px;
-      border-radius: 4px;
+      padding: 3px 8px;
+      border-radius: 2px;
       background: #e2e8f0;
       color: #334155;
     }
@@ -338,7 +338,7 @@
       margin-top: 14px;
       background: #f8fafc;
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 4px;
       padding: 14px;
       text-align: center;
     }
@@ -382,7 +382,7 @@
       background: rgba(255, 255, 255, 0.92);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-      border-radius: 16px;
+      border-radius: 4px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
       border: 1px solid rgba(255, 255, 255, 0.5);
       z-index: 1000;
@@ -423,7 +423,7 @@
       cursor: pointer;
       line-height: 1;
       padding: 2px 6px;
-      border-radius: 4px;
+      border-radius: 2px;
     }
 
     .calc-close-btn:hover {
@@ -437,7 +437,7 @@
 
     .calc-screen-container {
       background: #1e293b;
-      border-radius: 10px;
+      border-radius: 4px;
       padding: 8px 12px;
       margin-bottom: 10px;
       text-align: right;
@@ -467,7 +467,7 @@
     .calc-btn {
       background: #f1f5f9;
       border: 1px solid #e2e8f0;
-      border-radius: 8px;
+      border-radius: 4px;
       padding: 10px 0;
       font-size: 1rem;
       font-weight: 600;
@@ -504,7 +504,7 @@
       color: white;
       border: none;
       padding: 8px;
-      border-radius: 8px;
+      border-radius: 4px;
       font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
@@ -549,7 +549,7 @@
     .error-card {
       background: var(--card-bg);
       padding: 30px;
-      border-radius: 16px;
+      border-radius: 4px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       border: 1px solid var(--border);
       text-align: center;
@@ -701,11 +701,11 @@
 
           <div class="result-card-item">
             <span class="res-label" id="lblResSize">실제 화면 크기</span>
-            <div class="res-val" style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+            <div class="res-val" style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
               <span id="resSize">0 × 0 mm</span>
               <div class="diff-details-container" id="resSizeDiffContainer">
-                <span id="resDiffW" class="diff-badge zero">가로 차이: 0mm</span>
-                <span id="resDiffH" class="diff-badge zero">세로 차이: 0mm</span>
+                <span id="resDiffW" class="diff-badge zero">가로 차이: 0mm (좌우: 0mm, 0mm)</span>
+                <span id="resDiffH" class="diff-badge zero">세로 차이: 0mm (상하: 0mm, 0mm)</span>
               </div>
             </div>
           </div>
@@ -738,7 +738,7 @@
 
         <div class="diagram-container">
           <div class="diagram-title" id="lblDiagramTitle">📐 설치 공간 vs 실제 화면 비교도</div>
-          <svg id="comparisonSvg" width="100%" height="180" viewBox="0 0 320 180" style="background:#ffffff; border-radius:8px; border:1px solid #e2e8f0;"></svg>
+          <svg id="comparisonSvg" width="100%" height="210" viewBox="0 0 320 210" style="background:#ffffff; border-radius:4px; border:1px solid #e2e8f0;"></svg>
         </div>
 
         <button class="btn btn-share" onclick="shareResults()" id="btnShare">📤 제목, 결과, 메모 공유하기</button>
@@ -1003,7 +1003,7 @@
     };
 
     let currentLang = 'ko';
-    const STORAGE_KEY = 'LED_CALC_DATA_V5';
+    const STORAGE_KEY = 'LED_CALC_DATA_V6';
 
     let calcExpression = '';
     let calcCurrentVal = '0';
@@ -1272,6 +1272,9 @@
       const diffW = totalW - targetW;
       const diffH = totalH - targetH;
 
+      const halfDiffW = diffW / 2;
+      const halfDiffH = diffH / 2;
+
       const modResX = Math.round(modW / pitch);
       const modResY = Math.round(modH / pitch);
 
@@ -1288,25 +1291,23 @@
       document.getElementById('resInputTargetSize').innerText = `${targetW} × ${targetH} mm`;
       document.getElementById('resSize').innerText = `${totalW.toLocaleString()} × ${totalH.toLocaleString()} mm`;
 
-      // 가로 및 세로 개별 차이 반영
       const diffWEl = document.getElementById('resDiffW');
       const diffHEl = document.getElementById('resDiffH');
 
-      const formatDiffItem = (val, label) => {
+      const formatSplitDiff = (val, splitVal, label, splitLabel) => {
+        const sign = val > 0 ? '+' : '';
         if (val === 0) return `${label}: 0mm (일치)`;
-        return `${label}: ${val > 0 ? '+' : ''}${val.toLocaleString()}mm`;
+        return `${label}: ${sign}${val.toLocaleString()}mm (${splitLabel}: ${sign}${splitVal.toLocaleString()}mm, ${sign}${splitVal.toLocaleString()}mm)`;
       };
 
-      diffWEl.innerText = formatDiffItem(diffW, dict.diffWidth);
-      diffHEl.innerText = formatDiffItem(diffH, dict.diffHeight);
+      diffWEl.innerText = formatSplitDiff(diffW, halfDiffW, dict.diffWidth, currentLang === 'ko' ? '좌우' : 'Left/Right');
+      diffHEl.innerText = formatSplitDiff(diffH, halfDiffH, dict.diffHeight, currentLang === 'ko' ? '상하' : 'Top/Bottom');
 
-      // 클래스 갱신 (가로)
       diffWEl.className = 'diff-badge';
       if (diffW > 0) diffWEl.classList.add('plus');
       else if (diffW < 0) diffWEl.classList.add('minus');
       else diffWEl.classList.add('zero');
 
-      // 클래스 갱신 (세로)
       diffHEl.className = 'diff-badge';
       if (diffH > 0) diffHEl.classList.add('plus');
       else if (diffH < 0) diffHEl.classList.add('minus');
@@ -1325,11 +1326,10 @@
         memoContainer.style.display = 'none';
       }
 
-      // 향상된 비교도 다이어그램 렌더링
-      renderDiagram(targetW, targetH, totalW, totalH, diffW, diffH);
+      renderDiagram(targetW, targetH, totalW, totalH, diffW, diffH, halfDiffW, halfDiffH);
     }
 
-    function renderDiagram(targetW, targetH, totalW, totalH, diffW, diffH) {
+    function renderDiagram(targetW, targetH, totalW, totalH, diffW, diffH, halfDiffW, halfDiffH) {
       const svg = document.getElementById('comparisonSvg');
       svg.innerHTML = '';
 
@@ -1337,11 +1337,11 @@
       const maxH = Math.max(targetH, totalH);
 
       const svgWidth = 320;
-      const svgHeight = 180;
+      const svgHeight = 210;
 
-      const padding = 28;
+      const padding = 35;
       const drawWidth = svgWidth - (padding * 2);
-      const drawHeight = svgHeight - (padding * 2) - 24;
+      const drawHeight = svgHeight - (padding * 2) - 30;
 
       const scaleX = drawWidth / maxW;
       const scaleY = drawHeight / maxH;
@@ -1353,7 +1353,7 @@
       const totalBoxH = totalH * scale;
 
       const startX = padding + (drawWidth - Math.max(targetBoxW, totalBoxW)) / 2;
-      const startY = padding + 12 + (drawHeight - Math.max(targetBoxH, totalBoxH)) / 2;
+      const startY = padding + 15 + (drawHeight - Math.max(targetBoxH, totalBoxH)) / 2;
 
       const targetX = startX + (Math.max(targetBoxW, totalBoxW) - targetBoxW) / 2;
       const targetY = startY + (Math.max(targetBoxH, totalBoxH) - targetBoxH) / 2;
@@ -1363,93 +1363,112 @@
 
       const dict = i18n[currentLang];
 
-      // 1. 설치 공간 사각형 (세련된 회색 점선 박스)
+      // 1. 설치 공간 사각형 (색상 구분: 주황/회색 계열 뚜렷한 직사각형, rx=0)
       const rectTarget = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
       rectTarget.setAttribute('x', targetX);
       rectTarget.setAttribute('y', targetY);
       rectTarget.setAttribute('width', Math.max(targetBoxW, 4));
       rectTarget.setAttribute('height', Math.max(targetBoxH, 4));
-      rectTarget.setAttribute('fill', '#f8fafc');
-      rectTarget.setAttribute('stroke', '#64748b');
+      rectTarget.setAttribute('fill', '#fff7ed');
+      rectTarget.setAttribute('stroke', '#ea580c');
       rectTarget.setAttribute('stroke-width', '2');
-      rectTarget.setAttribute('stroke-dasharray', '5');
-      rectTarget.setAttribute('rx', '6');
+      rectTarget.setAttribute('stroke-dasharray', '4');
+      rectTarget.setAttribute('rx', '0');
       svg.appendChild(rectTarget);
 
-      // 2. 실제 화면 사각형 (뚜렷한 블루 그라데이션 효과의 채워진 박스)
+      // 2. 실제 화면 사각형 (색상 구분: 선명한 파란색 채움 직사각형, rx=0)
       const rectScreen = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
       rectScreen.setAttribute('x', screenX);
       rectScreen.setAttribute('y', screenY);
       rectScreen.setAttribute('width', Math.max(totalBoxW, 4));
       rectScreen.setAttribute('height', Math.max(totalBoxH, 4));
       rectScreen.setAttribute('fill', '#2563eb');
-      rectScreen.setAttribute('fill-opacity', '0.25');
+      rectScreen.setAttribute('fill-opacity', '0.2');
       rectScreen.setAttribute('stroke', '#2563eb');
       rectScreen.setAttribute('stroke-width', '2.5');
-      rectScreen.setAttribute('rx', '6');
+      rectScreen.setAttribute('rx', '0');
       svg.appendChild(rectScreen);
 
-      // 3. 차이 수치 표시 (시각적 오버레이 라인 및 텍스트)
-      // 만약 공간과 화면 크기가 다를 경우 다이어그램 상단/우측에 차이 값 표시
-      const diffGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      // 3. 차이 값 텍스트 표시 (가로/세로 및 양쪽/상하 분리 표시)
+      const infoGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       
-      // 가로 차이 텍스트 라벨 (다이어그램 상단 중앙)
+      const signW = diffW > 0 ? '+' : '';
+      const signH = diffH > 0 ? '+' : '';
+
+      // 상단 가로 차이 레이블
       const topLabelY = Math.min(targetY, screenY) - 6;
-      if (topLabelY > 10) {
-        const diffTextX = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        diffTextX.setAttribute('x', startX + Math.max(targetBoxW, totalBoxW) / 2);
-        diffTextX.setAttribute('y', topLabelY);
-        diffTextX.setAttribute('text-anchor', 'middle');
-        diffTextX.setAttribute('font-size', '9.5');
-        diffTextX.setAttribute('font-weight', '700');
-        diffTextX.setAttribute('fill', diffW === 0 ? '#64748b' : (diffW > 0 ? '#1d4ed8' : '#dc2626'));
-        diffTextX.textContent = `${dict.diffWidth}: ${diffW > 0 ? '+' : ''}${diffW}mm`;
-        diffGroup.appendChild(diffTextX);
+      if (topLabelY > 8) {
+        const textW = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        textW.setAttribute('x', startX + Math.max(targetBoxW, totalBoxW) / 2);
+        textW.setAttribute('y', topLabelY);
+        textW.setAttribute('text-anchor', 'middle');
+        textW.setAttribute('font-size', '9');
+        textW.setAttribute('font-weight', '700');
+        textW.setAttribute('fill', diffW === 0 ? '#64748b' : '#1e40af');
+        textW.textContent = `${dict.diffWidth}: ${signW}${diffW}mm (좌우 ${signW}${halfDiffW}mm)`;
+        infoGroup.appendChild(textW);
       }
 
-      svg.appendChild(diffGroup);
+      // 우측 세로 차이 레이블
+      const rightLabelX = Math.max(targetX + targetBoxW, screenX + totalBoxW) + 6;
+      if (rightLabelX < svgWidth - 10) {
+        const textH = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        textH.setAttribute('x', rightLabelX);
+        textH.setAttribute('y', startY + Math.max(targetBoxH, totalBoxH) / 2);
+        textH.setAttribute('text-anchor', 'start');
+        textH.setAttribute('dominant-baseline', 'middle');
+        textH.setAttribute('font-size', '9');
+        textH.setAttribute('font-weight', '700');
+        textH.setAttribute('fill', diffH === 0 ? '#64748b' : '#1e40af');
+        textH.textContent = `${dict.diffHeight}: ${signH}${diffH}mm (상하 ${signH}${halfDiffH}mm)`;
+        infoGroup.appendChild(textH);
+      }
 
-      // 4. 범례 및 구분 안내 (하단)
+      svg.appendChild(infoGroup);
+
+      // 4. 범례 및 색상 구분 안내 (하단)
       const legendGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      legendGroup.setAttribute('transform', `translate(10, 166)`);
+      legendGroup.setAttribute('transform', `translate(12, 192)`);
 
-      // 범례 1 (설치 공간)
+      // 범례 1 (설치 공간 - 주황 점선 직사각형)
       const indicator1 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
       indicator1.setAttribute('x', '0');
-      indicator1.setAttribute('y', '-8');
-      indicator1.setAttribute('width', '11');
-      indicator1.setAttribute('height', '11');
-      indicator1.setAttribute('fill', '#f8fafc');
-      indicator1.setAttribute('stroke', '#64748b');
-      indicator1.setAttribute('stroke-dasharray', '3');
+      indicator1.setAttribute('y', '-7');
+      indicator1.setAttribute('width', '10');
+      indicator1.setAttribute('height', '10');
+      indicator1.setAttribute('fill', '#fff7ed');
+      indicator1.setAttribute('stroke', '#ea580c');
+      indicator1.setAttribute('stroke-dasharray', '2');
       indicator1.setAttribute('stroke-width', '1.5');
+      indicator1.setAttribute('rx', '0');
       legendGroup.appendChild(indicator1);
 
       const text1 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text1.setAttribute('x', '15');
+      text1.setAttribute('x', '14');
       text1.setAttribute('y', '0');
-      text1.setAttribute('font-size', '10');
-      text1.setAttribute('fill', '#475569');
-      text1.setAttribute('font-weight', '600');
+      text1.setAttribute('font-size', '9.5');
+      text1.setAttribute('fill', '#ea580c');
+      text1.setAttribute('font-weight', '700');
       text1.textContent = `${dict.legendSpace} (${targetW}×${targetH})`;
       legendGroup.appendChild(text1);
 
-      // 범례 2 (실제 화면)
+      // 범례 2 (실제 화면 - 파란색 직사각형)
       const indicator2 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      indicator2.setAttribute('x', '162');
-      indicator2.setAttribute('y', '-8');
-      indicator2.setAttribute('width', '11');
-      indicator2.setAttribute('height', '11');
+      indicator2.setAttribute('x', '160');
+      indicator2.setAttribute('y', '-7');
+      indicator2.setAttribute('width', '10');
+      indicator2.setAttribute('height', '10');
       indicator2.setAttribute('fill', '#2563eb');
-      indicator2.setAttribute('fill-opacity', '0.4');
+      indicator2.setAttribute('fill-opacity', '0.3');
       indicator2.setAttribute('stroke', '#2563eb');
       indicator2.setAttribute('stroke-width', '1.5');
+      indicator2.setAttribute('rx', '0');
       legendGroup.appendChild(indicator2);
 
       const text2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text2.setAttribute('x', '177');
+      text2.setAttribute('x', '174');
       text2.setAttribute('y', '0');
-      text2.setAttribute('font-size', '10');
+      text2.setAttribute('font-size', '9.5');
       text2.setAttribute('fill', '#1e3a8a');
       text2.setAttribute('font-weight', '700');
       text2.textContent = `${dict.legendScreen} (${totalW}×${totalH})`;
@@ -1476,7 +1495,8 @@
       textToCopy += `▪ ${i18n[currentLang].resInputModSize}: ${inputModSize}\n`;
       textToCopy += `▪ ${i18n[currentLang].resInputTargetSize}: ${inputTargetSize}\n`;
       textToCopy += `▪ ${i18n[currentLang].resSize}: ${size}\n`;
-      textToCopy += `  - ${diffWText} / ${diffHText}\n`;
+      textToCopy += `  - ${diffWText}\n`;
+      textToCopy += `  - ${diffHText}\n`;
       textToCopy += `▪ ${i18n[currentLang].resInputPitch}: ${inputPitch}\n`;
       textToCopy += `------------------------------\n`;
       textToCopy += `▪ ${i18n[currentLang].resModCount}: ${modCount}\n`;
