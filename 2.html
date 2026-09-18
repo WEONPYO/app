@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>WP LED Display Calculator</title>
+  <!-- html2canvas for image export functionality -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     :root {
       --bg-color: #f8fafc;
@@ -11,11 +13,13 @@
       --primary: #2563eb;
       --primary-hover: #1d4ed8;
       --text-main: #0f172a;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
+      --text-muted: #475569;
+      --border: #cbd5e1;
       --accent: #f1f5f9;
-      --success: #10b981;
-      --success-hover: #059669;
+      --success: #059669;
+      --success-hover: #047857;
+      --memo-bg: #f8fafc;
+      --memo-border: #94a3b8;
     }
 
     * {
@@ -60,7 +64,7 @@
       gap: 4px;
       background: var(--border);
       padding: 3px;
-      border-radius: 4px;
+      border-radius: 6px;
     }
 
     .lang-btn {
@@ -68,9 +72,9 @@
       border: none;
       padding: 5px 8px;
       font-size: 0.75rem;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--text-muted);
-      border-radius: 2px;
+      border-radius: 4px;
       cursor: pointer;
       transition: all 0.2s;
     }
@@ -91,7 +95,7 @@
       background: #ffffff;
       border: 1px solid var(--border);
       padding: 6px 10px;
-      border-radius: 4px;
+      border-radius: 6px;
       font-size: 0.8rem;
       font-weight: 600;
       color: var(--text-main);
@@ -124,9 +128,9 @@
 
     .tab-nav {
       display: flex;
-      background: #e2e8f0;
+      background: #cbd5e1;
       padding: 4px;
-      border-radius: 4px;
+      border-radius: 6px;
       gap: 4px;
     }
 
@@ -134,7 +138,7 @@
       flex: 1;
       padding: 10px;
       border: none;
-      border-radius: 2px;
+      border-radius: 4px;
       font-size: 0.9rem;
       font-weight: 700;
       color: var(--text-muted);
@@ -161,8 +165,8 @@
     .card {
       background: var(--card-bg);
       padding: 18px;
-      border-radius: 4px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
       border: 1px solid var(--border);
     }
 
@@ -173,7 +177,7 @@
     label {
       display: block;
       font-size: 0.825rem;
-      font-weight: 600;
+      font-weight: 700;
       margin-bottom: 6px;
       color: var(--text-main);
     }
@@ -191,7 +195,7 @@
       width: 100%;
       padding: 10px 12px;
       border: 1px solid var(--border);
-      border-radius: 4px;
+      border-radius: 6px;
       font-size: 0.9rem;
       background-color: #fafafa;
       color: var(--text-main);
@@ -213,13 +217,14 @@
       font-size: 0.8rem;
       color: var(--text-muted);
       white-space: nowrap;
+      font-weight: 600;
     }
 
     .btn {
       width: 100%;
       padding: 12px;
       border: none;
-      border-radius: 4px;
+      border-radius: 6px;
       font-size: 0.95rem;
       font-weight: 700;
       cursor: pointer;
@@ -253,6 +258,16 @@
       background-color: var(--success-hover);
     }
 
+    .btn-image-share {
+      background-color: #0284c7;
+      color: white;
+      margin-top: 8px;
+    }
+
+    .btn-image-share:hover {
+      background-color: #0369a1;
+    }
+
     .btn-reset {
       background-color: transparent;
       color: var(--text-muted);
@@ -260,7 +275,7 @@
       margin-top: 8px;
       padding: 8px;
       font-size: 0.8rem;
-      font-weight: 500;
+      font-weight: 600;
     }
 
     .result-list {
@@ -272,11 +287,12 @@
     .result-card-item {
       background: var(--accent);
       padding: 12px 14px;
-      border-radius: 4px;
+      border-radius: 6px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 12px;
+      border: 1px solid #e2e8f0;
     }
 
     .result-card-item.highlight-box {
@@ -285,9 +301,9 @@
     }
 
     .res-label {
-      font-size: 0.8rem;
+      font-size: 0.825rem;
       color: var(--text-muted);
-      font-weight: 600;
+      font-weight: 700;
       white-space: nowrap;
       flex-shrink: 0;
     }
@@ -315,11 +331,11 @@
     .diff-badge {
       display: inline-block;
       font-size: 0.75rem;
-      font-weight: 600;
+      font-weight: 700;
       padding: 3px 8px;
-      border-radius: 2px;
+      border-radius: 4px;
       background: #e2e8f0;
-      color: #334155;
+      color: #1e293b;
     }
     .diff-badge.plus {
       background: #dbeafe;
@@ -331,21 +347,57 @@
     }
     .diff-badge.zero {
       background: #f1f5f9;
-      color: #64748b;
+      color: #475569;
+    }
+
+    /* Enhanced Memo Result Card */
+    .memo-result-item {
+      background: #ffffff;
+      border: 1.5px solid var(--memo-border);
+      padding: 14px;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .memo-result-title {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .memo-result-text {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #1e293b;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #f8fafc;
+      width: 100%;
+      padding: 10px;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
     }
 
     .diagram-container {
       margin-top: 14px;
-      background: #f8fafc;
+      background: #ffffff;
       border: 1px solid var(--border);
-      border-radius: 4px;
+      border-radius: 6px;
       padding: 14px;
       text-align: center;
     }
     .diagram-title {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--text-muted);
+      font-size: 0.825rem;
+      font-weight: 700;
+      color: var(--text-main);
       margin-bottom: 8px;
     }
 
@@ -379,10 +431,10 @@
       top: 60px;
       right: 16px;
       width: 310px;
-      background: rgba(255, 255, 255, 0.92);
+      background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-      border-radius: 4px;
+      border-radius: 8px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
       border: 1px solid rgba(255, 255, 255, 0.5);
       z-index: 1000;
@@ -409,7 +461,7 @@
 
     .calc-title {
       font-size: 0.85rem;
-      font-weight: 600;
+      font-weight: 700;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -423,7 +475,7 @@
       cursor: pointer;
       line-height: 1;
       padding: 2px 6px;
-      border-radius: 2px;
+      border-radius: 4px;
     }
 
     .calc-close-btn:hover {
@@ -437,7 +489,7 @@
 
     .calc-screen-container {
       background: #1e293b;
-      border-radius: 4px;
+      border-radius: 6px;
       padding: 8px 12px;
       margin-bottom: 10px;
       text-align: right;
@@ -466,11 +518,11 @@
 
     .calc-btn {
       background: #f1f5f9;
-      border: 1px solid #e2e8f0;
-      border-radius: 4px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
       padding: 10px 0;
       font-size: 1rem;
-      font-weight: 600;
+      font-weight: 700;
       color: #334155;
       cursor: pointer;
       transition: background 0.1s, transform 0.05s;
@@ -500,13 +552,13 @@
     .calc-copy-btn {
       margin-top: 10px;
       width: 100%;
-      background: #10b981;
+      background: #059669;
       color: white;
       border: none;
       padding: 8px;
-      border-radius: 4px;
+      border-radius: 6px;
       font-size: 0.8rem;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       display: flex;
       justify-content: center;
@@ -515,7 +567,7 @@
     }
 
     .calc-copy-btn:hover {
-      background: #059669;
+      background: #047857;
     }
 
     .toast {
@@ -528,6 +580,7 @@
       padding: 10px 20px;
       border-radius: 30px;
       font-size: 0.85rem;
+      font-weight: 600;
       display: none;
       box-shadow: 0 4px 12px rgba(0,0,0,0.2);
       z-index: 2000;
@@ -549,7 +602,7 @@
     .error-card {
       background: var(--card-bg);
       padding: 30px;
-      border-radius: 4px;
+      border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       border: 1px solid var(--border);
       text-align: center;
@@ -681,8 +734,9 @@
       </div>
     </div>
 
+    <!-- Result View Container optimized for image export & UI readability -->
     <div class="view-panel" id="viewResult">
-      <div class="card">
+      <div class="card" id="exportableResultCard">
         <div class="result-list">
           <div class="result-card-item">
             <span class="res-label" id="lblResTitle">프로젝트</span>
@@ -727,23 +781,27 @@
 
           <div class="result-card-item">
             <span class="res-label" id="lblResRatio">계산된 화면 비율</span>
-            <span class="res-val" id="resRatio">16 : 9.00</span>
+            <span class="res-val" id="resRatio">16 : 9.0</span>
           </div>
 
-          <div class="result-card-item" id="memoResultContainer" style="display:none; flex-direction:column; align-items:flex-start; gap:4px;">
-            <span class="res-label" id="lblResMemo">메모 / 특이사항</span>
-            <span class="res-val" id="resMemoDisplay" style="text-align:left; font-weight:normal; font-size:0.85rem; color:var(--text-main); white-space:pre-wrap; word-break:break-word;"></span>
+          <!-- Enhanced Memo Result Card Section -->
+          <div class="memo-result-item" id="memoResultContainer" style="display:none;">
+            <span class="memo-result-title" id="lblResMemo">📝 메모 / 특이사항</span>
+            <span class="memo-result-text" id="resMemoDisplay"></span>
           </div>
         </div>
 
         <div class="diagram-container">
           <div class="diagram-title" id="lblDiagramTitle">📐 설치 공간 vs 실제 화면 비교도</div>
-          <svg id="comparisonSvg" width="100%" height="210" viewBox="0 0 320 210" style="background:#ffffff; border-radius:4px; border:1px solid #e2e8f0;"></svg>
+          <!-- Expanded SVG Viewport and padding to prevent clipping of vertical/horizontal difference labels -->
+          <svg id="comparisonSvg" width="100%" height="240" viewBox="0 0 360 240" style="background:#ffffff; border-radius:6px; border:1px solid #cbd5e1;"></svg>
         </div>
-
-        <button class="btn btn-share" onclick="shareResults()" id="btnShare">📤 제목, 결과, 메모 공유하기</button>
-        <button class="btn btn-primary" onclick="switchTab('input')" style="margin-top:8px; background-color:#475569;" id="btnBackToInput">⬅️ 입력창으로 돌아가기</button>
       </div>
+
+      <!-- Action buttons outside export card -->
+      <button class="btn btn-share" onclick="shareResults()" id="btnShare">📤 제목, 결과, 메모 텍스트 복사</button>
+      <button class="btn btn-image-share" onclick="shareResultsAsImage()" id="btnImageShare">🖼️ 결과 화면을 이미지로 복사/저장</button>
+      <button class="btn btn-primary" onclick="switchTab('input')" style="margin-top:8px; background-color:#475569;" id="btnBackToInput">⬅️ 입력창으로 돌아가기</button>
     </div>
   </div>
 
@@ -850,12 +908,14 @@
         legendScreen: "실제 화면",
         diffWidth: "가로 차이",
         diffHeight: "세로 차이",
-        btnShare: "📤 제목, 결과, 메모 공유하기",
+        btnShare: "📤 제목, 결과, 메모 텍스트 복사",
+        btnImageShare: "🖼️ 결과 화면을 이미지로 복사/저장",
         btnBackToInput: "⬅️ 입력창으로 돌아가기",
         modUnit: "개",
         labelWidth: "가로",
         labelHeight: "세로",
         toastCopied: "클립보드에 결과가 복사되었습니다!",
+        toastImageCopied: "결과 화면 이미지가 클립보드에 복사되었습니다!",
         copyFail: "복사에 실패했습니다.",
         resetConfirm: "모든 입력값을 초기화하시겠습니까?"
       },
@@ -897,12 +957,14 @@
         legendScreen: "Actual Screen",
         diffWidth: "Width Diff",
         diffHeight: "Height Diff",
-        btnShare: "📤 Share Title, Results & Memo",
+        btnShare: "📤 Copy Text (Title, Results & Memo)",
+        btnImageShare: "🖼️ Copy/Save Results as Image",
         btnBackToInput: "⬅️ Back to Inputs",
         modUnit: "pcs",
         labelWidth: "W",
         labelHeight: "H",
         toastCopied: "Results copied to clipboard!",
+        toastImageCopied: "Result image copied to clipboard!",
         copyFail: "Failed to copy.",
         resetConfirm: "Are you sure you want to reset all inputs?"
       },
@@ -944,12 +1006,14 @@
         legendScreen: "实际屏幕",
         diffWidth: "宽度差",
         diffHeight: "高度差",
-        btnShare: "📤 分享标题、结果与备注",
+        btnShare: "📤 复制文本 (标题、结果与备注)",
+        btnImageShare: "🖼️ 复制/保存结果图片",
         btnBackToInput: "⬅️ 返回输入页",
         modUnit: "块",
         labelWidth: "宽",
         labelHeight: "高",
         toastCopied: "结果已成功复制到剪贴板！",
+        toastImageCopied: "结果图片已复制到剪贴板！",
         copyFail: "复制失败。",
         resetConfirm: "确定要重置所有输入内容吗？"
       },
@@ -991,19 +1055,21 @@
         legendScreen: "実際の画面",
         diffWidth: "幅の差",
         diffHeight: "高さの差",
-        btnShare: "📤 タイトル・結果・メモを共有",
+        btnShare: "📤 テキストコピー (タイトル・結果・メモ)",
+        btnImageShare: "🖼️ 結果を画像としてコピー/保存",
         btnBackToInput: "⬅️ 入力画面に戻る",
         modUnit: "個",
         labelWidth: "幅",
         labelHeight: "高さ",
         toastCopied: "結果がクリップボードにコピーされました！",
+        toastImageCopied: "結果画像がクリップボードにコピーされました！",
         copyFail: "コピーに失敗しました。",
         resetConfirm: "すべての入力値をリセットしますか？"
       }
     };
 
     let currentLang = 'ko';
-    const STORAGE_KEY = 'LED_CALC_DATA_V6';
+    const STORAGE_KEY = 'LED_CALC_DATA_V7';
 
     let calcExpression = '';
     let calcCurrentVal = '0';
@@ -1206,9 +1272,10 @@
       document.getElementById('lblResModCount').innerText = dict.resModCount;
       document.getElementById('lblResResolution').innerText = dict.resResolution;
       document.getElementById('lblResRatio').innerText = dict.resRatio;
-      document.getElementById('lblResMemo').innerText = dict.resMemo;
+      document.getElementById('lblResMemo').innerText = `📝 ${dict.resMemo}`;
       document.getElementById('lblDiagramTitle').innerText = dict.diagramTitle;
       document.getElementById('btnShare').innerText = dict.btnShare;
+      document.getElementById('btnImageShare').innerText = dict.btnImageShare;
       document.getElementById('btnBackToInput').innerText = dict.btnBackToInput;
 
       saveAndCalculate();
@@ -1281,7 +1348,8 @@
       const totalResX = countX * modResX;
       const totalResY = countY * modResY;
 
-      const calculatedSubRatio = (baseRatioVal * (totalH / totalW)).toFixed(2);
+      // Ratio calculated to exactly 1 decimal place as requested
+      const calculatedSubRatio = (baseRatioVal * (totalH / totalW)).toFixed(1);
       const ratioDisplay = `${baseRatioVal} : ${calculatedSubRatio}`;
 
       const dict = i18n[currentLang];
@@ -1336,12 +1404,14 @@
       const maxW = Math.max(targetW, totalW);
       const maxH = Math.max(targetH, totalH);
 
-      const svgWidth = 320;
-      const svgHeight = 210;
+      // Expanded viewBox: 360 x 240 with generous padding (46px) to avoid any clipping of diff labels
+      const svgWidth = 360;
+      const svgHeight = 240;
 
-      const padding = 35;
-      const drawWidth = svgWidth - (padding * 2);
-      const drawHeight = svgHeight - (padding * 2) - 30;
+      const paddingX = 55;
+      const paddingY = 46;
+      const drawWidth = svgWidth - (paddingX * 2);
+      const drawHeight = svgHeight - (paddingY * 2) - 15;
 
       const scaleX = drawWidth / maxW;
       const scaleY = drawHeight / maxH;
@@ -1352,8 +1422,8 @@
       const totalBoxW = totalW * scale;
       const totalBoxH = totalH * scale;
 
-      const startX = padding + (drawWidth - Math.max(targetBoxW, totalBoxW)) / 2;
-      const startY = padding + 15 + (drawHeight - Math.max(targetBoxH, totalBoxH)) / 2;
+      const startX = paddingX + (drawWidth - Math.max(targetBoxW, totalBoxW)) / 2;
+      const startY = paddingY + (drawHeight - Math.max(targetBoxH, totalBoxH)) / 2;
 
       const targetX = startX + (Math.max(targetBoxW, totalBoxW) - targetBoxW) / 2;
       const targetY = startY + (Math.max(targetBoxH, totalBoxH) - targetBoxH) / 2;
@@ -1363,7 +1433,7 @@
 
       const dict = i18n[currentLang];
 
-      // 1. 설치 공간 사각형 (색상 구분: 주황/회색 계열 뚜렷한 직사각형, rx=0)
+      // 1. Target Space Box (Orange Dashed Outline)
       const rectTarget = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
       rectTarget.setAttribute('x', targetX);
       rectTarget.setAttribute('y', targetY);
@@ -1373,64 +1443,59 @@
       rectTarget.setAttribute('stroke', '#ea580c');
       rectTarget.setAttribute('stroke-width', '2');
       rectTarget.setAttribute('stroke-dasharray', '4');
-      rectTarget.setAttribute('rx', '0');
+      rectTarget.setAttribute('rx', '2');
       svg.appendChild(rectTarget);
 
-      // 2. 실제 화면 사각형 (색상 구분: 선명한 파란색 채움 직사각형, rx=0)
+      // 2. Actual Screen Box (Blue Filled Rectangle)
       const rectScreen = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
       rectScreen.setAttribute('x', screenX);
       rectScreen.setAttribute('y', screenY);
       rectScreen.setAttribute('width', Math.max(totalBoxW, 4));
       rectScreen.setAttribute('height', Math.max(totalBoxH, 4));
       rectScreen.setAttribute('fill', '#2563eb');
-      rectScreen.setAttribute('fill-opacity', '0.2');
+      rectScreen.setAttribute('fill-opacity', '0.18');
       rectScreen.setAttribute('stroke', '#2563eb');
       rectScreen.setAttribute('stroke-width', '2.5');
-      rectScreen.setAttribute('rx', '0');
+      rectScreen.setAttribute('rx', '2');
       svg.appendChild(rectScreen);
 
-      // 3. 차이 값 텍스트 표시 (가로/세로 및 양쪽/상하 분리 표시)
+      // 3. Difference Labels Positioned safely inside the expanded padding bounds
       const infoGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       
       const signW = diffW > 0 ? '+' : '';
       const signH = diffH > 0 ? '+' : '';
 
-      // 상단 가로 차이 레이블
-      const topLabelY = Math.min(targetY, screenY) - 6;
-      if (topLabelY > 8) {
-        const textW = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        textW.setAttribute('x', startX + Math.max(targetBoxW, totalBoxW) / 2);
-        textW.setAttribute('y', topLabelY);
-        textW.setAttribute('text-anchor', 'middle');
-        textW.setAttribute('font-size', '9');
-        textW.setAttribute('font-weight', '700');
-        textW.setAttribute('fill', diffW === 0 ? '#64748b' : '#1e40af');
-        textW.textContent = `${dict.diffWidth}: ${signW}${diffW}mm (좌우 ${signW}${halfDiffW}mm)`;
-        infoGroup.appendChild(textW);
-      }
+      // Top Width Difference label
+      const topLabelY = Math.min(targetY, screenY) - 10;
+      const textW = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      textW.setAttribute('x', startX + Math.max(targetBoxW, totalBoxW) / 2);
+      textW.setAttribute('y', Math.max(topLabelY, 14));
+      textW.setAttribute('text-anchor', 'middle');
+      textW.setAttribute('font-size', '9.5');
+      textW.setAttribute('font-weight', '700');
+      textW.setAttribute('fill', diffW === 0 ? '#475569' : '#1e40af');
+      textW.textContent = `${dict.diffWidth}: ${signW}${diffW}mm (좌우 ${signW}${halfDiffW}mm)`;
+      infoGroup.appendChild(textW);
 
-      // 우측 세로 차이 레이블
-      const rightLabelX = Math.max(targetX + targetBoxW, screenX + totalBoxW) + 6;
-      if (rightLabelX < svgWidth - 10) {
-        const textH = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        textH.setAttribute('x', rightLabelX);
-        textH.setAttribute('y', startY + Math.max(targetBoxH, totalBoxH) / 2);
-        textH.setAttribute('text-anchor', 'start');
-        textH.setAttribute('dominant-baseline', 'middle');
-        textH.setAttribute('font-size', '9');
-        textH.setAttribute('font-weight', '700');
-        textH.setAttribute('fill', diffH === 0 ? '#64748b' : '#1e40af');
-        textH.textContent = `${dict.diffHeight}: ${signH}${diffH}mm (상하 ${signH}${halfDiffH}mm)`;
-        infoGroup.appendChild(textH);
-      }
+      // Right Height Difference label positioned with adequate right padding boundary
+      const rightLabelX = Math.max(targetX + targetBoxW, screenX + totalBoxW) + 8;
+      const textH = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      textH.setAttribute('x', Math.min(rightLabelX, svgWidth - 110));
+      textH.setAttribute('y', startY + Math.max(targetBoxH, totalBoxH) / 2);
+      textH.setAttribute('text-anchor', 'start');
+      textH.setAttribute('dominant-baseline', 'middle');
+      textH.setAttribute('font-size', '9.5');
+      textH.setAttribute('font-weight', '700');
+      textH.setAttribute('fill', diffH === 0 ? '#475569' : '#1e40af');
+      textH.textContent = `${dict.diffHeight}: ${signH}${diffH}mm (상하 ${signH}${halfDiffH}mm)`;
+      infoGroup.appendChild(textH);
 
       svg.appendChild(infoGroup);
 
-      // 4. 범례 및 색상 구분 안내 (하단)
+      // 4. Legend Section at the bottom of SVG
       const legendGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      legendGroup.setAttribute('transform', `translate(12, 192)`);
+      legendGroup.setAttribute('transform', `translate(20, 222)`);
 
-      // 범례 1 (설치 공간 - 주황 점선 직사각형)
       const indicator1 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
       indicator1.setAttribute('x', '0');
       indicator1.setAttribute('y', '-7');
@@ -1440,21 +1505,19 @@
       indicator1.setAttribute('stroke', '#ea580c');
       indicator1.setAttribute('stroke-dasharray', '2');
       indicator1.setAttribute('stroke-width', '1.5');
-      indicator1.setAttribute('rx', '0');
       legendGroup.appendChild(indicator1);
 
       const text1 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       text1.setAttribute('x', '14');
       text1.setAttribute('y', '0');
-      text1.setAttribute('font-size', '9.5');
+      text1.setAttribute('font-size', '10');
       text1.setAttribute('fill', '#ea580c');
       text1.setAttribute('font-weight', '700');
       text1.textContent = `${dict.legendSpace} (${targetW}×${targetH})`;
       legendGroup.appendChild(text1);
 
-      // 범례 2 (실제 화면 - 파란색 직사각형)
       const indicator2 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      indicator2.setAttribute('x', '160');
+      indicator2.setAttribute('x', '180');
       indicator2.setAttribute('y', '-7');
       indicator2.setAttribute('width', '10');
       indicator2.setAttribute('height', '10');
@@ -1462,13 +1525,12 @@
       indicator2.setAttribute('fill-opacity', '0.3');
       indicator2.setAttribute('stroke', '#2563eb');
       indicator2.setAttribute('stroke-width', '1.5');
-      indicator2.setAttribute('rx', '0');
       legendGroup.appendChild(indicator2);
 
       const text2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text2.setAttribute('x', '174');
+      text2.setAttribute('x', '194');
       text2.setAttribute('y', '0');
-      text2.setAttribute('font-size', '9.5');
+      text2.setAttribute('font-size', '10');
       text2.setAttribute('fill', '#1e3a8a');
       text2.setAttribute('font-weight', '700');
       text2.textContent = `${dict.legendScreen} (${totalW}×${totalH})`;
@@ -1504,7 +1566,7 @@
       textToCopy += `▪ ${i18n[currentLang].resRatio}: ${ratio}\n`;
       if (memo) {
         textToCopy += `------------------------------\n`;
-        textToCopy += `📝 ${i18n[currentLang].resMemo}: ${memo}\n`;
+        textToCopy += `📝 ${i18n[currentLang].resMemo}:\n${memo}\n`;
       }
 
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1516,6 +1578,47 @@
       } else {
         fallbackCopy(textToCopy);
       }
+    }
+
+    function shareResultsAsImage() {
+      const exportCard = document.getElementById('exportableResultCard');
+      if (!window.html2canvas) {
+        alert("html2canvas library is loading or unavailable.");
+        return;
+      }
+
+      html2canvas(exportCard, { scale: 2, backgroundColor: '#ffffff', logging: false }).then(canvas => {
+        canvas.toBlob(blob => {
+          if (!blob) {
+            alert(i18n[currentLang].copyFail);
+            return;
+          }
+
+          // Try copying image to clipboard if supported
+          if (navigator.clipboard && window.ClipboardItem) {
+            navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob })
+            ]).then(() => {
+              showToast(i18n[currentLang].toastImageCopied);
+            }).catch(() => {
+              fallbackDownloadImage(canvas);
+            });
+          } else {
+            fallbackDownloadImage(canvas);
+          }
+        });
+      }).catch(err => {
+        console.error("Image generation error:", err);
+        alert(i18n[currentLang].copyFail);
+      });
+    }
+
+    function fallbackDownloadImage(canvas) {
+      const link = document.createElement('a');
+      link.download = 'led_calculation_result.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast(i18n[currentLang].toastImageCopied);
     }
 
     function fallbackCopy(text) {
