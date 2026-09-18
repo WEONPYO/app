@@ -624,6 +624,119 @@
       color: var(--text-muted);
       line-height: 1.5;
     }
+    /* ===== Readability / mobile UX improvements ===== */
+    .card {
+      padding: 16px;
+    }
+
+    .result-list {
+      gap: 8px;
+    }
+
+    .result-card-item {
+      display: grid;
+      grid-template-columns: minmax(92px, 34%) minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
+      padding: 11px 12px;
+    }
+
+    .res-label {
+      white-space: normal;
+      line-height: 1.35;
+    }
+
+    .res-val {
+      min-width: 0;
+      text-align: left;
+      overflow-wrap: anywhere;
+      word-break: normal;
+      line-height: 1.4;
+    }
+
+    .result-card-item .res-val[style] {
+      align-items: flex-start !important;
+    }
+
+    .diff-details-container {
+      width: 100%;
+      align-items: flex-start;
+    }
+
+    .diff-badge {
+      max-width: 100%;
+      white-space: normal;
+      line-height: 1.35;
+      text-align: left;
+    }
+
+    .memo-result-item {
+      padding: 12px;
+      gap: 8px;
+    }
+
+    .memo-result-text {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .diagram-container {
+      margin-top: 12px;
+      padding: 12px;
+    }
+
+    .diagram-scroll {
+      width: 100%;
+      overflow: hidden;
+      border-radius: 8px;
+    }
+
+    #comparisonSvg {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 240px;
+    }
+
+    .btn {
+      min-height: 46px;
+    }
+
+    @media (max-width: 380px) {
+      body { padding: 8px; }
+      .app-container { gap: 9px; }
+      .card { padding: 12px; }
+      .result-card-item {
+        grid-template-columns: 88px minmax(0, 1fr);
+        gap: 8px;
+        padding: 10px;
+      }
+      .res-label { font-size: 0.76rem; }
+      .res-val { font-size: 0.84rem; }
+      .diff-badge { font-size: 0.69rem; padding: 3px 6px; }
+      .diagram-container { padding: 8px; }
+    }
+
+    @media (min-width: 700px) {
+      .app-container { max-width: 620px; }
+      .result-card-item {
+        grid-template-columns: 180px minmax(0, 1fr);
+      }
+    }
+
+    /* Better text selection/copy readability */
+    #exportableResultCard {
+      color: #0f172a;
+    }
+
+    #exportableResultCard .res-val,
+    #exportableResultCard .memo-result-text {
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
   </style>
 </head>
 <body>
@@ -794,7 +907,9 @@
         <div class="diagram-container">
           <div class="diagram-title" id="lblDiagramTitle">📐 설치 공간 vs 실제 화면 비교도</div>
           <!-- Expanded SVG Viewport and padding to prevent clipping of vertical/horizontal difference labels -->
-          <svg id="comparisonSvg" width="100%" height="240" viewBox="0 0 360 240" style="background:#ffffff; border-radius:6px; border:1px solid #cbd5e1;"></svg>
+          <div class="diagram-scroll">
+            <svg id="comparisonSvg" width="100%" height="300" viewBox="0 0 420 300" preserveAspectRatio="xMidYMid meet" style="background:#ffffff; border-radius:8px; border:1px solid #cbd5e1;"></svg>
+          </div>
         </div>
       </div>
 
@@ -1069,7 +1184,7 @@
     };
 
     let currentLang = 'ko';
-    const STORAGE_KEY = 'LED_CALC_DATA_V7';
+    const STORAGE_KEY = 'LED_CALC_DATA_V8';
 
     let calcExpression = '';
     let calcCurrentVal = '0';
@@ -1401,142 +1516,123 @@
       const svg = document.getElementById('comparisonSvg');
       svg.innerHTML = '';
 
-      const maxW = Math.max(targetW, totalW);
-      const maxH = Math.max(targetH, totalH);
-
-      // Expanded viewBox: 360 x 240 with generous padding (46px) to avoid any clipping of diff labels
-      const svgWidth = 360;
-      const svgHeight = 240;
-
-      const paddingX = 55;
-      const paddingY = 46;
-      const drawWidth = svgWidth - (paddingX * 2);
-      const drawHeight = svgHeight - (paddingY * 2) - 15;
-
-      const scaleX = drawWidth / maxW;
-      const scaleY = drawHeight / maxH;
-      const scale = Math.min(scaleX, scaleY);
-
-      const targetBoxW = targetW * scale;
-      const targetBoxH = targetH * scale;
-      const totalBoxW = totalW * scale;
-      const totalBoxH = totalH * scale;
-
-      const startX = paddingX + (drawWidth - Math.max(targetBoxW, totalBoxW)) / 2;
-      const startY = paddingY + (drawHeight - Math.max(targetBoxH, totalBoxH)) / 2;
-
-      const targetX = startX + (Math.max(targetBoxW, totalBoxW) - targetBoxW) / 2;
-      const targetY = startY + (Math.max(targetBoxH, totalBoxH) - targetBoxH) / 2;
-
-      const screenX = startX + (Math.max(targetBoxW, totalBoxW) - totalBoxW) / 2;
-      const screenY = startY + (Math.max(targetBoxH, totalBoxH) - totalBoxH) / 2;
+      const NS = 'http://www.w3.org/2000/svg';
+      const W = 420, H = 300;
+      svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
 
       const dict = i18n[currentLang];
+      const maxW = Math.max(targetW, totalW, 1);
+      const maxH = Math.max(targetH, totalH, 1);
 
-      // 1. Target Space Box (Orange Dashed Outline)
-      const rectTarget = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      rectTarget.setAttribute('x', targetX);
-      rectTarget.setAttribute('y', targetY);
-      rectTarget.setAttribute('width', Math.max(targetBoxW, 4));
-      rectTarget.setAttribute('height', Math.max(targetBoxH, 4));
-      rectTarget.setAttribute('fill', '#fff7ed');
-      rectTarget.setAttribute('stroke', '#ea580c');
-      rectTarget.setAttribute('stroke-width', '2');
-      rectTarget.setAttribute('stroke-dasharray', '4');
-      rectTarget.setAttribute('rx', '2');
-      svg.appendChild(rectTarget);
+      // The drawing is deliberately kept inside a safe central area.
+      // Difference labels are placed above/below the drawing, so the
+      // vertical-difference text can never be clipped at the right edge.
+      const boxArea = { x: 70, y: 62, w: 280, h: 158 };
+      const scale = Math.min(boxArea.w / maxW, boxArea.h / maxH);
 
-      // 2. Actual Screen Box (Blue Filled Rectangle)
-      const rectScreen = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      rectScreen.setAttribute('x', screenX);
-      rectScreen.setAttribute('y', screenY);
-      rectScreen.setAttribute('width', Math.max(totalBoxW, 4));
-      rectScreen.setAttribute('height', Math.max(totalBoxH, 4));
-      rectScreen.setAttribute('fill', '#2563eb');
-      rectScreen.setAttribute('fill-opacity', '0.18');
-      rectScreen.setAttribute('stroke', '#2563eb');
-      rectScreen.setAttribute('stroke-width', '2.5');
-      rectScreen.setAttribute('rx', '2');
-      svg.appendChild(rectScreen);
+      const targetBoxW = Math.max(8, targetW * scale);
+      const targetBoxH = Math.max(8, targetH * scale);
+      const screenBoxW = Math.max(8, totalW * scale);
+      const screenBoxH = Math.max(8, totalH * scale);
 
-      // 3. Difference Labels Positioned safely inside the expanded padding bounds
-      const infoGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      
+      const outerW = Math.max(targetBoxW, screenBoxW);
+      const outerH = Math.max(targetBoxH, screenBoxH);
+      const outerX = boxArea.x + (boxArea.w - outerW) / 2;
+      const outerY = boxArea.y + (boxArea.h - outerH) / 2;
+
+      const targetX = outerX + (outerW - targetBoxW) / 2;
+      const targetY = outerY + (outerH - targetBoxH) / 2;
+      const screenX = outerX + (outerW - screenBoxW) / 2;
+      const screenY = outerY + (outerH - screenBoxH) / 2;
+
+      function el(name, attrs = {}, textContent = '') {
+        const node = document.createElementNS(NS, name);
+        Object.entries(attrs).forEach(([k, v]) => node.setAttribute(k, v));
+        if (textContent !== '') node.textContent = textContent;
+        return node;
+      }
+
+      function addText(x, y, txt, attrs = {}) {
+        svg.appendChild(el('text', {
+          x, y,
+          'font-family': 'Arial, sans-serif',
+          ...attrs
+        }, txt));
+      }
+
       const signW = diffW > 0 ? '+' : '';
       const signH = diffH > 0 ? '+' : '';
+      const fmt = n => Number(n).toLocaleString(undefined, { maximumFractionDigits: 1 });
 
-      // Top Width Difference label
-      const topLabelY = Math.min(targetY, screenY) - 10;
-      const textW = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      textW.setAttribute('x', startX + Math.max(targetBoxW, totalBoxW) / 2);
-      textW.setAttribute('y', Math.max(topLabelY, 14));
-      textW.setAttribute('text-anchor', 'middle');
-      textW.setAttribute('font-size', '9.5');
-      textW.setAttribute('font-weight', '700');
-      textW.setAttribute('fill', diffW === 0 ? '#475569' : '#1e40af');
-      textW.textContent = `${dict.diffWidth}: ${signW}${diffW}mm (좌우 ${signW}${halfDiffW}mm)`;
-      infoGroup.appendChild(textW);
+      // Title/helper line
+      addText(W / 2, 18, dict.diagramTitle.replace(/^📐\s*/, ''), {
+        'text-anchor': 'middle', 'font-size': '12', 'font-weight': '700', fill: '#0f172a'
+      });
 
-      // Right Height Difference label positioned with adequate right padding boundary
-      const rightLabelX = Math.max(targetX + targetBoxW, screenX + totalBoxW) + 8;
-      const textH = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      textH.setAttribute('x', Math.min(rightLabelX, svgWidth - 110));
-      textH.setAttribute('y', startY + Math.max(targetBoxH, totalBoxH) / 2);
-      textH.setAttribute('text-anchor', 'start');
-      textH.setAttribute('dominant-baseline', 'middle');
-      textH.setAttribute('font-size', '9.5');
-      textH.setAttribute('font-weight', '700');
-      textH.setAttribute('fill', diffH === 0 ? '#475569' : '#1e40af');
-      textH.textContent = `${dict.diffHeight}: ${signH}${diffH}mm (상하 ${signH}${halfDiffH}mm)`;
-      infoGroup.appendChild(textH);
+      // Width difference: safely above the rectangles.
+      const widthText = diffW === 0
+        ? `${dict.diffWidth}: 0mm (${currentLang === 'ko' ? '일치' : 'Match'})`
+        : `${dict.diffWidth}: ${signW}${fmt(diffW)}mm  •  ${currentLang === 'ko' ? '좌우' : 'L/R'} ${signW}${fmt(halfDiffW)}mm`;
+      addText(W / 2, 40, widthText, {
+        'text-anchor': 'middle', 'font-size': '10.5', 'font-weight': '700',
+        fill: diffW === 0 ? '#475569' : (diffW > 0 ? '#1e40af' : '#991b1b')
+      });
 
-      svg.appendChild(infoGroup);
+      // Target space
+      svg.appendChild(el('rect', {
+        x: targetX, y: targetY, width: targetBoxW, height: targetBoxH,
+        fill: '#fff7ed', stroke: '#ea580c', 'stroke-width': '2',
+        'stroke-dasharray': '5 4', rx: '3'
+      }));
 
-      // 4. Legend Section at the bottom of SVG
-      const legendGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      legendGroup.setAttribute('transform', `translate(20, 222)`);
+      // Actual screen
+      svg.appendChild(el('rect', {
+        x: screenX, y: screenY, width: screenBoxW, height: screenBoxH,
+        fill: '#2563eb', 'fill-opacity': '0.18', stroke: '#2563eb',
+        'stroke-width': '2.5', rx: '3'
+      }));
 
-      const indicator1 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      indicator1.setAttribute('x', '0');
-      indicator1.setAttribute('y', '-7');
-      indicator1.setAttribute('width', '10');
-      indicator1.setAttribute('height', '10');
-      indicator1.setAttribute('fill', '#fff7ed');
-      indicator1.setAttribute('stroke', '#ea580c');
-      indicator1.setAttribute('stroke-dasharray', '2');
-      indicator1.setAttribute('stroke-width', '1.5');
-      legendGroup.appendChild(indicator1);
+      // Labels inside the drawing when there is enough room.
+      if (targetBoxW >= 100 && targetBoxH >= 30) {
+        addText(targetX + targetBoxW / 2, targetY + 16,
+          `${dict.legendSpace} ${fmt(targetW)}×${fmt(targetH)}mm`, {
+            'text-anchor': 'middle', 'font-size': '9', 'font-weight': '700', fill: '#c2410c'
+          });
+      }
+      if (screenBoxW >= 100 && screenBoxH >= 30) {
+        addText(screenX + screenBoxW / 2, screenY + screenBoxH - 9,
+          `${dict.legendScreen} ${fmt(totalW)}×${fmt(totalH)}mm`, {
+            'text-anchor': 'middle', 'font-size': '9', 'font-weight': '700', fill: '#1e3a8a'
+          });
+      }
 
-      const text1 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text1.setAttribute('x', '14');
-      text1.setAttribute('y', '0');
-      text1.setAttribute('font-size', '10');
-      text1.setAttribute('fill', '#ea580c');
-      text1.setAttribute('font-weight', '700');
-      text1.textContent = `${dict.legendSpace} (${targetW}×${targetH})`;
-      legendGroup.appendChild(text1);
+      // Height difference: moved below the drawing instead of to the right.
+      const heightText = diffH === 0
+        ? `${dict.diffHeight}: 0mm (${currentLang === 'ko' ? '일치' : 'Match'})`
+        : `${dict.diffHeight}: ${signH}${fmt(diffH)}mm  •  ${currentLang === 'ko' ? '상하' : 'T/B'} ${signH}${fmt(halfDiffH)}mm`;
+      addText(W / 2, 238, heightText, {
+        'text-anchor': 'middle', 'font-size': '10.5', 'font-weight': '700',
+        fill: diffH === 0 ? '#475569' : (diffH > 0 ? '#1e40af' : '#991b1b')
+      });
 
-      const indicator2 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      indicator2.setAttribute('x', '180');
-      indicator2.setAttribute('y', '-7');
-      indicator2.setAttribute('width', '10');
-      indicator2.setAttribute('height', '10');
-      indicator2.setAttribute('fill', '#2563eb');
-      indicator2.setAttribute('fill-opacity', '0.3');
-      indicator2.setAttribute('stroke', '#2563eb');
-      indicator2.setAttribute('stroke-width', '1.5');
-      legendGroup.appendChild(indicator2);
+      // Simple, separated legend at the bottom for image-copy readability.
+      const legendY = 266;
+      svg.appendChild(el('rect', {
+        x: 48, y: legendY - 9, width: 11, height: 11,
+        fill: '#fff7ed', stroke: '#ea580c', 'stroke-width': '1.5',
+        'stroke-dasharray': '3 2'
+      }));
+      addText(65, legendY, `${dict.legendSpace} (${fmt(targetW)}×${fmt(targetH)}mm)`, {
+        'font-size': '9.5', 'font-weight': '700', fill: '#c2410c'
+      });
 
-      const text2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text2.setAttribute('x', '194');
-      text2.setAttribute('y', '0');
-      text2.setAttribute('font-size', '10');
-      text2.setAttribute('fill', '#1e3a8a');
-      text2.setAttribute('font-weight', '700');
-      text2.textContent = `${dict.legendScreen} (${totalW}×${totalH})`;
-      legendGroup.appendChild(text2);
-
-      svg.appendChild(legendGroup);
+      svg.appendChild(el('rect', {
+        x: 238, y: legendY - 9, width: 11, height: 11,
+        fill: '#2563eb', 'fill-opacity': '0.3', stroke: '#2563eb', 'stroke-width': '1.5'
+      }));
+      addText(255, legendY, `${dict.legendScreen} (${fmt(totalW)}×${fmt(totalH)}mm)`, {
+        'font-size': '9.5', 'font-weight': '700', fill: '#1e3a8a'
+      });
     }
 
     function shareResults() {
@@ -1552,29 +1648,30 @@
       const resolution = document.getElementById('resResolution').innerText;
       const ratio = document.getElementById('resRatio').innerText;
 
-      let textToCopy = `📌 [${title}]\n`;
+      // Plain, line-separated report for much better readability in
+      // KakaoTalk, email, notes and other apps after copying.
+      let textToCopy = `${title}\n`;
+      textToCopy += `==============================\n`;
+      textToCopy += `${i18n[currentLang].resInputModSize}: ${inputModSize}\n`;
+      textToCopy += `${i18n[currentLang].resInputTargetSize}: ${inputTargetSize}\n`;
+      textToCopy += `${i18n[currentLang].resSize}: ${size}\n`;
+      textToCopy += `  ${diffWText}\n`;
+      textToCopy += `  ${diffHText}\n`;
+      textToCopy += `${i18n[currentLang].resInputPitch}: ${inputPitch}\n`;
       textToCopy += `------------------------------\n`;
-      textToCopy += `▪ ${i18n[currentLang].resInputModSize}: ${inputModSize}\n`;
-      textToCopy += `▪ ${i18n[currentLang].resInputTargetSize}: ${inputTargetSize}\n`;
-      textToCopy += `▪ ${i18n[currentLang].resSize}: ${size}\n`;
-      textToCopy += `  - ${diffWText}\n`;
-      textToCopy += `  - ${diffHText}\n`;
-      textToCopy += `▪ ${i18n[currentLang].resInputPitch}: ${inputPitch}\n`;
-      textToCopy += `------------------------------\n`;
-      textToCopy += `▪ ${i18n[currentLang].resModCount}: ${modCount}\n`;
-      textToCopy += `▪ ${i18n[currentLang].resResolution}: ${resolution}\n`;
-      textToCopy += `▪ ${i18n[currentLang].resRatio}: ${ratio}\n`;
+      textToCopy += `${i18n[currentLang].resModCount}: ${modCount}\n`;
+      textToCopy += `${i18n[currentLang].resResolution}: ${resolution}\n`;
+      textToCopy += `${i18n[currentLang].resRatio}: ${ratio}\n`;
+
       if (memo) {
         textToCopy += `------------------------------\n`;
-        textToCopy += `📝 ${i18n[currentLang].resMemo}:\n${memo}\n`;
+        textToCopy += `${i18n[currentLang].resMemo}:\n${memo}\n`;
       }
 
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(textToCopy).then(() => {
           showToast(i18n[currentLang].toastCopied);
-        }).catch(() => {
-          fallbackCopy(textToCopy);
-        });
+        }).catch(() => fallbackCopy(textToCopy));
       } else {
         fallbackCopy(textToCopy);
       }
