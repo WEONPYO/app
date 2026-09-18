@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>LED Display Calculator</title>
+  <title>LED Display Calculator with Popup Widget</title>
   <style>
     :root {
       --bg-color: #f8fafc;
@@ -15,6 +15,7 @@
       --border: #e2e8f0;
       --accent: #f1f5f9;
       --success: #10b981;
+      --success-hover: #059669;
     }
 
     * {
@@ -32,6 +33,7 @@
       display: flex;
       justify-content: center;
       min-height: 100vh;
+      position: relative;
     }
 
     .app-container {
@@ -41,6 +43,7 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
+      padding-bottom: 70px; /* Space for floating trigger button on mobile */
     }
 
     .header-bar {
@@ -48,6 +51,8 @@
       justify-content: space-between;
       align-items: center;
       padding: 4px 0;
+      gap: 6px;
+      flex-wrap: wrap;
     }
 
     .lang-selector {
@@ -76,7 +81,13 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
 
-    .fullscreen-btn {
+    .header-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .action-btn {
       background: #ffffff;
       border: 1px solid var(--border);
       padding: 6px 10px;
@@ -89,6 +100,11 @@
       gap: 4px;
       cursor: pointer;
       box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      transition: background 0.2s;
+    }
+
+    .action-btn:hover {
+      background: var(--accent);
     }
 
     h1 {
@@ -233,6 +249,10 @@
       margin-top: 12px;
     }
 
+    .btn-share:hover {
+      background-color: var(--success-hover);
+    }
+
     .btn-reset {
       background-color: transparent;
       color: var(--text-muted);
@@ -281,19 +301,188 @@
       font-size: 1.05rem;
     }
 
+    .floating-calc-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: #0f172a;
+      color: white;
+      border: none;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.4rem;
+      z-index: 900;
+      transition: transform 0.2s, background 0.2s;
+    }
+
+    .floating-calc-btn:hover {
+      transform: scale(1.08);
+      background: #1e293b;
+    }
+
+    .calc-popup-overlay {
+      position: fixed;
+      top: 60px;
+      right: 16px;
+      width: 310px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    .calc-popup-overlay.active {
+      display: flex;
+    }
+
+    .calc-header {
+      background: #0f172a;
+      color: white;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: move;
+      user-select: none;
+    }
+
+    .calc-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .calc-close-btn {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.1rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .calc-close-btn:hover {
+      color: #ffffff;
+      background: rgba(255,255,255,0.1);
+    }
+
+    .calc-body {
+      padding: 12px;
+    }
+
+    .calc-screen-container {
+      background: #1e293b;
+      border-radius: 10px;
+      padding: 8px 12px;
+      margin-bottom: 10px;
+      text-align: right;
+    }
+
+    .calc-history {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      min-height: 16px;
+      word-break: break-all;
+    }
+
+    .calc-display {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #ffffff;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .calc-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .calc-btn {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      transition: background 0.1s, transform 0.05s;
+    }
+
+    .calc-btn:active {
+      transform: scale(0.96);
+      background: #cbd5e1;
+    }
+
+    .calc-btn.op {
+      background: #e0f2fe;
+      color: #0284c7;
+    }
+
+    .calc-btn.action {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .calc-btn.equals {
+      background: #2563eb;
+      color: white;
+      grid-column: span 1;
+    }
+
+    .calc-copy-btn {
+      margin-top: 10px;
+      width: 100%;
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .calc-copy-btn:hover {
+      background: #059669;
+    }
+
     .toast {
       position: fixed;
       bottom: 24px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(15, 23, 42, 0.9);
+      background: rgba(15, 23, 42, 0.95);
       color: white;
       padding: 10px 20px;
       border-radius: 30px;
       font-size: 0.85rem;
       display: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 2000;
     }
   </style>
 </head>
@@ -308,9 +497,14 @@
         <button class="lang-btn" id="btnLangJa" onclick="setLanguage('ja')">JA</button>
       </div>
 
-      <button class="fullscreen-btn" onclick="toggleFullscreen()">
-        <span id="fsIcon">⛶</span> <span id="lblFullscreen">전체화면</span>
-      </button>
+      <div class="header-actions">
+        <button class="action-btn" onclick="toggleCalcPopup()">
+          🧮 <span id="lblHeaderCalc">계산기</span>
+        </button>
+        <button class="action-btn" onclick="toggleFullscreen()">
+          <span id="fsIcon">⛶</span> <span id="lblFullscreen">전체화면</span>
+        </button>
+      </div>
     </div>
 
     <div>
@@ -452,6 +646,52 @@
     </div>
   </div>
 
+  <button class="floating-calc-btn" onclick="toggleCalcPopup()" title="계산기 열기">🧮</button>
+
+  <div class="calc-popup-overlay" id="calcPopup">
+    <div class="calc-header" id="calcHeader">
+      <div class="calc-title">
+        <span>🧮</span> <span id="lblPopupTitle">미니 계산기</span>
+      </div>
+      <button class="calc-close-btn" onclick="toggleCalcPopup()">✕</button>
+    </div>
+    <div class="calc-body">
+      <div class="calc-screen-container">
+        <div class="calc-history" id="calcHistory">&nbsp;</div>
+        <div class="calc-display" id="calcDisplay">0</div>
+      </div>
+      <div class="calc-grid">
+        <button class="calc-btn action" onclick="calcInput('C')">C</button>
+        <button class="calc-btn action" onclick="calcInput('DEL')">⌫</button>
+        <button class="calc-btn op" onclick="calcInput('%')">%</button>
+        <button class="calc-btn op" onclick="calcInput('/')">÷</button>
+
+        <button class="calc-btn" onclick="calcInput('7')">7</button>
+        <button class="calc-btn" onclick="calcInput('8')">8</button>
+        <button class="calc-btn" onclick="calcInput('9')">9</button>
+        <button class="calc-btn op" onclick="calcInput('*')">×</button>
+
+        <button class="calc-btn" onclick="calcInput('4')">4</button>
+        <button class="calc-btn" onclick="calcInput('5')">5</button>
+        <button class="calc-btn" onclick="calcInput('6')">6</button>
+        <button class="calc-btn op" onclick="calcInput('-')">-</button>
+
+        <button class="calc-btn" onclick="calcInput('1')">1</button>
+        <button class="calc-btn" onclick="calcInput('2')">2</button>
+        <button class="calc-btn" onclick="calcInput('3')">3</button>
+        <button class="calc-btn op" onclick="calcInput('+')">+</button>
+
+        <button class="calc-btn" onclick="calcInput('00')">00</button>
+        <button class="calc-btn" onclick="calcInput('0')">0</button>
+        <button class="calc-btn" onclick="calcInput('.')">.</button>
+        <button class="calc-btn equals" onclick="calcInput('=')">=</button>
+      </div>
+      <button class="calc-copy-btn" onclick="copyCalcResult()">
+        📋 <span id="lblCopyCalcRes">결과 복사</span>
+      </button>
+    </div>
+  </div>
+
   <div id="toast" class="toast">클립보드에 결과가 복사되었습니다!</div>
 
   <script>
@@ -460,6 +700,9 @@
         appTitle: "LED 디스플레이 모듈 계산기",
         appSub: "입력 및 결과 창 분리형 스마트 계산기",
         fullscreen: "전체화면",
+        headerCalc: "계산기",
+        popupTitle: "미니 계산기",
+        copyCalcRes: "결과 복사",
         tabInput: "⚙️ 입력창",
         tabResult: "📊 결과창",
         title: "프로젝트 제목",
@@ -502,6 +745,9 @@
         appTitle: "LED Display Module Calculator",
         appSub: "Smart Calculator with Tabbed Navigation",
         fullscreen: "Fullscreen",
+        headerCalc: "Calculator",
+        popupTitle: "Mini Calculator",
+        copyCalcRes: "Copy Result",
         tabInput: "⚙️ Input",
         tabResult: "📊 Results",
         title: "Project Title",
@@ -544,6 +790,9 @@
         appTitle: "LED 显示屏模块计算器",
         appSub: "输入与结果分屏智能计算器",
         fullscreen: "全屏模式",
+        headerCalc: "计算器",
+        popupTitle: "迷你计算器",
+        copyCalcRes: "复制结果",
         tabInput: "⚙️ 输入页",
         tabResult: "📊 结果页",
         title: "项目名称",
@@ -584,8 +833,11 @@
       },
       ja: {
         appTitle: "LED ディスプレイモジュール計算機",
-        appSub: "入力と結果が分かれたスマート計算機",
+        appSub: "入力과 結果가 分かれたスマート計算機",
         fullscreen: "全画面",
+        headerCalc: "電卓",
+        popupTitle: "ミニ電卓",
+        copyCalcRes: "結果をコピー",
         tabInput: "⚙️ 入力",
         tabResult: "📊 結果",
         title: "プロジェクトタイトル",
@@ -629,6 +881,142 @@
     let currentLang = 'ko';
     const STORAGE_KEY = 'LED_CALC_DATA_V3';
 
+    let calcExpression = '';
+    let calcCurrentVal = '0';
+    let isEvaluated = false;
+
+    function toggleCalcPopup() {
+      const popup = document.getElementById('calcPopup');
+      popup.classList.toggle('active');
+    }
+
+    function calcInput(key) {
+      const display = document.getElementById('calcDisplay');
+      const history = document.getElementById('calcHistory');
+
+      if (key === 'C') {
+        calcExpression = '';
+        calcCurrentVal = '0';
+        isEvaluated = false;
+        history.innerHTML = '&nbsp;';
+      } else if (key === 'DEL') {
+        if (isEvaluated) {
+          calcExpression = '';
+          calcCurrentVal = '0';
+          isEvaluated = false;
+        } else {
+          calcCurrentVal = calcCurrentVal.length > 1 ? calcCurrentVal.slice(0, -1) : '0';
+        }
+      } else if (['+', '-', '*', '/', '%'].includes(key)) {
+        if (isEvaluated) {
+          calcExpression = calcCurrentVal + ' ' + key + ' ';
+          isEvaluated = false;
+        } else {
+          calcExpression += calcCurrentVal + ' ' + key + ' ';
+        }
+        calcCurrentVal = '0';
+        history.innerText = calcExpression;
+      } else if (key === '=') {
+        if (!isEvaluated) {
+          const fullExpr = calcExpression + calcCurrentVal;
+          try {
+            // Safe evaluation of mathematical expression
+            const sanitized = fullExpr.replace(/×/g, '*').replace(/÷/g, '/');
+            let res = eval(sanitized);
+            if (typeof res === 'number') {
+              res = Math.round(res * 1000000) / 1000000; // Round to avoid float precision issues
+            }
+            history.innerText = fullExpr + ' =';
+            calcCurrentVal = String(res);
+            calcExpression = '';
+            isEvaluated = true;
+          } catch (e) {
+            calcCurrentVal = 'Error';
+            isEvaluated = true;
+          }
+        }
+      } else {
+        // Number or dot input
+        if (isEvaluated) {
+          calcCurrentVal = key === '.' ? '0.' : key;
+          calcExpression = '';
+          isEvaluated = false;
+        } else {
+          if (calcCurrentVal === '0' && key !== '.') {
+            calcCurrentVal = key;
+          } else if (key === '.' && calcCurrentVal.includes('.')) {
+            return;
+          } else {
+            calcCurrentVal += key;
+          }
+        }
+      }
+
+      display.innerText = calcCurrentVal;
+    }
+
+    function copyCalcResult() {
+      const val = document.getElementById('calcDisplay').innerText;
+      if (val === 'Error') return;
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(val).then(() => {
+          showToast(i18n[currentLang].toastCopied);
+        }).catch(() => {
+          fallbackCopy(val);
+        });
+      } else {
+        fallbackCopy(val);
+      }
+    }
+
+    (function setupDraggable() {
+      const popup = document.getElementById('calcPopup');
+      const header = document.getElementById('calcHeader');
+      let isDragging = false;
+      let startX, startY, initialLeft, initialTop;
+
+      header.addEventListener('mousedown', startDrag);
+      header.addEventListener('touchstart', startDrag, { passive: false });
+
+      function startDrag(e) {
+        if (e.target.classList.contains('calc-close-btn')) return;
+        isDragging = true;
+        const event = e.touches ? e.touches[0] : e;
+        startX = event.clientX;
+        startY = event.clientY;
+
+        const rect = popup.getBoundingClientRect();
+        initialLeft = rect.left;
+        initialTop = rect.top;
+
+        document.addEventListener('mousemove', onDrag);
+        document.addEventListener('touchmove', onDrag, { passive: false });
+        document.addEventListener('mouseup', stopDrag);
+        document.addEventListener('touchend', stopDrag);
+      }
+
+      function onDrag(e) {
+        if (!isDragging) return;
+        if (e.cancelable) e.preventDefault();
+        const event = e.touches ? e.touches[0] : e;
+        const deltaX = event.clientX - startX;
+        const deltaY = event.clientY - startY;
+
+        popup.style.left = `${initialLeft + deltaX}px`;
+        popup.style.top = `${initialTop + deltaY}px`;
+        popup.style.right = 'auto'; // Disable CSS right positioning once dragged
+      }
+
+      function stopDrag() {
+        isDragging = false;
+        document.removeEventListener('mousemove', onDrag);
+        document.removeEventListener('touchmove', onDrag);
+        document.removeEventListener('mouseup', stopDrag);
+        document.removeEventListener('touchend', stopDrag);
+      }
+    })();
+
     function switchTab(tabName) {
       document.getElementById('viewInput').classList.remove('active');
       document.getElementById('viewResult').classList.remove('active');
@@ -662,6 +1050,10 @@
       document.getElementById('lblAppTitle').innerText = dict.appTitle;
       document.getElementById('lblAppSub').innerText = dict.appSub;
       document.getElementById('lblFullscreen').innerText = dict.fullscreen;
+      document.getElementById('lblHeaderCalc').innerText = dict.headerCalc;
+      document.getElementById('lblPopupTitle').innerText = dict.popupTitle;
+      document.getElementById('lblCopyCalcRes').innerText = dict.copyCalcRes;
+
       document.getElementById('tabInputBtn').innerText = dict.tabInput;
       document.getElementById('tabResultBtn').innerText = dict.tabResult;
       document.getElementById('lblTitle').innerText = dict.title;
