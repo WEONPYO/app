@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>WP LED Display Calculator</title>
+  <!-- html2canvas for image export functionality -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     :root {
       --bg-color: #f8fafc;
@@ -11,11 +13,13 @@
       --primary: #2563eb;
       --primary-hover: #1d4ed8;
       --text-main: #0f172a;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
+      --text-muted: #475569;
+      --border: #cbd5e1;
       --accent: #f1f5f9;
-      --success: #10b981;
-      --success-hover: #059669;
+      --success: #059669;
+      --success-hover: #047857;
+      --memo-bg: #f8fafc;
+      --memo-border: #94a3b8;
     }
 
     * {
@@ -60,7 +64,7 @@
       gap: 4px;
       background: var(--border);
       padding: 3px;
-      border-radius: 8px;
+      border-radius: 6px;
     }
 
     .lang-btn {
@@ -68,9 +72,9 @@
       border: none;
       padding: 5px 8px;
       font-size: 0.75rem;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--text-muted);
-      border-radius: 6px;
+      border-radius: 4px;
       cursor: pointer;
       transition: all 0.2s;
     }
@@ -91,7 +95,7 @@
       background: #ffffff;
       border: 1px solid var(--border);
       padding: 6px 10px;
-      border-radius: 8px;
+      border-radius: 6px;
       font-size: 0.8rem;
       font-weight: 600;
       color: var(--text-main);
@@ -124,9 +128,9 @@
 
     .tab-nav {
       display: flex;
-      background: #e2e8f0;
+      background: #cbd5e1;
       padding: 4px;
-      border-radius: 12px;
+      border-radius: 6px;
       gap: 4px;
     }
 
@@ -134,7 +138,7 @@
       flex: 1;
       padding: 10px;
       border: none;
-      border-radius: 8px;
+      border-radius: 4px;
       font-size: 0.9rem;
       font-weight: 700;
       color: var(--text-muted);
@@ -161,8 +165,8 @@
     .card {
       background: var(--card-bg);
       padding: 18px;
-      border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
       border: 1px solid var(--border);
     }
 
@@ -173,7 +177,7 @@
     label {
       display: block;
       font-size: 0.825rem;
-      font-weight: 600;
+      font-weight: 700;
       margin-bottom: 6px;
       color: var(--text-main);
     }
@@ -191,7 +195,7 @@
       width: 100%;
       padding: 10px 12px;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 6px;
       font-size: 0.9rem;
       background-color: #fafafa;
       color: var(--text-main);
@@ -213,13 +217,14 @@
       font-size: 0.8rem;
       color: var(--text-muted);
       white-space: nowrap;
+      font-weight: 600;
     }
 
     .btn {
       width: 100%;
       padding: 12px;
       border: none;
-      border-radius: 10px;
+      border-radius: 6px;
       font-size: 0.95rem;
       font-weight: 700;
       cursor: pointer;
@@ -253,6 +258,16 @@
       background-color: var(--success-hover);
     }
 
+    .btn-image-share {
+      background-color: #0284c7;
+      color: white;
+      margin-top: 8px;
+    }
+
+    .btn-image-share:hover {
+      background-color: #0369a1;
+    }
+
     .btn-reset {
       background-color: transparent;
       color: var(--text-muted);
@@ -260,7 +275,7 @@
       margin-top: 8px;
       padding: 8px;
       font-size: 0.8rem;
-      font-weight: 500;
+      font-weight: 600;
     }
 
     .result-list {
@@ -271,11 +286,13 @@
 
     .result-card-item {
       background: var(--accent);
-      padding: 14px;
-      border-radius: 10px;
+      padding: 12px 14px;
+      border-radius: 6px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 12px;
+      border: 1px solid #e2e8f0;
     }
 
     .result-card-item.highlight-box {
@@ -286,19 +303,102 @@
     .res-label {
       font-size: 0.825rem;
       color: var(--text-muted);
-      font-weight: 500;
+      font-weight: 700;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .res-val {
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       font-weight: 700;
       color: var(--text-main);
       text-align: right;
+      word-break: break-all;
     }
 
     .res-val.primary-text {
       color: var(--primary);
-      font-size: 1.05rem;
+      font-size: 0.95rem;
+    }
+
+    .diff-details-container {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .diff-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: #e2e8f0;
+      color: #1e293b;
+    }
+    .diff-badge.plus {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    .diff-badge.minus {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .diff-badge.zero {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    /* Enhanced Memo Result Card */
+    .memo-result-item {
+      background: #ffffff;
+      border: 1.5px solid var(--memo-border);
+      padding: 14px;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .memo-result-title {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .memo-result-text {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #1e293b;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #f8fafc;
+      width: 100%;
+      padding: 10px;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .diagram-container {
+      margin-top: 14px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      text-align: center;
+    }
+    .diagram-title {
+      font-size: 0.825rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 8px;
     }
 
     .floating-calc-btn {
@@ -331,10 +431,10 @@
       top: 60px;
       right: 16px;
       width: 310px;
-      background: rgba(255, 255, 255, 0.92);
+      background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-      border-radius: 16px;
+      border-radius: 8px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
       border: 1px solid rgba(255, 255, 255, 0.5);
       z-index: 1000;
@@ -361,7 +461,7 @@
 
     .calc-title {
       font-size: 0.85rem;
-      font-weight: 600;
+      font-weight: 700;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -389,7 +489,7 @@
 
     .calc-screen-container {
       background: #1e293b;
-      border-radius: 10px;
+      border-radius: 6px;
       padding: 8px 12px;
       margin-bottom: 10px;
       text-align: right;
@@ -418,11 +518,11 @@
 
     .calc-btn {
       background: #f1f5f9;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
       padding: 10px 0;
       font-size: 1rem;
-      font-weight: 600;
+      font-weight: 700;
       color: #334155;
       cursor: pointer;
       transition: background 0.1s, transform 0.05s;
@@ -452,13 +552,13 @@
     .calc-copy-btn {
       margin-top: 10px;
       width: 100%;
-      background: #10b981;
+      background: #059669;
       color: white;
       border: none;
       padding: 8px;
-      border-radius: 8px;
+      border-radius: 6px;
       font-size: 0.8rem;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       display: flex;
       justify-content: center;
@@ -467,7 +567,7 @@
     }
 
     .calc-copy-btn:hover {
-      background: #059669;
+      background: #047857;
     }
 
     .toast {
@@ -480,6 +580,7 @@
       padding: 10px 20px;
       border-radius: 30px;
       font-size: 0.85rem;
+      font-weight: 600;
       display: none;
       box-shadow: 0 4px 12px rgba(0,0,0,0.2);
       z-index: 2000;
@@ -501,7 +602,7 @@
     .error-card {
       background: var(--card-bg);
       padding: 30px;
-      border-radius: 16px;
+      border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       border: 1px solid var(--border);
       text-align: center;
@@ -523,6 +624,119 @@
       color: var(--text-muted);
       line-height: 1.5;
     }
+    /* ===== Readability / mobile UX improvements ===== */
+    .card {
+      padding: 16px;
+    }
+
+    .result-list {
+      gap: 8px;
+    }
+
+    .result-card-item {
+      display: grid;
+      grid-template-columns: minmax(92px, 34%) minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
+      padding: 11px 12px;
+    }
+
+    .res-label {
+      white-space: normal;
+      line-height: 1.35;
+    }
+
+    .res-val {
+      min-width: 0;
+      text-align: left;
+      overflow-wrap: anywhere;
+      word-break: normal;
+      line-height: 1.4;
+    }
+
+    .result-card-item .res-val[style] {
+      align-items: flex-start !important;
+    }
+
+    .diff-details-container {
+      width: 100%;
+      align-items: flex-start;
+    }
+
+    .diff-badge {
+      max-width: 100%;
+      white-space: normal;
+      line-height: 1.35;
+      text-align: left;
+    }
+
+    .memo-result-item {
+      padding: 12px;
+      gap: 8px;
+    }
+
+    .memo-result-text {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .diagram-container {
+      margin-top: 12px;
+      padding: 12px;
+    }
+
+    .diagram-scroll {
+      width: 100%;
+      overflow: hidden;
+      border-radius: 8px;
+    }
+
+    #comparisonSvg {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 240px;
+    }
+
+    .btn {
+      min-height: 46px;
+    }
+
+    @media (max-width: 380px) {
+      body { padding: 8px; }
+      .app-container { gap: 9px; }
+      .card { padding: 12px; }
+      .result-card-item {
+        grid-template-columns: 88px minmax(0, 1fr);
+        gap: 8px;
+        padding: 10px;
+      }
+      .res-label { font-size: 0.76rem; }
+      .res-val { font-size: 0.84rem; }
+      .diff-badge { font-size: 0.69rem; padding: 3px 6px; }
+      .diagram-container { padding: 8px; }
+    }
+
+    @media (min-width: 700px) {
+      .app-container { max-width: 620px; }
+      .result-card-item {
+        grid-template-columns: 180px minmax(0, 1fr);
+      }
+    }
+
+    /* Better text selection/copy readability */
+    #exportableResultCard {
+      color: #0f172a;
+    }
+
+    #exportableResultCard .res-val,
+    #exportableResultCard .memo-result-text {
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
   </style>
 </head>
 <body>
@@ -633,8 +847,9 @@
       </div>
     </div>
 
+    <!-- Result View Container optimized for image export & UI readability -->
     <div class="view-panel" id="viewResult">
-      <div class="card">
+      <div class="card" id="exportableResultCard">
         <div class="result-list">
           <div class="result-card-item">
             <span class="res-label" id="lblResTitle">프로젝트</span>
@@ -652,23 +867,24 @@
           </div>
 
           <div class="result-card-item">
-            <span class="res-label" id="lblResInputPitch">픽셀 피치</span>
-            <span class="res-val" id="resInputPitch">1.86 mm</span>
+            <span class="res-label" id="lblResSize">실제 화면 크기</span>
+            <div class="res-val" style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+              <span id="resSize">0 × 0 mm</span>
+              <div class="diff-details-container" id="resSizeDiffContainer">
+                <span id="resDiffW" class="diff-badge zero">가로 차이: 0mm (좌우: 0mm, 0mm)</span>
+                <span id="resDiffH" class="diff-badge zero">세로 차이: 0mm (상하: 0mm, 0mm)</span>
+              </div>
+            </div>
           </div>
 
           <div class="result-card-item">
-            <span class="res-label" id="lblResInputFitMode">크기 설정 기준</span>
-            <span class="res-val" id="resInputFitMode">가로: 작게 / 세로: 작게</span>
+            <span class="res-label" id="lblResInputPitch">픽셀 피치</span>
+            <span class="res-val" id="resInputPitch">1.86 mm</span>
           </div>
 
           <div class="result-card-item highlight-box">
             <span class="res-label" id="lblResModCount">총 모듈 개수</span>
             <span class="res-val primary-text" id="resModCount">0 개 (가로 0 × 세로 0)</span>
-          </div>
-
-          <div class="result-card-item">
-            <span class="res-label" id="lblResSize">실제 화면 크기</span>
-            <span class="res-val" id="resSize">0 × 0 mm</span>
           </div>
 
           <div class="result-card-item highlight-box">
@@ -678,18 +894,29 @@
 
           <div class="result-card-item">
             <span class="res-label" id="lblResRatio">계산된 화면 비율</span>
-            <span class="res-val" id="resRatio">16 : 9.00</span>
+            <span class="res-val" id="resRatio">16 : 9.0</span>
           </div>
 
-          <div class="result-card-item" id="memoResultContainer" style="display:none; flex-direction:column; align-items:flex-start; gap:4px;">
-            <span class="res-label" id="lblResMemo">메모 / 특이사항</span>
-            <span class="res-val" id="resMemoDisplay" style="text-align:left; font-weight:normal; font-size:0.85rem; color:var(--text-main); white-space:pre-wrap; word-break:break-word;"></span>
+          <!-- Enhanced Memo Result Card Section -->
+          <div class="memo-result-item" id="memoResultContainer" style="display:none;">
+            <span class="memo-result-title" id="lblResMemo">📝 메모 / 특이사항</span>
+            <span class="memo-result-text" id="resMemoDisplay"></span>
           </div>
         </div>
 
-        <button class="btn btn-share" onclick="shareResults()" id="btnShare">📤 제목, 결과, 메모 공유하기</button>
-        <button class="btn btn-primary" onclick="switchTab('input')" style="margin-top:8px; background-color:#475569;" id="btnBackToInput">⬅️ 입력창으로 돌아가기</button>
+        <div class="diagram-container">
+          <div class="diagram-title" id="lblDiagramTitle">📐 설치 공간 vs 실제 화면 비교도</div>
+          <!-- Expanded SVG Viewport and padding to prevent clipping of vertical/horizontal difference labels -->
+          <div class="diagram-scroll">
+            <svg id="comparisonSvg" width="100%" height="300" viewBox="0 0 420 300" preserveAspectRatio="xMidYMid meet" style="background:#ffffff; border-radius:8px; border:1px solid #cbd5e1;"></svg>
+          </div>
+        </div>
       </div>
+
+      <!-- Action buttons outside export card -->
+      <button class="btn btn-share" onclick="shareResults()" id="btnShare">📤 제목, 결과, 메모 텍스트 복사</button>
+      <button class="btn btn-image-share" onclick="shareResultsAsImage()" id="btnImageShare">🖼️ 결과 화면을 이미지로 복사/저장</button>
+      <button class="btn btn-primary" onclick="switchTab('input')" style="margin-top:8px; background-color:#475569;" id="btnBackToInput">⬅️ 입력창으로 돌아가기</button>
     </div>
   </div>
 
@@ -741,7 +968,816 @@
 
   <div id="toast" class="toast">클립보드에 결과가 복사되었습니다!</div>
 
-  <!-- 분리된 난독화 대상 자바스크립트 파일 -->
-  <script src="led_calculator.js"></script>
+  <script>
+    (function checkDomain() {
+      const hostname = window.location.hostname;
+      const isAllowed = hostname.includes('weonpyo.github.io') || 
+                        hostname === 'localhost' || 
+                        hostname === '127.0.0.1';
+      
+      if (!isAllowed) {
+        document.getElementById('error-page').style.display = 'flex';
+        const appContainer = document.getElementById('app');
+        if (appContainer) appContainer.style.display = 'none';
+        const floatBtn = document.querySelector('.floating-calc-btn');
+        if (floatBtn) floatBtn.style.display = 'none';
+      }
+    })();
+
+    const i18n = {
+      ko: {
+        appTitle: "LED 디스플레이 모듈 계산기",
+        appSub: "입력 및 결과 창 분리형 스마트 계산기",
+        fullscreen: "전체화면",
+        headerCalc: "계산기",
+        popupTitle: "미니 계산기",
+        copyCalcRes: "결과 복사",
+        tabInput: "⚙️ 입력창",
+        tabResult: "📊 결과창",
+        title: "프로젝트 제목",
+        titlePh: "예: 메인강당 LED 스크린",
+        modSize: "모듈 규격 (가로 x 세로, mm)",
+        targetSize: "설치 공간 크기 (가로 x 세로, mm)",
+        pitch: "픽셀 피치 (Pixel Pitch, mm)",
+        fitModeW: "가로 크기 설정 기준",
+        fitModeH: "세로 크기 설정 기준",
+        optSmaller: "공간보다 작게 (안전 범위 내)",
+        optLarger: "공간보다 크게 (가득 채움)",
+        baseRatio: "비교 기준 화면비 (가로 기준값)",
+        ratioUnit: "기반 (예: 16 입력시 16 : X)",
+        memo: "메모 / 특이사항",
+        memoPh: "현장 설치 여유공간, 프레임 두께 등 메모 작성",
+        btnCalculate: "📐 계산 및 결과 보기 ➔",
+        btnReset: "🔄 입력값 초기화",
+        resTitle: "프로젝트",
+        resInputModSize: "모듈 규격",
+        resInputTargetSize: "설치 공간",
+        resSize: "실제 화면",
+        resInputPitch: "픽셀 피치",
+        resModCount: "총 모듈 개수",
+        resResolution: "전체 해상도",
+        resRatio: "계산된 화면 비율",
+        resMemo: "메모 / 특이사항",
+        diagramTitle: "📐 설치 공간 vs 실제 화면 비교도",
+        legendSpace: "설치 공간",
+        legendScreen: "실제 화면",
+        diffWidth: "가로 차이",
+        diffHeight: "세로 차이",
+        btnShare: "📤 제목, 결과, 메모 텍스트 복사",
+        btnImageShare: "🖼️ 결과 화면을 이미지로 복사/저장",
+        btnBackToInput: "⬅️ 입력창으로 돌아가기",
+        modUnit: "개",
+        labelWidth: "가로",
+        labelHeight: "세로",
+        toastCopied: "클립보드에 결과가 복사되었습니다!",
+        toastImageCopied: "결과 화면 이미지가 클립보드에 복사되었습니다!",
+        copyFail: "복사에 실패했습니다.",
+        resetConfirm: "모든 입력값을 초기화하시겠습니까?"
+      },
+      en: {
+        appTitle: "LED Display Module Calculator",
+        appSub: "Smart Calculator with Tabbed Navigation",
+        fullscreen: "Fullscreen",
+        headerCalc: "Calculator",
+        popupTitle: "Mini Calculator",
+        copyCalcRes: "Copy Result",
+        tabInput: "⚙️ Input",
+        tabResult: "📊 Results",
+        title: "Project Title",
+        titlePh: "e.g., Main Hall LED Screen",
+        modSize: "Module Dimensions (W x H, mm)",
+        targetSize: "Available Space (W x H, mm)",
+        pitch: "Pixel Pitch (mm)",
+        fitModeW: "Width Sizing Strategy",
+        fitModeH: "Height Sizing Strategy",
+        optSmaller: "Smaller than space (Fit inside)",
+        optLarger: "Larger than space (Cover space)",
+        baseRatio: "Aspect Ratio Base (Width Ref)",
+        ratioUnit: "Base (e.g. 16 for 16:X)",
+        memo: "Memo / Notes",
+        memoPh: "Enter clearance, frame margins, or special notes",
+        btnCalculate: "📐 Calculate & View Results ➔",
+        btnReset: "🔄 Reset Inputs",
+        resTitle: "Project",
+        resInputModSize: "Module Size",
+        resInputTargetSize: "Target Space",
+        resSize: "Actual Screen",
+        resInputPitch: "Pixel Pitch",
+        resModCount: "Total Modules",
+        resResolution: "Total Resolution",
+        resRatio: "Calculated Aspect Ratio",
+        resMemo: "Memo / Notes",
+        diagramTitle: "📐 Space vs Actual Screen Comparison",
+        legendSpace: "Target Space",
+        legendScreen: "Actual Screen",
+        diffWidth: "Width Diff",
+        diffHeight: "Height Diff",
+        btnShare: "📤 Copy Text (Title, Results & Memo)",
+        btnImageShare: "🖼️ Copy/Save Results as Image",
+        btnBackToInput: "⬅️ Back to Inputs",
+        modUnit: "pcs",
+        labelWidth: "W",
+        labelHeight: "H",
+        toastCopied: "Results copied to clipboard!",
+        toastImageCopied: "Result image copied to clipboard!",
+        copyFail: "Failed to copy.",
+        resetConfirm: "Are you sure you want to reset all inputs?"
+      },
+      zh: {
+        appTitle: "LED 显示屏模块计算器",
+        appSub: "输入与结果分屏智能计算器",
+        fullscreen: "全屏模式",
+        headerCalc: "计算器",
+        popupTitle: "迷你计算器",
+        copyCalcRes: "复制结果",
+        tabInput: "⚙️ 输入页",
+        tabResult: "📊 结果页",
+        title: "项目名称",
+        titlePh: "例如：礼堂主屏 LED",
+        modSize: "模组尺寸 (宽 x 高, mm)",
+        targetSize: "安装空间 (宽 x 高, mm)",
+        pitch: "点间距 (Pixel Pitch, mm)",
+        fitModeW: "宽度尺寸适配标准",
+        fitModeH: "高度尺寸适配标准",
+        optSmaller: "小于安装空间 (安全范围内)",
+        optLarger: "大于安装空间 (完全覆盖)",
+        baseRatio: "对比屏幕比例 (基准宽度)",
+        ratioUnit: "基准 (例: 16 对应 16 : X)",
+        memo: "备注 / 特殊说明",
+        memoPh: "填写现场留空、边框厚度等备注",
+        btnCalculate: "📐 计算并查看结果 ➔",
+        btnReset: "🔄 重置输入",
+        resTitle: "项目",
+        resInputModSize: "模组尺寸",
+        resInputTargetSize: "安装空间",
+        resSize: "实际屏幕",
+        resInputPitch: "点间距",
+        resModCount: "模组总数量",
+        resResolution: "总分辨率",
+        resRatio: "计算所得屏幕比例",
+        resMemo: "备注 / 特殊说明",
+        diagramTitle: "📐 安装空间 vs 实际屏幕尺寸对比图",
+        legendSpace: "安装空间",
+        legendScreen: "实际屏幕",
+        diffWidth: "宽度差",
+        diffHeight: "高度差",
+        btnShare: "📤 复制文本 (标题、结果与备注)",
+        btnImageShare: "🖼️ 复制/保存结果图片",
+        btnBackToInput: "⬅️ 返回输入页",
+        modUnit: "块",
+        labelWidth: "宽",
+        labelHeight: "高",
+        toastCopied: "结果已成功复制到剪贴板！",
+        toastImageCopied: "结果图片已复制到剪贴板！",
+        copyFail: "复制失败。",
+        resetConfirm: "确定要重置所有输入内容吗？"
+      },
+      ja: {
+        appTitle: "LED ディスプレイモジュール計算機",
+        appSub: "入力と結果が分かれたスマート計算機",
+        fullscreen: "全画面",
+        headerCalc: "電卓",
+        popupTitle: "ミニ電卓",
+        copyCalcRes: "結果をコピー",
+        tabInput: "⚙️ 入力",
+        tabResult: "📊 結果",
+        title: "プロジェクトタイトル",
+        titlePh: "例: メインホール LEDスクリーン",
+        modSize: "モジュール規格 (幅 x 高さ, mm)",
+        targetSize: "設置スペース (幅 x 高さ, mm)",
+        pitch: "ピクセルピッチ (Pixel Pitch, mm)",
+        fitModeW: "横幅サイズ調整基準",
+        fitModeH: "高さサイズ調整基準",
+        optSmaller: "設置スペースより小さく (安全範囲内)",
+        optLarger: "設置スペースより大きく (全体をカバー)",
+        baseRatio: "比較基準画面比 (横幅基準)",
+        ratioUnit: "基準 (例: 16入力で 16 : X)",
+        memo: "メモ / 特記事項",
+        memoPh: "現場の余裕スペース、フレーム厚みなどのメモ",
+        btnCalculate: "📐 計算して結果を表示 ➔",
+        btnReset: "🔄 入力をリセット",
+        resTitle: "プロジェクト",
+        resInputModSize: "モジュール規格",
+        resInputTargetSize: "設置スペース",
+        resSize: "実際の画面",
+        resInputPitch: "ピクセルピッチ",
+        resModCount: "総モジュール数",
+        resResolution: "総解像度",
+        resRatio: "計算された画面比率",
+        resMemo: "メモ / 特記事項",
+        diagramTitle: "📐 設置スペース vs 実際の画面サイズ比較図",
+        legendSpace: "設置スペース",
+        legendScreen: "実際の画面",
+        diffWidth: "幅の差",
+        diffHeight: "高さの差",
+        btnShare: "📤 テキストコピー (タイトル・結果・メモ)",
+        btnImageShare: "🖼️ 結果を画像としてコピー/保存",
+        btnBackToInput: "⬅️ 入力画面に戻る",
+        modUnit: "個",
+        labelWidth: "幅",
+        labelHeight: "高さ",
+        toastCopied: "結果がクリップボードにコピーされました！",
+        toastImageCopied: "結果画像がクリップボードにコピーされました！",
+        copyFail: "コピーに失敗しました。",
+        resetConfirm: "すべての入力値をリセットしますか？"
+      }
+    };
+
+    let currentLang = 'ko';
+    const STORAGE_KEY = 'LED_CALC_DATA_V8';
+
+    let calcExpression = '';
+    let calcCurrentVal = '0';
+    let isEvaluated = false;
+
+    function toggleCalcPopup() {
+      const popup = document.getElementById('calcPopup');
+      popup.classList.toggle('active');
+    }
+
+    function calcInput(key) {
+      const display = document.getElementById('calcDisplay');
+      const history = document.getElementById('calcHistory');
+
+      if (key === 'C') {
+        calcExpression = '';
+        calcCurrentVal = '0';
+        isEvaluated = false;
+        history.innerHTML = '&nbsp;';
+      } else if (key === 'DEL') {
+        if (isEvaluated) {
+          calcExpression = '';
+          calcCurrentVal = '0';
+          isEvaluated = false;
+        } else {
+          calcCurrentVal = calcCurrentVal.length > 1 ? calcCurrentVal.slice(0, -1) : '0';
+        }
+      } else if (['+', '-', '*', '/', '%'].includes(key)) {
+        if (isEvaluated) {
+          calcExpression = calcCurrentVal + ' ' + key + ' ';
+          isEvaluated = false;
+        } else {
+          calcExpression += calcCurrentVal + ' ' + key + ' ';
+        }
+        calcCurrentVal = '0';
+        history.innerText = calcExpression;
+      } else if (key === '=') {
+        if (!isEvaluated) {
+          const fullExpr = calcExpression + calcCurrentVal;
+          try {
+            const sanitized = fullExpr.replace(/×/g, '*').replace(/÷/g, '/');
+            let res = eval(sanitized);
+            if (typeof res === 'number') {
+              res = Math.round(res * 1000000) / 1000000;
+            }
+            history.innerText = fullExpr + ' =';
+            calcCurrentVal = String(res);
+            calcExpression = '';
+            isEvaluated = true;
+          } catch (e) {
+            calcCurrentVal = 'Error';
+            isEvaluated = true;
+          }
+        }
+      } else {
+        if (isEvaluated) {
+          calcCurrentVal = key === '.' ? '0.' : key;
+          calcExpression = '';
+          isEvaluated = false;
+        } else {
+          if (calcCurrentVal === '0' && key !== '.') {
+            calcCurrentVal = key;
+          } else if (key === '.' && calcCurrentVal.includes('.')) {
+            return;
+          } else {
+            calcCurrentVal += key;
+          }
+        }
+      }
+
+      display.innerText = calcCurrentVal;
+    }
+
+    function copyCalcResult() {
+      const val = document.getElementById('calcDisplay').innerText;
+      if (val === 'Error') return;
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(val).then(() => {
+          showToast(i18n[currentLang].toastCopied);
+        }).catch(() => {
+          fallbackCopy(val);
+        });
+      } else {
+        fallbackCopy(val);
+      }
+    }
+
+    (function setupDraggable() {
+      const popup = document.getElementById('calcPopup');
+      const header = document.getElementById('calcHeader');
+      let isDragging = false;
+      let startX, startY, initialLeft, initialTop;
+
+      header.addEventListener('mousedown', startDrag);
+      header.addEventListener('touchstart', startDrag, { passive: false });
+
+      function startDrag(e) {
+        if (e.target.classList.contains('calc-close-btn')) return;
+        isDragging = true;
+        const event = e.touches ? e.touches[0] : e;
+        startX = event.clientX;
+        startY = event.clientY;
+
+        const rect = popup.getBoundingClientRect();
+        initialLeft = rect.left;
+        initialTop = rect.top;
+
+        document.addEventListener('mousemove', onDrag);
+        document.addEventListener('touchmove', onDrag, { passive: false });
+        document.addEventListener('mouseup', stopDrag);
+        document.addEventListener('touchend', stopDrag);
+      }
+
+      function onDrag(e) {
+        if (!isDragging) return;
+        if (e.cancelable) e.preventDefault();
+        const event = e.touches ? e.touches[0] : e;
+        const deltaX = event.clientX - startX;
+        const deltaY = event.clientY - startY;
+
+        popup.style.left = `${initialLeft + deltaX}px`;
+        popup.style.top = `${initialTop + deltaY}px`;
+        popup.style.right = 'auto';
+      }
+
+      function stopDrag() {
+        isDragging = false;
+        document.removeEventListener('mousemove', onDrag);
+        document.removeEventListener('touchmove', onDrag);
+        document.removeEventListener('mouseup', stopDrag);
+        document.removeEventListener('touchend', stopDrag);
+      }
+    })();
+
+    function switchTab(tabName) {
+      document.getElementById('viewInput').classList.remove('active');
+      document.getElementById('viewResult').classList.remove('active');
+      document.getElementById('tabInputBtn').classList.remove('active');
+      document.getElementById('tabResultBtn').classList.remove('active');
+
+      if (tabName === 'input') {
+        document.getElementById('viewInput').classList.add('active');
+        document.getElementById('tabInputBtn').classList.add('active');
+      } else {
+        calculate();
+        document.getElementById('viewResult').classList.add('active');
+        document.getElementById('tabResultBtn').classList.add('active');
+      }
+    }
+
+    function goToResultTab() {
+      switchTab('result');
+    }
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      const dict = i18n[lang];
+
+      document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+      if(lang === 'ko') document.getElementById('btnLangKo').classList.add('active');
+      if(lang === 'en') document.getElementById('btnLangEn').classList.add('active');
+      if(lang === 'zh') document.getElementById('btnLangZh').classList.add('active');
+      if(lang === 'ja') document.getElementById('btnLangJa').classList.add('active');
+
+      document.getElementById('lblAppTitle').innerText = dict.appTitle;
+      document.getElementById('lblAppSub').innerText = dict.appSub;
+      document.getElementById('lblFullscreen').innerText = dict.fullscreen;
+      document.getElementById('lblHeaderCalc').innerText = dict.headerCalc;
+      document.getElementById('lblPopupTitle').innerText = dict.popupTitle;
+      document.getElementById('lblCopyCalcRes').innerText = dict.copyCalcRes;
+
+      document.getElementById('tabInputBtn').innerText = dict.tabInput;
+      document.getElementById('tabResultBtn').innerText = dict.tabResult;
+      document.getElementById('lblTitle').innerText = dict.title;
+      document.getElementById('projectTitle').placeholder = dict.titlePh;
+      document.getElementById('lblModSize').innerText = dict.modSize;
+      document.getElementById('lblTargetSize').innerText = dict.targetSize;
+      document.getElementById('lblPitch').innerText = dict.pitch;
+      
+      document.getElementById('lblFitModeW').innerText = dict.fitModeW;
+      document.getElementById('lblFitModeH').innerText = dict.fitModeH;
+      document.getElementById('optSmallerW').innerText = dict.optSmaller;
+      document.getElementById('optLargerW').innerText = dict.optLarger;
+      document.getElementById('optSmallerH').innerText = dict.optSmaller;
+      document.getElementById('optLargerH').innerText = dict.optLarger;
+
+      document.getElementById('lblBaseRatio').innerText = dict.baseRatio;
+      document.getElementById('lblRatioUnit').innerText = dict.ratioUnit;
+      document.getElementById('lblMemo').innerText = dict.memo;
+      document.getElementById('memo').placeholder = dict.memoPh;
+      document.getElementById('btnCalculate').innerText = dict.btnCalculate;
+      document.getElementById('btnReset').innerText = dict.btnReset;
+      
+      document.getElementById('lblResTitle').innerText = dict.resTitle;
+      document.getElementById('lblResInputModSize').innerText = dict.resInputModSize;
+      document.getElementById('lblResInputTargetSize').innerText = dict.resInputTargetSize;
+      document.getElementById('lblResSize').innerText = dict.resSize;
+      document.getElementById('lblResInputPitch').innerText = dict.resInputPitch;
+      document.getElementById('lblResModCount').innerText = dict.resModCount;
+      document.getElementById('lblResResolution').innerText = dict.resResolution;
+      document.getElementById('lblResRatio').innerText = dict.resRatio;
+      document.getElementById('lblResMemo').innerText = `📝 ${dict.resMemo}`;
+      document.getElementById('lblDiagramTitle').innerText = dict.diagramTitle;
+      document.getElementById('btnShare').innerText = dict.btnShare;
+      document.getElementById('btnImageShare').innerText = dict.btnImageShare;
+      document.getElementById('btnBackToInput').innerText = dict.btnBackToInput;
+
+      saveAndCalculate();
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          alert(`Fullscreen error: ${err.message}`);
+        });
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    function saveAndCalculate() {
+      const data = {
+        title: document.getElementById('projectTitle').value,
+        modW: document.getElementById('modW').value,
+        modH: document.getElementById('modH').value,
+        targetW: document.getElementById('targetW').value,
+        targetH: document.getElementById('targetH').value,
+        pitch: document.getElementById('pitch').value,
+        fitModeW: document.getElementById('fitModeW').value,
+        fitModeH: document.getElementById('fitModeH').value,
+        baseRatioVal: document.getElementById('baseRatioVal').value,
+        memo: document.getElementById('memo').value,
+        lang: currentLang
+      };
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      calculate();
+    }
+
+    function calculate() {
+      const title = document.getElementById('projectTitle').value.trim();
+      const modW = parseFloat(document.getElementById('modW').value) || 0;
+      const modH = parseFloat(document.getElementById('modH').value) || 0;
+      const targetW = parseFloat(document.getElementById('targetW').value) || 0;
+      const targetH = parseFloat(document.getElementById('targetH').value) || 0;
+      const pitch = parseFloat(document.getElementById('pitch').value) || 1.86;
+      const fitModeW = document.getElementById('fitModeW').value;
+      const fitModeH = document.getElementById('fitModeH').value;
+      const baseRatioVal = parseFloat(document.getElementById('baseRatioVal').value) || 16;
+      const memo = document.getElementById('memo').value.trim();
+
+      if (modW <= 0 || modH <= 0 || targetW <= 0 || targetH <= 0) return;
+
+      let countX = fitModeW === 'smaller' ? Math.floor(targetW / modW) : Math.ceil(targetW / modW);
+      let countY = fitModeH === 'smaller' ? Math.floor(targetH / modH) : Math.ceil(targetH / modH);
+
+      countX = Math.max(1, countX);
+      countY = Math.max(1, countY);
+
+      const totalModules = countX * countY;
+      const totalW = countX * modW;
+      const totalH = countY * modH;
+
+      const diffW = totalW - targetW;
+      const diffH = totalH - targetH;
+
+      const halfDiffW = diffW / 2;
+      const halfDiffH = diffH / 2;
+
+      const modResX = Math.round(modW / pitch);
+      const modResY = Math.round(modH / pitch);
+
+      const totalResX = countX * modResX;
+      const totalResY = countY * modResY;
+
+      // Ratio calculated to exactly 1 decimal place as requested
+      const calculatedSubRatio = (baseRatioVal * (totalH / totalW)).toFixed(1);
+      const ratioDisplay = `${baseRatioVal} : ${calculatedSubRatio}`;
+
+      const dict = i18n[currentLang];
+
+      document.getElementById('resTitleDisplay').innerText = title || '-';
+      document.getElementById('resInputModSize').innerText = `${modW} × ${modH} mm`;
+      document.getElementById('resInputTargetSize').innerText = `${targetW} × ${targetH} mm`;
+      document.getElementById('resSize').innerText = `${totalW.toLocaleString()} × ${totalH.toLocaleString()} mm`;
+
+      const diffWEl = document.getElementById('resDiffW');
+      const diffHEl = document.getElementById('resDiffH');
+
+      const formatSplitDiff = (val, splitVal, label, splitLabel) => {
+        const sign = val > 0 ? '+' : '';
+        if (val === 0) return `${label}: 0mm (일치)`;
+        return `${label}: ${sign}${val.toLocaleString()}mm (${splitLabel}: ${sign}${splitVal.toLocaleString()}mm, ${sign}${splitVal.toLocaleString()}mm)`;
+      };
+
+      diffWEl.innerText = formatSplitDiff(diffW, halfDiffW, dict.diffWidth, currentLang === 'ko' ? '좌우' : 'Left/Right');
+      diffHEl.innerText = formatSplitDiff(diffH, halfDiffH, dict.diffHeight, currentLang === 'ko' ? '상하' : 'Top/Bottom');
+
+      diffWEl.className = 'diff-badge';
+      if (diffW > 0) diffWEl.classList.add('plus');
+      else if (diffW < 0) diffWEl.classList.add('minus');
+      else diffWEl.classList.add('zero');
+
+      diffHEl.className = 'diff-badge';
+      if (diffH > 0) diffHEl.classList.add('plus');
+      else if (diffH < 0) diffHEl.classList.add('minus');
+      else diffHEl.classList.add('zero');
+
+      document.getElementById('resInputPitch').innerText = `${pitch} mm`;
+      document.getElementById('resModCount').innerText = `${totalModules.toLocaleString()} ${dict.modUnit} (${dict.labelWidth}: ${countX} × ${dict.labelHeight}: ${countY})`;
+      document.getElementById('resResolution').innerText = `${totalResX.toLocaleString()} × ${totalResY.toLocaleString()} px`;
+      document.getElementById('resRatio').innerText = ratioDisplay;
+
+      const memoContainer = document.getElementById('memoResultContainer');
+      if (memo) {
+        document.getElementById('resMemoDisplay').innerText = memo;
+        memoContainer.style.display = 'flex';
+      } else {
+        memoContainer.style.display = 'none';
+      }
+
+      renderDiagram(targetW, targetH, totalW, totalH, diffW, diffH, halfDiffW, halfDiffH);
+    }
+
+    function renderDiagram(targetW, targetH, totalW, totalH, diffW, diffH, halfDiffW, halfDiffH) {
+      const svg = document.getElementById('comparisonSvg');
+      svg.innerHTML = '';
+
+      const NS = 'http://www.w3.org/2000/svg';
+      const W = 420, H = 300;
+      svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+      const dict = i18n[currentLang];
+      const maxW = Math.max(targetW, totalW, 1);
+      const maxH = Math.max(targetH, totalH, 1);
+
+      // The drawing is deliberately kept inside a safe central area.
+      // Difference labels are placed above/below the drawing, so the
+      // vertical-difference text can never be clipped at the right edge.
+      const boxArea = { x: 70, y: 62, w: 280, h: 158 };
+      const scale = Math.min(boxArea.w / maxW, boxArea.h / maxH);
+
+      const targetBoxW = Math.max(8, targetW * scale);
+      const targetBoxH = Math.max(8, targetH * scale);
+      const screenBoxW = Math.max(8, totalW * scale);
+      const screenBoxH = Math.max(8, totalH * scale);
+
+      const outerW = Math.max(targetBoxW, screenBoxW);
+      const outerH = Math.max(targetBoxH, screenBoxH);
+      const outerX = boxArea.x + (boxArea.w - outerW) / 2;
+      const outerY = boxArea.y + (boxArea.h - outerH) / 2;
+
+      const targetX = outerX + (outerW - targetBoxW) / 2;
+      const targetY = outerY + (outerH - targetBoxH) / 2;
+      const screenX = outerX + (outerW - screenBoxW) / 2;
+      const screenY = outerY + (outerH - screenBoxH) / 2;
+
+      function el(name, attrs = {}, textContent = '') {
+        const node = document.createElementNS(NS, name);
+        Object.entries(attrs).forEach(([k, v]) => node.setAttribute(k, v));
+        if (textContent !== '') node.textContent = textContent;
+        return node;
+      }
+
+      function addText(x, y, txt, attrs = {}) {
+        svg.appendChild(el('text', {
+          x, y,
+          'font-family': 'Arial, sans-serif',
+          ...attrs
+        }, txt));
+      }
+
+      const signW = diffW > 0 ? '+' : '';
+      const signH = diffH > 0 ? '+' : '';
+      const fmt = n => Number(n).toLocaleString(undefined, { maximumFractionDigits: 1 });
+
+      // Title/helper line
+      addText(W / 2, 18, dict.diagramTitle.replace(/^📐\s*/, ''), {
+        'text-anchor': 'middle', 'font-size': '12', 'font-weight': '700', fill: '#0f172a'
+      });
+
+      // Width difference: safely above the rectangles.
+      const widthText = diffW === 0
+        ? `${dict.diffWidth}: 0mm (${currentLang === 'ko' ? '일치' : 'Match'})`
+        : `${dict.diffWidth}: ${signW}${fmt(diffW)}mm  •  ${currentLang === 'ko' ? '좌우' : 'L/R'} ${signW}${fmt(halfDiffW)}mm`;
+      addText(W / 2, 40, widthText, {
+        'text-anchor': 'middle', 'font-size': '10.5', 'font-weight': '700',
+        fill: diffW === 0 ? '#475569' : (diffW > 0 ? '#1e40af' : '#991b1b')
+      });
+
+      // Target space
+      svg.appendChild(el('rect', {
+        x: targetX, y: targetY, width: targetBoxW, height: targetBoxH,
+        fill: '#fff7ed', stroke: '#ea580c', 'stroke-width': '2',
+        'stroke-dasharray': '5 4', rx: '3'
+      }));
+
+      // Actual screen
+      svg.appendChild(el('rect', {
+        x: screenX, y: screenY, width: screenBoxW, height: screenBoxH,
+        fill: '#2563eb', 'fill-opacity': '0.18', stroke: '#2563eb',
+        'stroke-width': '2.5', rx: '3'
+      }));
+
+      // Labels inside the drawing when there is enough room.
+      if (targetBoxW >= 100 && targetBoxH >= 30) {
+        addText(targetX + targetBoxW / 2, targetY + 16,
+          `${dict.legendSpace} ${fmt(targetW)}×${fmt(targetH)}mm`, {
+            'text-anchor': 'middle', 'font-size': '9', 'font-weight': '700', fill: '#c2410c'
+          });
+      }
+      if (screenBoxW >= 100 && screenBoxH >= 30) {
+        addText(screenX + screenBoxW / 2, screenY + screenBoxH - 9,
+          `${dict.legendScreen} ${fmt(totalW)}×${fmt(totalH)}mm`, {
+            'text-anchor': 'middle', 'font-size': '9', 'font-weight': '700', fill: '#1e3a8a'
+          });
+      }
+
+      // Height difference: moved below the drawing instead of to the right.
+      const heightText = diffH === 0
+        ? `${dict.diffHeight}: 0mm (${currentLang === 'ko' ? '일치' : 'Match'})`
+        : `${dict.diffHeight}: ${signH}${fmt(diffH)}mm  •  ${currentLang === 'ko' ? '상하' : 'T/B'} ${signH}${fmt(halfDiffH)}mm`;
+      addText(W / 2, 238, heightText, {
+        'text-anchor': 'middle', 'font-size': '10.5', 'font-weight': '700',
+        fill: diffH === 0 ? '#475569' : (diffH > 0 ? '#1e40af' : '#991b1b')
+      });
+
+      // Simple, separated legend at the bottom for image-copy readability.
+      const legendY = 266;
+      svg.appendChild(el('rect', {
+        x: 48, y: legendY - 9, width: 11, height: 11,
+        fill: '#fff7ed', stroke: '#ea580c', 'stroke-width': '1.5',
+        'stroke-dasharray': '3 2'
+      }));
+      addText(65, legendY, `${dict.legendSpace} (${fmt(targetW)}×${fmt(targetH)}mm)`, {
+        'font-size': '9.5', 'font-weight': '700', fill: '#c2410c'
+      });
+
+      svg.appendChild(el('rect', {
+        x: 238, y: legendY - 9, width: 11, height: 11,
+        fill: '#2563eb', 'fill-opacity': '0.3', stroke: '#2563eb', 'stroke-width': '1.5'
+      }));
+      addText(255, legendY, `${dict.legendScreen} (${fmt(totalW)}×${fmt(totalH)}mm)`, {
+        'font-size': '9.5', 'font-weight': '700', fill: '#1e3a8a'
+      });
+    }
+
+    function shareResults() {
+      const title = document.getElementById('projectTitle').value.trim() || i18n[currentLang].title;
+      const memo = document.getElementById('memo').value.trim();
+      const inputModSize = document.getElementById('resInputModSize').innerText;
+      const inputTargetSize = document.getElementById('resInputTargetSize').innerText;
+      const size = document.getElementById('resSize').innerText;
+      const diffWText = document.getElementById('resDiffW').innerText;
+      const diffHText = document.getElementById('resDiffH').innerText;
+      const inputPitch = document.getElementById('resInputPitch').innerText;
+      const modCount = document.getElementById('resModCount').innerText;
+      const resolution = document.getElementById('resResolution').innerText;
+      const ratio = document.getElementById('resRatio').innerText;
+
+      // Plain, line-separated report for much better readability in
+      // KakaoTalk, email, notes and other apps after copying.
+      let textToCopy = `${title}\n`;
+      textToCopy += `==============================\n`;
+      textToCopy += `${i18n[currentLang].resInputModSize}: ${inputModSize}\n`;
+      textToCopy += `${i18n[currentLang].resInputTargetSize}: ${inputTargetSize}\n`;
+      textToCopy += `${i18n[currentLang].resSize}: ${size}\n`;
+      textToCopy += `  ${diffWText}\n`;
+      textToCopy += `  ${diffHText}\n`;
+      textToCopy += `${i18n[currentLang].resInputPitch}: ${inputPitch}\n`;
+      textToCopy += `------------------------------\n`;
+      textToCopy += `${i18n[currentLang].resModCount}: ${modCount}\n`;
+      textToCopy += `${i18n[currentLang].resResolution}: ${resolution}\n`;
+      textToCopy += `${i18n[currentLang].resRatio}: ${ratio}\n`;
+
+      if (memo) {
+        textToCopy += `------------------------------\n`;
+        textToCopy += `${i18n[currentLang].resMemo}:\n${memo}\n`;
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(textToCopy).then(() => {
+          showToast(i18n[currentLang].toastCopied);
+        }).catch(() => fallbackCopy(textToCopy));
+      } else {
+        fallbackCopy(textToCopy);
+      }
+    }
+
+    function shareResultsAsImage() {
+      const exportCard = document.getElementById('exportableResultCard');
+      if (!window.html2canvas) {
+        alert("html2canvas library is loading or unavailable.");
+        return;
+      }
+
+      html2canvas(exportCard, { scale: 2, backgroundColor: '#ffffff', logging: false }).then(canvas => {
+        canvas.toBlob(blob => {
+          if (!blob) {
+            alert(i18n[currentLang].copyFail);
+            return;
+          }
+
+          // Try copying image to clipboard if supported
+          if (navigator.clipboard && window.ClipboardItem) {
+            navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob })
+            ]).then(() => {
+              showToast(i18n[currentLang].toastImageCopied);
+            }).catch(() => {
+              fallbackDownloadImage(canvas);
+            });
+          } else {
+            fallbackDownloadImage(canvas);
+          }
+        });
+      }).catch(err => {
+        console.error("Image generation error:", err);
+        alert(i18n[currentLang].copyFail);
+      });
+    }
+
+    function fallbackDownloadImage(canvas) {
+      const link = document.createElement('a');
+      link.download = 'led_calculation_result.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast(i18n[currentLang].toastImageCopied);
+    }
+
+    function fallbackCopy(text) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast(i18n[currentLang].toastCopied);
+      } catch (err) {
+        alert(i18n[currentLang].copyFail);
+      }
+      document.body.removeChild(textarea);
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 2500);
+    }
+
+    function resetDefaults() {
+      if (confirm(i18n[currentLang].resetConfirm)) {
+        localStorage.removeItem(STORAGE_KEY);
+        document.getElementById('projectTitle').value = '';
+        document.getElementById('modW').value = '320';
+        document.getElementById('modH').value = '160';
+        document.getElementById('targetW').value = '3000';
+        document.getElementById('targetH').value = '2000';
+        document.getElementById('pitch').value = '1.86';
+        document.getElementById('fitModeW').value = 'smaller';
+        document.getElementById('fitModeH').value = 'smaller';
+        document.getElementById('baseRatioVal').value = '16';
+        document.getElementById('memo').value = '';
+        saveAndCalculate();
+      }
+    }
+
+    window.onload = function() {
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData);
+          if (parsed.title !== undefined) document.getElementById('projectTitle').value = parsed.title;
+          if (parsed.modW) document.getElementById('modW').value = parsed.modW;
+          if (parsed.modH) document.getElementById('modH').value = parsed.modH;
+          if (parsed.targetW) document.getElementById('targetW').value = parsed.targetW;
+          if (parsed.targetH) document.getElementById('targetH').value = parsed.targetH;
+          if (parsed.pitch) document.getElementById('pitch').value = parsed.pitch;
+          if (parsed.fitModeW) document.getElementById('fitModeW').value = parsed.fitModeW;
+          if (parsed.fitModeH) document.getElementById('fitModeH').value = parsed.fitModeH;
+          if (parsed.baseRatioVal) document.getElementById('baseRatioVal').value = parsed.baseRatioVal;
+          if (parsed.memo !== undefined) document.getElementById('memo').value = parsed.memo;
+          if (parsed.lang) currentLang = parsed.lang;
+        } catch(e) {
+          console.error("Cache load error", e);
+        }
+      }
+      setLanguage(currentLang);
+    }
+  </script>
 </body>
 </html>
